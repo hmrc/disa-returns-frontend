@@ -10,7 +10,7 @@ ThisBuild / scalaVersion := "3.3.5"
 
 lazy val microservice = (project in file("."))
   .enablePlugins(PlayScala, SbtDistributablesPlugin)
-  .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
+  .disablePlugins(JUnitXmlReportPlugin) // Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(inConfig(Test)(testSettings) *)
   .settings(ThisBuild / useSuperShell := false)
   .settings(
