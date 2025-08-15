@@ -19,3 +19,17 @@ GET         /account/sign-out                            controllers.auth.AuthCo
 GET         /account/signed-out                          controllers.auth.SignedOutController.onPageLoad()
 
 GET         /unauthorised                                controllers.UnauthorisedController.onPageLoad()
+
+GET        /upscan-journey/:isaManagerReference              controllers.UpscanFormController.onPageLoad(isaManagerReference:String)
+
+GET       /upscan-success               controllers.UpscanFormController.showResult(isaManagerReference:String)
++ nocsrf
+
+POST /upscan-callback            controllers.UpscanCallbackController.onPageLoad()
+
+POST  /add-another-file/:isaManagerReference  controllers.AddAnotherFileController.onSubmit(isaManagerReference: String)
+GET  /remove-file/:isaManagerReference/:name  controllers.RemoveFileController.removeFile(isaManagerReference: String, name:String)
+
+GET   /status/:isaManagerReference   controllers.UpscanFormController.getStatuses(isaManagerReference: String)
+
+
