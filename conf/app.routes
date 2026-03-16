@@ -25,3 +25,5 @@ GET         /download-report-template                    controllers.DownloadRep
 GET         /problem-with-uploaded-file                  controllers.ProblemWithUploadedFileController.onPageLoad()
 
 GET         /empty-uploaded-file                         controllers.EmptyUploadedFileController.onPageLoad()
+
+GET         /file-formatting-errors                      controllers.FileFormattingErrorsController.onPageLoad()
