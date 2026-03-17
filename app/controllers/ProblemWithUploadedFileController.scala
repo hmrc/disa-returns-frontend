@@ -23,15 +23,15 @@ import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import views.html.ProblemWithUploadedFileView
 
-class ProblemWithUploadedFileController @Inject()(
-                                       override val messagesApi: MessagesApi,
-                                       identify: IdentifierAction,
-                                       val controllerComponents: MessagesControllerComponents,
-                                       view: ProblemWithUploadedFileView
-                                     ) extends FrontendBaseController with I18nSupport {
+class ProblemWithUploadedFileController @Inject() (
+  override val messagesApi: MessagesApi,
+  identify: IdentifierAction,
+  val controllerComponents: MessagesControllerComponents,
+  view: ProblemWithUploadedFileView
+) extends FrontendBaseController
+    with I18nSupport {
 
-  def onPageLoad: Action[AnyContent] = identify {
-    implicit request =>
-      Ok(view())
+  def onPageLoad: Action[AnyContent] = identify { implicit request =>
+    Ok(view())
   }
 }
