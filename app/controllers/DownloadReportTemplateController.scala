@@ -25,12 +25,12 @@ import views.html.DownloadReportTemplateView
 import javax.inject.Inject
 
 class DownloadReportTemplateController @Inject() (
-                                                    override val messagesApi: MessagesApi,
-                                                    identify: IdentifierAction,
-                                                    val controllerComponents: MessagesControllerComponents,
-                                                    view: DownloadReportTemplateView
-                                                  ) extends FrontendBaseController
-  with I18nSupport {
+  override val messagesApi: MessagesApi,
+  identify: IdentifierAction,
+  val controllerComponents: MessagesControllerComponents,
+  view: DownloadReportTemplateView
+) extends FrontendBaseController
+    with I18nSupport {
 
   def onPageLoad(): Action[AnyContent] = identify { implicit request =>
     Ok(view())
