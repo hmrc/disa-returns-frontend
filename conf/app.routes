@@ -22,4 +22,6 @@ GET         /unauthorised                                controllers.Unauthorise
 
 GET         /download-report-template                    controllers.DownloadReportTemplateController.onPageLoad()
 
-GET        /problem-with-uploaded-file                   controllers.ProblemWithUploadedFileController.onPageLoad()
+GET         /problem-with-uploaded-file                  controllers.ProblemWithUploadedFileController.onPageLoad()
+
+GET         /empty-uploaded-file                         controllers.EmptyUploadedFileController.onPageLoad()

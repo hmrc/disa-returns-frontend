@@ -65,3 +65,9 @@ problemWithUploadedFile.p2 = Correct the errors then you can upload the file aga
 problemWithUploadedFile.p3 = Remember, do not edit the first two rows of the template, or change the order of the columns.
 problemWithUploadedFile.link = Download the template file
 problemWithUploadedFile.callToAction = Back to file upload
+
+emptyUploadedFile.title = Your file is empty
+emptyUploadedFile.heading = Your file is empty
+emptyUploadedFile.p1 = The file you have uploaded is empty.
+emptyUploadedFile.link = Download the template file
+emptyUploadedFile.callToAction = Back to file upload
