@@ -20,4 +20,6 @@ GET         /account/signed-out                          controllers.auth.Signed
 
 GET         /unauthorised                                controllers.UnauthorisedController.onPageLoad()
 
+GET         /download-report-template                    controllers.DownloadReportTemplateController.onPageLoad()
+
 GET        /problem-with-uploaded-file                   controllers.ProblemWithUploadedFileController.onPageLoad()

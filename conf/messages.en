@@ -48,6 +48,16 @@ signedOut.guidance = We did not save your answers.
 unauthorised.title = You can’t access this service with this account
 unauthorised.heading = You can’t access this service with this account
 
+downloadReportTemplate.title = Download the CSV report template file
+downloadReportTemplate.heading = Download the CSV report template file
+downloadReportTemplate.p1 = You need to use the CSV template provided and enter details of investors.
+downloadReportTemplate.h2 = Supporting information
+downloadReportTemplate.p2 = In the template there is guidance to support you to complete the file successfully.
+downloadReportTemplate.h3 = Download the file
+downloadReportTemplate.p3 = and enter all the required information.
+downloadReportTemplate.p3.link = Download the CSV template file
+downloadReportTemplate.callToAction = Return to manage reports
+
 problemWithUploadedFile.title = There is a problem with your uploaded file
 problemWithUploadedFile.heading = There is a problem with your uploaded file
 problemWithUploadedFile.p1 = The header rows or columns have been changed.
