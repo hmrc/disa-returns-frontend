@@ -84,3 +84,8 @@ fileContainsVirus.title = The selected file contains a virus
 fileContainsVirus.heading = The selected file contains a virus
 fileContainsVirus.p1 = Check your file and try again.
 fileContainsVirus.button = Back to file upload
+
+filePasswordProtected.title = The selected file is password protected
+filePasswordProtected.heading = The selected file is password protected
+filePasswordProtected.p1 = You need to remove the password on this file.
+filePasswordProtected.button = Back to file upload

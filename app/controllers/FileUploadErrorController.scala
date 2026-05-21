@@ -16,22 +16,32 @@
 
 package controllers
 
-import controllers.actions._
-import javax.inject.Inject
+import com.google.inject.Inject
+import controllers.actions.IdentifierAction
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
-import views.html.EmptyUploadedFileView
+import views.html.{EmptyUploadedFileView, FileContainsVirusView, FilePasswordProtectedView}
 
-class EmptyUploadedFileController @Inject() (
+class FileUploadErrorController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   val controllerComponents: MessagesControllerComponents,
-  view: EmptyUploadedFileView
+  filePasswordProtectedView: FilePasswordProtectedView,
+  fileContainsVirusView: FileContainsVirusView,
+  emptyUploadedFileView: EmptyUploadedFileView
 ) extends FrontendBaseController
     with I18nSupport {
 
-  def onPageLoad: Action[AnyContent] = identify { implicit request =>
-    Ok(view())
+  def filePasswordProtected(): Action[AnyContent] = identify { implicit request =>
+    Ok(filePasswordProtectedView())
+  }
+
+  def fileContainsVirus(): Action[AnyContent] = identify { implicit request =>
+    Ok(fileContainsVirusView())
+  }
+
+  def emptyFileUploaded(): Action[AnyContent] = identify { implicit request =>
+    Ok(emptyUploadedFileView())
   }
 }
