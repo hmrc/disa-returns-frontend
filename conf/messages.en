@@ -79,3 +79,8 @@ fileFormattingErrors.p2 = The errors may include things like incorrect formattin
 fileFormattingErrors.p3 = These will need to be corrected before your file can be uploaded again.
 fileFormattingErrors.p4 = Check the instructions in the template file for more guidance.
 fileFormattingErrors.button = Back to file upload
+
+fileContainsVirus.title = The selected file contains a virus
+fileContainsVirus.heading = The selected file contains a virus
+fileContainsVirus.p1 = Check your file and try again.
+fileContainsVirus.button = Back to file upload

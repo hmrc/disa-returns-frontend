@@ -27,3 +27,5 @@ GET         /problem-with-uploaded-file                  controllers.ProblemWith
 GET         /empty-uploaded-file                         controllers.EmptyUploadedFileController.onPageLoad()
 
 GET         /file-formatting-errors                      controllers.FileFormattingErrorsController.onPageLoad()
+
+GET         /file-contains-virus                         controllers.FileContainsVirusController.onPageLoad()
