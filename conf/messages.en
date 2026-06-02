@@ -89,3 +89,8 @@ filePasswordProtected.title = The selected file is password protected
 filePasswordProtected.heading = The selected file is password protected
 filePasswordProtected.p1 = You need to remove the password on this file.
 filePasswordProtected.button = Back to file upload
+
+invalidFileType.title = The file you uploaded is not recognised
+invalidFileType.heading = The file you uploaded is not recognised
+invalidFileType.p1 = The selected file must be in CSV or Excel format.
+invalidFileType.callToAction = Back to file upload
