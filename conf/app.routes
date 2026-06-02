@@ -33,3 +33,5 @@ GET         /file-contains-virus                         controllers.FileUploadE
 GET         /file-password-protected                     controllers.FileUploadErrorController.filePasswordProtected()
 
 GET         /invalid-file-type                           controllers.FileUploadErrorController.invalidFileType()
+
+GET         /duplicate-file-upload                       controllers.FileUploadErrorController.duplicateFileUpload()
