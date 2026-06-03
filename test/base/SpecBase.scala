@@ -17,36 +17,43 @@
 package base
 
 import controllers.actions._
-import models.UserAnswers
+import models.MonthlyReturnSubmission
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.{OptionValues, TryValues}
+import org.scalatest.{EitherValues, OptionValues, TryValues}
 import play.api.Application
 import play.api.i18n.{Messages, MessagesApi}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeRequest
 
+import java.util.UUID
+
 trait SpecBase
     extends AnyFreeSpec
     with Matchers
     with TryValues
+    with EitherValues
     with OptionValues
     with ScalaFutures
     with IntegrationPatience {
 
-  val userAnswersId: String = "id"
-
-  def emptyUserAnswers: UserAnswers = UserAnswers(userAnswersId)
+  def emptyMonthlyReturnSubmission: MonthlyReturnSubmission =
+    MonthlyReturnSubmission(
+      submissionId = UUID.fromString("11111111-1111-1111-1111-111111111111"),
+      nilReport = false
+    )
 
   def messages(app: Application): Messages = app.injector.instanceOf[MessagesApi].preferred(FakeRequest())
 
-  protected def applicationBuilder(userAnswers: Option[UserAnswers] = None): GuiceApplicationBuilder =
+  protected def applicationBuilder(
+    monthlyReturnSubmission: Option[MonthlyReturnSubmission] = None
+  ): GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
       .overrides(
         bind[DataRequiredAction].to[DataRequiredActionImpl],
         bind[IdentifierAction].to[FakeIdentifierAction],
-        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(userAnswers))
+        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturnSubmission))
       )
 }

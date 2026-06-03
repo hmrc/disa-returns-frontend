@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,24 @@
  * limitations under the License.
  */
 
-package navigation
+package forms
 
-import models.{Mode, MonthlyReturnSubmission}
-import pages._
-import play.api.mvc.Call
+import forms.behaviours.OptionFieldBehaviours
+import models.YesNoAnswer
+import play.api.data.FormError
 
-class FakeNavigator(desiredRoute: Call) extends Navigator {
+class MonthlyReportSubmissionFormProviderSpec extends OptionFieldBehaviours {
 
-  override def nextPage(page: Page, mode: Mode, monthlyReturnSubmission: MonthlyReturnSubmission): Call =
-    desiredRoute
+  private val form = new MonthlyReportSubmissionFormProvider()()
+
+  ".value" - {
+
+    val fieldName = "value"
+
+    behave like mandatoryField(
+      form,
+      fieldName,
+      requiredError = FormError(fieldName, "monthlyReportSubmission.error.required")
+    )
+  }
 }

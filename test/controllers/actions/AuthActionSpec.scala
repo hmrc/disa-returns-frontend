@@ -25,7 +25,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.Retrieval
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -34,16 +34,87 @@ import scala.concurrent.{ExecutionContext, Future}
 class AuthActionSpec extends SpecBase {
 
   class Harness(authAction: IdentifierAction) {
-    def onPageLoad(): Action[AnyContent] = authAction(_ => Results.Ok)
+    def onPageLoad(): Action[AnyContent] = authAction(request => Results.Ok(request.zReference))
+
+    def providerId(): Action[AnyContent] = authAction(request => Results.Ok(request.providerId))
   }
 
   "Auth Action" - {
+
+    "when the user has a DISA enrolment with a ZREF identifier" - {
+
+      "must use it as the request identifier" in {
+
+        val application = applicationBuilder().build()
+
+        running(application) {
+          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
+          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
+
+          val authAction = new AuthenticatedIdentifierAction(
+            new FakeSuccessfulZReferenceAuthConnector("Z1234"),
+            appConfig,
+            bodyParsers
+          )
+          val controller = new Harness(authAction)
+          val result     = controller.onPageLoad()(FakeRequest())
+
+          status(result) mustBe OK
+          contentAsString(result) mustBe "Z1234"
+        }
+      }
+
+      "must add the provider id to the request" in {
+
+        val application = applicationBuilder().build()
+
+        running(application) {
+          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
+          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
+
+          val authAction = new AuthenticatedIdentifierAction(
+            new FakeSuccessfulZReferenceAuthConnector("Z1234", providerId = "provider-123"),
+            appConfig,
+            bodyParsers
+          )
+          val controller = new Harness(authAction)
+          val result     = controller.providerId()(FakeRequest())
+
+          status(result) mustBe OK
+          contentAsString(result) mustBe "provider-123"
+        }
+      }
+    }
+
+    "when the user does not have a ZREF identifier" - {
+
+      "must redirect the user to the unauthorised page" in {
+
+        val application = applicationBuilder().build()
+
+        running(application) {
+          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
+          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
+
+          val authAction = new AuthenticatedIdentifierAction(
+            new FakeMissingZReferenceAuthConnector,
+            appConfig,
+            bodyParsers
+          )
+          val controller = new Harness(authAction)
+          val result     = controller.onPageLoad()(FakeRequest())
+
+          status(result) mustBe SEE_OTHER
+          redirectLocation(result).value mustBe routes.UnauthorisedController.onPageLoad().url
+        }
+      }
+    }
 
     "when the user hasn't logged in" - {
 
       "must redirect the user to log in " in {
 
-        val application = applicationBuilder(userAnswers = None).build()
+        val application = applicationBuilder().build()
 
         running(application) {
           val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
@@ -67,7 +138,7 @@ class AuthActionSpec extends SpecBase {
 
       "must redirect the user to log in " in {
 
-        val application = applicationBuilder(userAnswers = None).build()
+        val application = applicationBuilder().build()
 
         running(application) {
           val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
@@ -91,7 +162,7 @@ class AuthActionSpec extends SpecBase {
 
       "must redirect the user to the unauthorised page" in {
 
-        val application = applicationBuilder(userAnswers = None).build()
+        val application = applicationBuilder().build()
 
         running(application) {
           val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
@@ -115,7 +186,7 @@ class AuthActionSpec extends SpecBase {
 
       "must redirect the user to the unauthorised page" in {
 
-        val application = applicationBuilder(userAnswers = None).build()
+        val application = applicationBuilder().build()
 
         running(application) {
           val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
@@ -139,7 +210,7 @@ class AuthActionSpec extends SpecBase {
 
       "must redirect the user to the unauthorised page" in {
 
-        val application = applicationBuilder(userAnswers = None).build()
+        val application = applicationBuilder().build()
 
         running(application) {
           val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
@@ -163,7 +234,7 @@ class AuthActionSpec extends SpecBase {
 
       "must redirect the user to the unauthorised page" in {
 
-        val application = applicationBuilder(userAnswers = None).build()
+        val application = applicationBuilder().build()
 
         running(application) {
           val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
@@ -187,7 +258,7 @@ class AuthActionSpec extends SpecBase {
 
       "must redirect the user to the unauthorised page" in {
 
-        val application = applicationBuilder(userAnswers = None).build()
+        val application = applicationBuilder().build()
 
         running(application) {
           val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
@@ -217,4 +288,42 @@ class FakeFailingAuthConnector @Inject() (exceptionToReturn: Throwable) extends 
     ec: ExecutionContext
   ): Future[A] =
     Future.failed(exceptionToReturn)
+}
+
+class FakeSuccessfulZReferenceAuthConnector(zReference: String, providerId: String = "provider-123")
+    extends AuthConnector {
+  val serviceUrl: String = ""
+
+  override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[A] =
+    Future.successful(
+      (
+        new ~(
+          Enrolments(
+            Set(
+              Enrolment(
+                "HMRC-DISA-ORG",
+                Seq(EnrolmentIdentifier("ZREF", zReference)),
+                "Activated"
+              )
+            )
+          ),
+          Some(Credentials(providerId, "GovernmentGateway"))
+        )
+      ).asInstanceOf[A]
+    )
+}
+
+class FakeMissingZReferenceAuthConnector extends AuthConnector {
+  val serviceUrl: String = ""
+
+  override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[A] =
+    Future.successful(
+      new ~(Enrolments(Set.empty), Some(Credentials("provider-123", "GovernmentGateway"))).asInstanceOf[A]
+    )
 }

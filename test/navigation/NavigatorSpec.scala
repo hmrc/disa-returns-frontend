@@ -18,30 +18,53 @@ package navigation
 
 import base.SpecBase
 import controllers.routes
+import models.{CheckMode, MonthlyReturnSubmission, NormalMode}
 import pages._
-import models._
+import play.api.mvc.Call
+
+import java.util.UUID
 
 class NavigatorSpec extends SpecBase {
 
   val navigator = new Navigator
 
+  private def submission(nilReport: Boolean): MonthlyReturnSubmission =
+    MonthlyReturnSubmission(UUID.fromString("11111111-1111-1111-1111-111111111111"), nilReport)
+
   "Navigator" - {
 
     "in Normal mode" - {
 
-      "must go from a page that doesn't exist in the route map to Index" in {
+      "must go from MonthlyReportSubmissionPage to the file upload placeholder when the user is uploading a report" in {
+        navigator.nextPage(MonthlyReportSubmissionPage, NormalMode, submission(nilReport = false)) mustBe Call(
+          "GET",
+          "???"
+        )
+      }
 
+      "must go from MonthlyReportSubmissionPage to the nil report CYA placeholder when the user has a nil report" in {
+        navigator.nextPage(MonthlyReportSubmissionPage, NormalMode, submission(nilReport = true)) mustBe Call(
+          "GET",
+          "???"
+        )
+      }
+
+      "must go from a page that doesn't exist in the route map to Index" in {
         case object UnknownPage extends Page
-        navigator.nextPage(UnknownPage, NormalMode, UserAnswers("id")) mustBe routes.IndexController.onPageLoad()
+        navigator.nextPage(UnknownPage, NormalMode, submission(nilReport = false)) mustBe routes.IndexController
+          .onPageLoad()
       }
     }
 
     "in Check mode" - {
 
       "must go from a page that doesn't exist in the edit route map to CheckYourAnswers" in {
-
         case object UnknownPage extends Page
-        navigator.nextPage(UnknownPage, CheckMode, UserAnswers("id")) mustBe routes.CheckYourAnswersController
+        navigator.nextPage(
+          UnknownPage,
+          CheckMode,
+          submission(nilReport = false)
+        ) mustBe routes.CheckYourAnswersController
           .onPageLoad()
       }
     }

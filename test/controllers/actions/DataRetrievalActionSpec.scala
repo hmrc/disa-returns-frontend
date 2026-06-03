@@ -17,49 +17,56 @@
 package controllers.actions
 
 import base.SpecBase
-import models.UserAnswers
 import models.requests.{IdentifierRequest, OptionalDataRequest}
-import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest
-import repositories.SessionRepository
+import services.StorageService
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
 
-  class Harness(sessionRepository: SessionRepository) extends DataRetrievalActionImpl(sessionRepository) {
+  class Harness(storageService: StorageService) extends DataRetrievalActionImpl(storageService) {
     def callTransform[A](request: IdentifierRequest[A]): Future[OptionalDataRequest[A]] = transform(request)
   }
 
   "Data Retrieval Action" - {
 
-    "when there is no data in the cache" - {
+    "when there is no monthly return submission in backend storage" - {
 
-      "must set userAnswers to 'None' in the request" in {
+      "must set monthlyReturnSubmission to None in the request" in {
 
-        val sessionRepository = mock[SessionRepository]
-        when(sessionRepository.get("id")) thenReturn Future(None)
-        val action            = new Harness(sessionRepository)
+        val storageService = mock[StorageService]
+        when(storageService.retrieveForThisWindow(eqTo("Z1234"))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(None))
+        val action         = new Harness(storageService)
 
-        val result = action.callTransform(IdentifierRequest(FakeRequest(), "id")).futureValue
+        val result = action.callTransform(IdentifierRequest(FakeRequest(), "Z1234", "provider-123")).futureValue
 
-        result.userAnswers must not be defined
+        result.zReference mustEqual "Z1234"
+        result.providerId mustEqual "provider-123"
+        result.monthlyReturnSubmission must not be defined
       }
     }
 
-    "when there is data in the cache" - {
+    "when there is a monthly return submission in backend storage" - {
 
-      "must build a userAnswers object and add it to the request" in {
+      "must add it to the request" in {
 
-        val sessionRepository = mock[SessionRepository]
-        when(sessionRepository.get("id")) thenReturn Future(Some(UserAnswers("id")))
-        val action            = new Harness(sessionRepository)
+        val storageService = mock[StorageService]
+        when(storageService.retrieveForThisWindow(eqTo("Z1234"))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(Some(emptyMonthlyReturnSubmission)))
+        val action         = new Harness(storageService)
 
-        val result = action.callTransform(IdentifierRequest(FakeRequest(), "id")).futureValue
+        val result = action.callTransform(IdentifierRequest(FakeRequest(), "Z1234", "provider-123")).futureValue
 
-        result.userAnswers mustBe defined
+        result.zReference mustEqual "Z1234"
+        result.providerId mustEqual "provider-123"
+        result.monthlyReturnSubmission.value mustEqual emptyMonthlyReturnSubmission
       }
     }
   }

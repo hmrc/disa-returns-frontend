@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package navigation
+package pages
 
-import models.{Mode, MonthlyReturnSubmission}
-import pages._
-import play.api.mvc.Call
+import base.SpecBase
 
-class FakeNavigator(desiredRoute: Call) extends Navigator {
+class MonthlyReportSubmissionPageSpec extends SpecBase {
 
-  override def nextPage(page: Page, mode: Mode, monthlyReturnSubmission: MonthlyReturnSubmission): Call =
-    desiredRoute
+  "MonthlyReportSubmissionPage" - {
+
+    "must have a stable page identifier" in {
+      MonthlyReportSubmissionPage.toString mustEqual "monthlyReportSubmission"
+    }
+  }
 }
