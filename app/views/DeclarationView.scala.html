@@ -28,22 +28,24 @@
 @layout(pageTitle = titleNoForm(messages(viewModel.titleKey))) {
 
     <div class="govuk-body">
-    <h1 class="govuk-heading-l">@messages(viewModel.headingKey)</h1>
+        <h1 class="govuk-heading-l">@messages(viewModel.headingKey)</h1>
 
-    @for(key <- viewModel.extraNilReturnParagraphKeys) {
-        <p>@messages(key)</p>
-    }
-    <p>@messages(viewModel.introKey)</p>
+        @for(key <- viewModel.extraNilReturnParagraphKeys) {
+            <p>@messages(key)</p>
+        }
+        <p>@messages(viewModel.introKey)</p>
 
-    <ul class="govuk-list govuk-list--bullet">
-    @for(key <- viewModel.bulletKeys) {<li>@messages(key)</li>}
-    </ul>
+        <ul class="govuk-list govuk-list--bullet">
+        @for(key <- viewModel.bulletKeys) {
+            <li>@messages(key)</li>
+        }
+        </ul>
 
-    <p>@messages(viewModel.closingKey)</p>
+        <p>@messages(viewModel.closingKey)</p>
 
-    @govukButton(Button(
-        content = Text(messages(viewModel.buttonKey)),
-        href = Some(IndexController.onPageLoad().url)
-    ))
+        @govukButton(Button(
+            content = Text(messages(viewModel.buttonKey)),
+            href = Some(IndexController.onPageLoad().url)
+        ))
     </div>
 }
