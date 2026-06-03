@@ -90,6 +90,16 @@ filePasswordProtected.heading = The selected file is password protected
 filePasswordProtected.p1 = You need to remove the password on this file.
 filePasswordProtected.button = Back to file upload
 
+invalidFileType.title = The file you uploaded is not recognised
+invalidFileType.heading = The file you uploaded is not recognised
+invalidFileType.p1 = The selected file must be in CSV or Excel format.
+invalidFileType.callToAction = Back to file upload
+
+duplicateFileUpload.title = The files you uploaded are the same
+duplicateFileUpload.heading = The files you uploaded are the same
+duplicateFileUpload.p1 = Check if this is correct.
+duplicateFileUpload.callToAction = Back to file upload
+
 declaration.title = Declaration
 declaration.heading = Declaration
 declaration.p1 = By agreeing to this declaration, I confirm that:

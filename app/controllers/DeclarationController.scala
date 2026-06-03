@@ -24,13 +24,13 @@ import views.html.DeclarationView
 import viewmodels.DeclarationViewModel
 import javax.inject.Inject
 
-class DeclarationController @Inject()(
-                                       override val messagesApi: MessagesApi,
-                                       identify: IdentifierAction,
-                                       val controllerComponents: MessagesControllerComponents,
-                                       view: DeclarationView
-                                     ) extends FrontendBaseController
-  with I18nSupport {
+class DeclarationController @Inject() (
+  override val messagesApi: MessagesApi,
+  identify: IdentifierAction,
+  val controllerComponents: MessagesControllerComponents,
+  view: DeclarationView
+) extends FrontendBaseController
+    with I18nSupport {
 
   // Parametrised for now until stored user answers are available
   def onPageLoad(nilReturn: Boolean): Action[AnyContent] =

@@ -21,7 +21,7 @@ import controllers.actions.IdentifierAction
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
-import views.html.{EmptyUploadedFileView, FileContainsVirusView, FilePasswordProtectedView}
+import views.html.{DuplicateFileUploadView, EmptyUploadedFileView, FileContainsVirusView, FilePasswordProtectedView, InvalidFileTypeView}
 
 class FileUploadErrorController @Inject() (
   override val messagesApi: MessagesApi,
@@ -29,7 +29,9 @@ class FileUploadErrorController @Inject() (
   val controllerComponents: MessagesControllerComponents,
   filePasswordProtectedView: FilePasswordProtectedView,
   fileContainsVirusView: FileContainsVirusView,
-  emptyUploadedFileView: EmptyUploadedFileView
+  emptyUploadedFileView: EmptyUploadedFileView,
+  invalidFileTypeView: InvalidFileTypeView,
+  duplicateFileUploadView: DuplicateFileUploadView
 ) extends FrontendBaseController
     with I18nSupport {
 
@@ -43,5 +45,13 @@ class FileUploadErrorController @Inject() (
 
   def emptyFileUploaded(): Action[AnyContent] = identify { implicit request =>
     Ok(emptyUploadedFileView())
+  }
+
+  def invalidFileType(): Action[AnyContent] = identify { implicit request =>
+    Ok(invalidFileTypeView())
+  }
+
+  def duplicateFileUpload(): Action[AnyContent] = identify { implicit request =>
+    Ok(duplicateFileUploadView())
   }
 }

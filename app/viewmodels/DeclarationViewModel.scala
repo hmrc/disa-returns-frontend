@@ -16,10 +16,9 @@
 
 package viewmodels
 
-
 final case class DeclarationViewModel(
-                                       isNilReturn: Boolean
-                                     ) {
+  isNilReturn: Boolean
+) {
 
   val titleKey: String =
     if (isNilReturn) "declaration.title.nilReturn"

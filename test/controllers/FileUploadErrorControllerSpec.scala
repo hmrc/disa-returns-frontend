@@ -19,7 +19,7 @@ package controllers
 import base.SpecBase
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import views.html.{EmptyUploadedFileView, FileContainsVirusView, FilePasswordProtectedView}
+import views.html.{DuplicateFileUploadView, EmptyUploadedFileView, FileContainsVirusView, FilePasswordProtectedView, InvalidFileTypeView}
 
 class FileUploadErrorControllerSpec extends SpecBase {
 
@@ -89,6 +89,54 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
         val view =
           application.injector.instanceOf[EmptyUploadedFileView]
+
+        status(result) mustEqual OK
+
+        contentAsString(result) mustEqual
+          view()(request, messages(application)).toString
+      }
+    }
+
+    "invalidFileType must return OK and the correct view for a GET" in {
+
+      val application = applicationBuilder(userAnswers = None).build()
+
+      running(application) {
+
+        val request =
+          FakeRequest(
+            GET,
+            routes.FileUploadErrorController.invalidFileType().url
+          )
+
+        val result = route(application, request).value
+
+        val view =
+          application.injector.instanceOf[InvalidFileTypeView]
+
+        status(result) mustEqual OK
+
+        contentAsString(result) mustEqual
+          view()(request, messages(application)).toString
+      }
+    }
+
+    "duplicateFileUpload must return OK and the correct view for a GET" in {
+
+      val application = applicationBuilder(userAnswers = None).build()
+
+      running(application) {
+
+        val request =
+          FakeRequest(
+            GET,
+            routes.FileUploadErrorController.duplicateFileUpload().url
+          )
+
+        val result = route(application, request).value
+
+        val view =
+          application.injector.instanceOf[DuplicateFileUploadView]
 
         status(result) mustEqual OK
 
