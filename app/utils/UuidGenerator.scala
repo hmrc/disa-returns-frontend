@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,12 @@
  * limitations under the License.
  */
 
-package queries
+package utils
 
-import models.UserAnswers
-import play.api.libs.json.JsPath
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 
-import scala.util.{Success, Try}
-
-sealed trait Query {
-
-  def path: JsPath
-}
-
-trait Gettable[A] extends Query
-
-trait Settable[A] extends Query {
-
-  def cleanup(value: Option[A], userAnswers: UserAnswers): Try[UserAnswers] =
-    Success(userAnswers)
+@Singleton
+class UuidGenerator @Inject() () {
+  def generate(): UUID = UUID.randomUUID()
 }

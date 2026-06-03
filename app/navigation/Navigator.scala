@@ -26,14 +26,34 @@ import models._
 @Singleton
 class Navigator @Inject() () {
 
-  private val normalRoutes: Page => UserAnswers => Call = _ => _ => routes.IndexController.onPageLoad()
+  private val normalRoutes: Page => MonthlyReturnSubmission => Call = {
+    case MonthlyReportSubmissionPage =>
+      answers => monthlyReportSubmissionRoute(answers)
+    case _                           => _ => routes.IndexController.onPageLoad()
+  }
 
-  private val checkRouteMap: Page => UserAnswers => Call = _ => _ => routes.CheckYourAnswersController.onPageLoad()
+  private val checkRouteMap: Page => MonthlyReturnSubmission => Call = _ =>
+    _ => routes.CheckYourAnswersController.onPageLoad()
 
-  def nextPage(page: Page, mode: Mode, userAnswers: UserAnswers): Call = mode match {
+  private def monthlyReportSubmissionRoute(monthlyReturnSubmission: MonthlyReturnSubmission): Call =
+    if (monthlyReturnSubmission.nilReport) {
+      nilReportCheckYourAnswersRoute
+    } else {
+      fileUploadJourneyRoute
+    }
+
+  private def fileUploadJourneyRoute: Call =
+    // TODO DFI-2156: replace placeholder with file upload journey route.
+    Call("GET", "???")
+
+  private def nilReportCheckYourAnswersRoute: Call =
+    // TODO DFI-2120: replace placeholder with nil report CYA journey route.
+    Call("GET", "???")
+
+  def nextPage(page: Page, mode: Mode, monthlyReturnSubmission: MonthlyReturnSubmission): Call = mode match {
     case NormalMode =>
-      normalRoutes(page)(userAnswers)
+      normalRoutes(page)(monthlyReturnSubmission)
     case CheckMode  =>
-      checkRouteMap(page)(userAnswers)
+      checkRouteMap(page)(monthlyReturnSubmission)
   }
 }

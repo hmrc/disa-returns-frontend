@@ -17,7 +17,7 @@
 package repositories
 
 import config.FrontendAppConfig
-import models.UserAnswers
+import models.Session
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.*
 import play.api.libs.json.Format
@@ -37,10 +37,10 @@ class SessionRepository @Inject() (
   appConfig: FrontendAppConfig,
   clock: Clock
 )(implicit ec: ExecutionContext)
-    extends PlayMongoRepository[UserAnswers](
-      collectionName = "user-answers",
+    extends PlayMongoRepository[Session](
+      collectionName = "sessions",
       mongoComponent = mongoComponent,
-      domainFormat = UserAnswers.format,
+      domainFormat = Session.format,
       indexes = Seq(
         IndexModel(
           Indexes.ascending("lastUpdated"),
@@ -59,37 +59,9 @@ class SessionRepository @Inject() (
     collection
       .updateOne(
         filter = byId(id),
-        update = Updates.set("lastUpdated", Instant.now(clock))
+        update = Updates.set("lastUpdated", Instant.now(clock)),
+        options = new UpdateOptions().upsert(true)
       )
-      .toFuture()
-      .map(_ => true)
-  }
-
-  def get(id: String): Future[Option[UserAnswers]] = Mdc.preservingMdc {
-    keepAlive(id).flatMap { _ =>
-      collection
-        .find(byId(id))
-        .headOption()
-    }
-  }
-
-  def set(answers: UserAnswers): Future[Boolean] = Mdc.preservingMdc {
-
-    val updatedAnswers = answers copy (lastUpdated = Instant.now(clock))
-
-    collection
-      .replaceOne(
-        filter = byId(updatedAnswers.id),
-        replacement = updatedAnswers,
-        options = ReplaceOptions().upsert(true)
-      )
-      .toFuture()
-      .map(_ => true)
-  }
-
-  def clear(id: String): Future[Boolean] = Mdc.preservingMdc {
-    collection
-      .deleteOne(byId(id))
       .toFuture()
       .map(_ => true)
   }
