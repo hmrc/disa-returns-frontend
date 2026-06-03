@@ -33,7 +33,7 @@ class KeepAliveControllerSpec extends SpecBase with MockitoSugar {
 
     "must return OK" in {
       val sessionRepository = mock[SessionRepository]
-      when(sessionRepository.keepAlive(eqTo("provider-123"))).thenReturn(Future.successful(true))
+      when(sessionRepository.keepAlive(eqTo(testProviderId))).thenReturn(Future.successful(true))
 
       val application = applicationBuilder()
         .overrides(bind[SessionRepository].toInstance(sessionRepository))
@@ -45,7 +45,7 @@ class KeepAliveControllerSpec extends SpecBase with MockitoSugar {
         val result = route(application, request).value
 
         status(result) mustEqual OK
-        verify(sessionRepository).keepAlive("provider-123")
+        verify(sessionRepository).keepAlive(testProviderId)
       }
     }
   }

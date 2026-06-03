@@ -37,17 +37,14 @@ import uk.gov.hmrc.http.HeaderCarrier
 import utils.UuidGenerator
 import views.html.MonthlyReportSubmissionView
 
-import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
-  private val fixedClock            = Clock.fixed(Instant.parse("2026-03-15T12:00:00Z"), ZoneOffset.UTC)
   private val onwardRoute           = Call("GET", "/foo")
-  private val zReference            = "Z1234"
-  private val generatedSubmissionId = UUID.fromString("22222222-2222-2222-2222-222222222222")
-  private val existingSubmissionId  = UUID.fromString("11111111-1111-1111-1111-111111111111")
+  private val generatedSubmissionId = secondTestSubmissionId
+  private val existingSubmissionId  = testSubmissionId
 
   private val formProvider = new MonthlyReportSubmissionFormProvider()
   private val form         = formProvider()
@@ -61,7 +58,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
       .overrides(
         bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturnSubmission)),
         bind[IdentifierAction].toInstance(new TestIdentifierAction),
-        bind[Clock].toInstance(fixedClock),
+        bind[java.time.Clock].toInstance(testReportingWindowClock),
         bind[StorageService].toInstance(storageService),
         bind[UuidGenerator].toInstance(uuidGenerator),
         bind[Navigator].toInstance(new FakeNavigator(onwardRoute))
@@ -77,7 +74,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
       scala.concurrent.ExecutionContext.Implicits.global
 
     override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
-      block(IdentifierRequest(request, zReference, "provider-123"))
+      block(IdentifierRequest(request, testZReference, testProviderId))
   }
 
   private def fixedUuidGenerator(): UuidGenerator = {
@@ -180,7 +177,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         status(result) mustEqual SEE_OTHER
 
         val captor = ArgumentCaptor.forClass(classOf[MonthlyReturnSubmission])
-        verify(storageService).upsertForThisWindow(eqTo(zReference), captor.capture())(any[HeaderCarrier])
+        verify(storageService).upsertForThisWindow(eqTo(testZReference), captor.capture())(any[HeaderCarrier])
 
         captor.getValue.submissionId mustEqual generatedSubmissionId
         captor.getValue.nilReport mustEqual true
@@ -205,7 +202,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         status(result) mustEqual SEE_OTHER
 
         val captor = ArgumentCaptor.forClass(classOf[MonthlyReturnSubmission])
-        verify(storageService).upsertForThisWindow(eqTo(zReference), captor.capture())(any[HeaderCarrier])
+        verify(storageService).upsertForThisWindow(eqTo(testZReference), captor.capture())(any[HeaderCarrier])
 
         captor.getValue.submissionId mustEqual existingSubmissionId
         captor.getValue.nilReport mustEqual false

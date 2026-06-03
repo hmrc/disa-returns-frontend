@@ -38,7 +38,8 @@ class DataRequiredActionSpec extends SpecBase {
     "must redirect to Journey Recovery when there is no monthly return submission" in {
       val action = new Harness
 
-      val result = action.callRefine(OptionalDataRequest(FakeRequest(), "Z1234", "provider-123", None)).futureValue
+      val result =
+        action.callRefine(OptionalDataRequest(FakeRequest(), testZReference, testProviderId, None)).futureValue
 
       result.left.value.header.status mustEqual SEE_OTHER
       result.left.value.header.headers(LOCATION) mustEqual routes.JourneyRecoveryController.onPageLoad().url
@@ -48,11 +49,13 @@ class DataRequiredActionSpec extends SpecBase {
       val action = new Harness
 
       val result = action
-        .callRefine(OptionalDataRequest(FakeRequest(), "Z1234", "provider-123", Some(emptyMonthlyReturnSubmission)))
+        .callRefine(
+          OptionalDataRequest(FakeRequest(), testZReference, testProviderId, Some(emptyMonthlyReturnSubmission))
+        )
         .futureValue
 
-      result.value.zReference mustEqual "Z1234"
-      result.value.providerId mustEqual "provider-123"
+      result.value.zReference mustEqual testZReference
+      result.value.providerId mustEqual testProviderId
       result.value.monthlyReturnSubmission mustEqual emptyMonthlyReturnSubmission
     }
   }

@@ -41,14 +41,14 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
       "must set monthlyReturnSubmission to None in the request" in {
 
         val storageService = mock[StorageService]
-        when(storageService.retrieveForThisWindow(eqTo("Z1234"))(any[HeaderCarrier]))
+        when(storageService.retrieveForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
           .thenReturn(Future.successful(None))
         val action         = new Harness(storageService)
 
-        val result = action.callTransform(IdentifierRequest(FakeRequest(), "Z1234", "provider-123")).futureValue
+        val result = action.callTransform(IdentifierRequest(FakeRequest(), testZReference, testProviderId)).futureValue
 
-        result.zReference mustEqual "Z1234"
-        result.providerId mustEqual "provider-123"
+        result.zReference mustEqual testZReference
+        result.providerId mustEqual testProviderId
         result.monthlyReturnSubmission must not be defined
       }
     }
@@ -58,14 +58,14 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
       "must add it to the request" in {
 
         val storageService = mock[StorageService]
-        when(storageService.retrieveForThisWindow(eqTo("Z1234"))(any[HeaderCarrier]))
+        when(storageService.retrieveForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(emptyMonthlyReturnSubmission)))
         val action         = new Harness(storageService)
 
-        val result = action.callTransform(IdentifierRequest(FakeRequest(), "Z1234", "provider-123")).futureValue
+        val result = action.callTransform(IdentifierRequest(FakeRequest(), testZReference, testProviderId)).futureValue
 
-        result.zReference mustEqual "Z1234"
-        result.providerId mustEqual "provider-123"
+        result.zReference mustEqual testZReference
+        result.providerId mustEqual testProviderId
         result.monthlyReturnSubmission.value mustEqual emptyMonthlyReturnSubmission
       }
     }

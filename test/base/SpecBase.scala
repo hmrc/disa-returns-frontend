@@ -17,7 +17,7 @@
 package base
 
 import controllers.actions._
-import models.MonthlyReturnSubmission
+import models.{Month, MonthlyReturnSubmission}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -27,8 +27,11 @@ import play.api.i18n.{Messages, MessagesApi}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeRequest
+import play.api.test.Helpers.stubControllerComponents
 
+import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
+import scala.util.Random
 
 trait SpecBase
     extends AnyFreeSpec
@@ -39,9 +42,25 @@ trait SpecBase
     with ScalaFutures
     with IntegrationPatience {
 
+  protected val testZReference: String                       = SpecBase.randomZReference
+  protected val testProviderId: String                       = SpecBase.randomProviderId
+  protected val secondTestProviderId: String                 = SpecBase.randomProviderId
+  protected val testSubmissionId: UUID                       = SpecBase.randomSubmissionId
+  protected val secondTestSubmissionId: UUID                 = SpecBase.randomSubmissionId
+  protected val testReportingWindowInstant                   = Instant.parse("2026-03-15T12:00:00Z")
+  protected val testReportingWindowClock                     = Clock.fixed(testReportingWindowInstant, ZoneOffset.UTC)
+  protected val testJanuaryReportingWindowInstant            = Instant.parse("2026-01-15T12:00:00Z")
+  protected val testAprilReportingWindowInstant              = Instant.parse("2026-04-01T00:00:00Z")
+  protected val testTaxYear: String                          = "2025-26"
+  protected val nextTestTaxYear: String                      = "2026-27"
+  protected val testSubmissionPeriod: Month.Value            = Month.MAR
+  protected val testReportingWindowMonthName: String         = "March"
+  protected val testReportingPeriodMonthName: String         = "February"
+  protected val previousYearReportingPeriodMonthName: String = "December"
+
   def emptyMonthlyReturnSubmission: MonthlyReturnSubmission =
     MonthlyReturnSubmission(
-      submissionId = UUID.fromString("11111111-1111-1111-1111-111111111111"),
+      submissionId = testSubmissionId,
       nilReport = false
     )
 
@@ -49,11 +68,26 @@ trait SpecBase
 
   protected def applicationBuilder(
     monthlyReturnSubmission: Option[MonthlyReturnSubmission] = None
-  ): GuiceApplicationBuilder =
+  ): GuiceApplicationBuilder = {
+    val bodyParsers = stubControllerComponents().parsers
+
     new GuiceApplicationBuilder()
       .overrides(
         bind[DataRequiredAction].to[DataRequiredActionImpl],
-        bind[IdentifierAction].to[FakeIdentifierAction],
+        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference, testProviderId)),
         bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturnSubmission))
       )
+  }
+}
+
+object SpecBase {
+
+  def randomZReference: String =
+    f"Z${Random.nextInt(10000)}%04d"
+
+  def randomProviderId: String =
+    s"provider-${UUID.randomUUID()}"
+
+  def randomSubmissionId: UUID =
+    UUID.randomUUID()
 }

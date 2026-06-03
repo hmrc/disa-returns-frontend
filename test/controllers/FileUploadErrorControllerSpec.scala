@@ -99,7 +99,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "invalidFileType must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder(monthlyReturnSubmission = None).build()
 
       running(application) {
 
@@ -123,7 +123,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "duplicateFileUpload must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder(monthlyReturnSubmission = None).build()
 
       running(application) {
 

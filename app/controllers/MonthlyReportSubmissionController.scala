@@ -26,9 +26,7 @@ import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.StorageService
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
-import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import utils.UuidGenerator
 import views.html.MonthlyReportSubmissionView
 
@@ -62,8 +60,6 @@ class MonthlyReportSubmissionController @Inject() (
   }
 
   def onSubmit(): Action[AnyContent] = (identify andThen getData).async { implicit request =>
-    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
-
     form
       .bindFromRequest()
       .fold(

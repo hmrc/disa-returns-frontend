@@ -16,19 +16,16 @@
 
 package models
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
+import base.SpecBase
 import play.api.libs.json.{JsSuccess, Json}
 
-import java.util.UUID
-
-class MonthlyReturnSubmissionSpec extends AnyFreeSpec with Matchers {
+class MonthlyReturnSubmissionSpec extends SpecBase {
 
   "MonthlyReturnSubmission" - {
 
     "must round-trip through JSON" in {
       val submission = MonthlyReturnSubmission(
-        submissionId = UUID.fromString("11111111-1111-1111-1111-111111111111"),
+        submissionId = testSubmissionId,
         nilReport = true
       )
 

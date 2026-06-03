@@ -16,53 +16,51 @@
 
 package utils
 
-import models.Month
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
+import base.SpecBase
 
 import java.time.{Clock, Instant, ZoneOffset}
 
-class DateHelperSpec extends AnyFreeSpec with Matchers {
+class DateHelperSpec extends SpecBase {
 
   "DateHelper" - {
 
     "must return the reporting window month from the current date" in {
-      val helper = dateHelperAt("2026-03-15T12:00:00Z")
+      val helper = new DateHelper(testReportingWindowClock)
 
-      helper.reportingWindowMonth mustEqual "March"
+      helper.reportingWindowMonth mustEqual testReportingWindowMonthName
     }
 
     "must return the reporting period month as the previous month" in {
-      val helper = dateHelperAt("2026-03-15T12:00:00Z")
+      val helper = new DateHelper(testReportingWindowClock)
 
-      helper.reportingPeriodMonth mustEqual "February"
+      helper.reportingPeriodMonth mustEqual testReportingPeriodMonthName
     }
 
     "must return December as the reporting period month for a January reporting window" in {
-      val helper = dateHelperAt("2026-01-15T12:00:00Z")
+      val helper = dateHelperAt(testJanuaryReportingWindowInstant)
 
-      helper.reportingPeriodMonth mustEqual "December"
+      helper.reportingPeriodMonth mustEqual previousYearReportingPeriodMonthName
     }
 
     "must return the submission period enum for the reporting window month" in {
-      val helper = dateHelperAt("2026-03-15T12:00:00Z")
+      val helper = new DateHelper(testReportingWindowClock)
 
-      helper.submissionPeriod mustEqual Month.MAR
+      helper.submissionPeriod mustEqual testSubmissionPeriod
     }
 
     "must return the tax year for a reporting window before April" in {
-      val helper = dateHelperAt("2026-03-15T12:00:00Z")
+      val helper = new DateHelper(testReportingWindowClock)
 
-      helper.taxYear mustEqual "2025-26"
+      helper.taxYear mustEqual testTaxYear
     }
 
     "must return the tax year for a reporting window from April onwards" in {
-      val helper = dateHelperAt("2026-04-01T00:00:00Z")
+      val helper = dateHelperAt(testAprilReportingWindowInstant)
 
-      helper.taxYear mustEqual "2026-27"
+      helper.taxYear mustEqual nextTestTaxYear
     }
   }
 
-  private def dateHelperAt(instant: String): DateHelper =
-    new DateHelper(Clock.fixed(Instant.parse(instant), ZoneOffset.UTC))
+  private def dateHelperAt(instant: Instant): DateHelper =
+    new DateHelper(Clock.fixed(instant, ZoneOffset.UTC))
 }

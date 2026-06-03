@@ -18,52 +18,57 @@ package services
 
 import base.SpecBase
 import connectors.BackendConnector
-import models.Month.MAR
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateHelper
 
-import java.time.{Clock, Instant, ZoneOffset}
 import scala.concurrent.Future
 
 class StorageServiceSpec extends SpecBase with MockitoSugar {
 
-  private val zReference = "Z1234"
-  private val fixedClock = Clock.fixed(Instant.parse("2026-03-15T12:00:00Z"), ZoneOffset.UTC)
-  private val dateHelper = new DateHelper(fixedClock)
+  private val dateHelper = new DateHelper(testReportingWindowClock)
 
   "StorageService" - {
 
     "must retrieve a submission for the current reporting window" in {
       val connector = mock[BackendConnector]
-      when(connector.retrieve(eqTo(zReference), eqTo("2025-26"), eqTo(MAR))(any[HeaderCarrier]))
+      when(connector.retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testSubmissionPeriod))(any[HeaderCarrier]))
         .thenReturn(Future.successful(Some(emptyMonthlyReturnSubmission)))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.retrieveForThisWindow(zReference)(HeaderCarrier()).futureValue
+      val result = service.retrieveForThisWindow(testZReference)(HeaderCarrier()).futureValue
 
       result.value mustEqual emptyMonthlyReturnSubmission
-      verify(connector).retrieve(eqTo(zReference), eqTo("2025-26"), eqTo(MAR))(any[HeaderCarrier])
+      verify(connector).retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testSubmissionPeriod))(
+        any[HeaderCarrier]
+      )
     }
 
     "must upsert a submission for the current reporting window" in {
       val connector = mock[BackendConnector]
       when(
-        connector.upsert(eqTo(emptyMonthlyReturnSubmission), eqTo(zReference), eqTo("2025-26"), eqTo(MAR))(
-          any[HeaderCarrier]
-        )
+        connector.upsert(
+          eqTo(emptyMonthlyReturnSubmission),
+          eqTo(testZReference),
+          eqTo(testTaxYear),
+          eqTo(testSubmissionPeriod)
+        )(any[HeaderCarrier])
       )
         .thenReturn(Future.successful(emptyMonthlyReturnSubmission))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.upsertForThisWindow(zReference, emptyMonthlyReturnSubmission)(HeaderCarrier()).futureValue
+      val result =
+        service.upsertForThisWindow(testZReference, emptyMonthlyReturnSubmission)(HeaderCarrier()).futureValue
 
       result mustEqual emptyMonthlyReturnSubmission
-      verify(connector).upsert(eqTo(emptyMonthlyReturnSubmission), eqTo(zReference), eqTo("2025-26"), eqTo(MAR))(
-        any[HeaderCarrier]
-      )
+      verify(connector).upsert(
+        eqTo(emptyMonthlyReturnSubmission),
+        eqTo(testZReference),
+        eqTo(testTaxYear),
+        eqTo(testSubmissionPeriod)
+      )(any[HeaderCarrier])
     }
   }
 }

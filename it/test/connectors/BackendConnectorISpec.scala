@@ -16,41 +16,29 @@
 
 package connectors
 
+import base.ISpecBase
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import models.Month.MAR
 import models.MonthlyReturnSubmission
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, OptionValues}
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.running
 import uk.gov.hmrc.http.HeaderCarrier
 
-import java.util.UUID
-
-class BackendConnectorISpec
-    extends AnyFreeSpec
-    with Matchers
-    with ScalaFutures
-    with IntegrationPatience
-    with OptionValues
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach {
+class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val wireMockServer = new WireMockServer(wireMockConfig().dynamicPort())
 
-  private val submission = MonthlyReturnSubmission(
-    submissionId = UUID.fromString("11111111-1111-1111-1111-111111111111"),
+  private val submission     = MonthlyReturnSubmission(
+    submissionId = testSubmissionId,
     nilReport = true
   )
   private val submissionJson =
-    """
+    s"""
       |{
-      |  "submissionId": "11111111-1111-1111-1111-111111111111",
+      |  "submissionId": "$testSubmissionId",
       |  "nilReport": true
       |}
       |""".stripMargin
@@ -79,7 +67,8 @@ class BackendConnectorISpec
       )
       .build()
 
-  private val submissionPath = "/disa-returns-backend/monthly-return-submissions/Z1234/2025-26/MAR"
+  private val submissionPath =
+    s"/disa-returns-backend/monthly-return-submissions/$testZReference/$testTaxYear/$testSubmissionPeriod"
 
   "BackendConnector" - {
 
@@ -93,7 +82,7 @@ class BackendConnectorISpec
       running(app) {
         val connector = appConnector(app)
 
-        val result = connector.retrieve("Z1234", "2025-26", MAR)(HeaderCarrier()).futureValue
+        val result = connector.retrieve(testZReference, testTaxYear, testSubmissionPeriod)(HeaderCarrier()).futureValue
 
         result.value mustEqual submission
       }
@@ -109,7 +98,7 @@ class BackendConnectorISpec
       running(app) {
         val connector = appConnector(app)
 
-        val result = connector.retrieve("Z1234", "2025-26", MAR)(HeaderCarrier()).futureValue
+        val result = connector.retrieve(testZReference, testTaxYear, testSubmissionPeriod)(HeaderCarrier()).futureValue
 
         result must not be defined
       }
@@ -126,7 +115,9 @@ class BackendConnectorISpec
       running(app) {
         val connector = appConnector(app)
 
-        val result = connector.upsert(submission, "Z1234", "2025-26", MAR)(HeaderCarrier()).futureValue
+        val result = connector
+          .upsert(submission, testZReference, testTaxYear, testSubmissionPeriod)(HeaderCarrier())
+          .futureValue
 
         result mustEqual submission
       }

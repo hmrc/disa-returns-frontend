@@ -57,7 +57,7 @@ lazy val testSettings: Seq[Def.Setting[?]] = Seq(
 lazy val it =
   (project in file("it"))
     .enablePlugins(PlayScala)
-    .dependsOn(microservice % "test->test")
+    .dependsOn(microservice % "compile->compile;test->test")
 
 addCommandAlias("prePrChecks", ";scalafmtCheckAll;scalafmtSbtCheck")
 

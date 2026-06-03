@@ -22,14 +22,12 @@ import models.{CheckMode, MonthlyReturnSubmission, NormalMode}
 import pages._
 import play.api.mvc.Call
 
-import java.util.UUID
-
 class NavigatorSpec extends SpecBase {
 
   val navigator = new Navigator
 
   private def submission(nilReport: Boolean): MonthlyReturnSubmission =
-    MonthlyReturnSubmission(UUID.fromString("11111111-1111-1111-1111-111111111111"), nilReport)
+    MonthlyReturnSubmission(testSubmissionId, nilReport)
 
   "Navigator" - {
 

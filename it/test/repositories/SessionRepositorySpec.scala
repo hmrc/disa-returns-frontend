@@ -16,16 +16,12 @@
 
 package repositories
 
+import base.ISpecBase
 import config.FrontendAppConfig
 import models.Session
 import org.mockito.Mockito.when
 import org.mongodb.scala.model.Filters
 import org.scalactic.source.Position
-import org.scalatest.OptionValues
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
-import org.scalatestplus.mockito.MockitoSugar
 import org.slf4j.MDC
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.play.bootstrap.dispatchers.MDCPropagatingExecutorService
@@ -35,19 +31,12 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 
-class SessionRepositorySpec
-    extends AnyFreeSpec
-    with Matchers
-    with DefaultPlayMongoRepositorySupport[Session]
-    with ScalaFutures
-    with IntegrationPatience
-    with OptionValues
-    with MockitoSugar {
+class SessionRepositorySpec extends ISpecBase with DefaultPlayMongoRepositorySupport[Session] {
 
   private val instant          = Instant.now.truncatedTo(ChronoUnit.MILLIS)
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
 
-  private val session = Session("provider-123", Instant.ofEpochSecond(1))
+  private val session = Session(testProviderId, Instant.ofEpochSecond(1))
 
   private val mockAppConfig = mock[FrontendAppConfig]
   when(mockAppConfig.cacheTtl) thenReturn 1L
@@ -80,7 +69,7 @@ class SessionRepositorySpec
 
       "must return true" in {
 
-        repository.keepAlive("id that does not exist").futureValue mustEqual true
+        repository.keepAlive(secondTestProviderId).futureValue mustEqual true
       }
     }
 

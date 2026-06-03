@@ -52,7 +52,7 @@ class AuthActionSpec extends SpecBase {
           val appConfig   = application.injector.instanceOf[FrontendAppConfig]
 
           val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector("Z1234"),
+            new FakeSuccessfulZReferenceAuthConnector(testZReference, providerId = testProviderId),
             appConfig,
             bodyParsers
           )
@@ -60,7 +60,7 @@ class AuthActionSpec extends SpecBase {
           val result     = controller.onPageLoad()(FakeRequest())
 
           status(result) mustBe OK
-          contentAsString(result) mustBe "Z1234"
+          contentAsString(result) mustBe testZReference
         }
       }
 
@@ -73,7 +73,7 @@ class AuthActionSpec extends SpecBase {
           val appConfig   = application.injector.instanceOf[FrontendAppConfig]
 
           val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector("Z1234", providerId = "provider-123"),
+            new FakeSuccessfulZReferenceAuthConnector(testZReference, providerId = testProviderId),
             appConfig,
             bodyParsers
           )
@@ -81,7 +81,7 @@ class AuthActionSpec extends SpecBase {
           val result     = controller.providerId()(FakeRequest())
 
           status(result) mustBe OK
-          contentAsString(result) mustBe "provider-123"
+          contentAsString(result) mustBe testProviderId
         }
       }
     }
@@ -290,7 +290,7 @@ class FakeFailingAuthConnector @Inject() (exceptionToReturn: Throwable) extends 
     Future.failed(exceptionToReturn)
 }
 
-class FakeSuccessfulZReferenceAuthConnector(zReference: String, providerId: String = "provider-123")
+class FakeSuccessfulZReferenceAuthConnector(zReference: String, providerId: String = SpecBase.randomProviderId)
     extends AuthConnector {
   val serviceUrl: String = ""
 
@@ -324,6 +324,6 @@ class FakeMissingZReferenceAuthConnector extends AuthConnector {
     ec: ExecutionContext
   ): Future[A] =
     Future.successful(
-      new ~(Enrolments(Set.empty), Some(Credentials("provider-123", "GovernmentGateway"))).asInstanceOf[A]
+      new ~(Enrolments(Set.empty), Some(Credentials(SpecBase.randomProviderId, "GovernmentGateway"))).asInstanceOf[A]
     )
 }
