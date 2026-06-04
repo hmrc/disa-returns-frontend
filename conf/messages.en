@@ -99,3 +99,17 @@ duplicateFileUpload.title = The files you uploaded are the same
 duplicateFileUpload.heading = The files you uploaded are the same
 duplicateFileUpload.p1 = Check if this is correct.
 duplicateFileUpload.callToAction = Back to file upload
+
+declaration.title = Declaration
+declaration.heading = Declaration
+declaration.p1 = By agreeing to this declaration, I confirm that:
+declaration.li1 = the monthly report is a complete record of subscription events and transfers in the relevant period in relation to each account
+declaration.li2 = it has been submitted on time
+declaration.li3 = I understand that if my circumstances change I'll notify HM Revenue and Customs immediately
+declaration.p4 = This means that you have met the reporting requirements.
+declaration.button = I agree - submit
+
+declaration.title.nilReturn = Declaration for nil report
+declaration.heading.nilReturn = Declaration for nil report
+declaration.p2.nilReturn = If there are no changes to all accounts held and you are submitting a nil report - you do not need to upload a file.
+declaration.p3.nilReturn = You must still agree to this declaration to confirm that there are no changes.
