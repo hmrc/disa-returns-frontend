@@ -36,4 +36,6 @@ GET         /invalid-file-type                           controllers.FileUploadE
 
 GET         /duplicate-file-upload                       controllers.FileUploadErrorController.duplicateFileUpload()
 
+GET         /file-upload-failed                          controllers.FileUploadErrorController.fileUploadFailed()
+
 GET         /declaration                                 controllers.DeclarationController.onPageLoad(nilReturn: Boolean)

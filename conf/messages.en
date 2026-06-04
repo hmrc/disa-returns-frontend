@@ -100,6 +100,11 @@ duplicateFileUpload.heading = The files you uploaded are the same
 duplicateFileUpload.p1 = Check if this is correct.
 duplicateFileUpload.callToAction = Back to file upload
 
+fileUploadFailed.title = The selected file could not be uploaded
+fileUploadFailed.heading = The selected file could not be uploaded
+fileUploadFailed.p1 = There was a problem uploading the selected file - try again.
+fileUploadFailed.callToAction = Back to file upload
+
 declaration.title = Declaration
 declaration.heading = Declaration
 declaration.p1 = By agreeing to this declaration, I confirm that:
