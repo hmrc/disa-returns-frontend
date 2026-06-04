@@ -44,11 +44,11 @@ class Navigator @Inject() () {
 
   private def fileUploadJourneyRoute: Call =
     // TODO DFI-2156: replace placeholder with file upload journey route.
-    Call("GET", "???")
+    routes.IndexController.onPageLoad()
 
   private def nilReportCheckYourAnswersRoute: Call =
     // TODO DFI-2120: replace placeholder with nil report CYA journey route.
-    Call("GET", "???")
+    routes.IndexController.onPageLoad()
 
   def nextPage(page: Page, mode: Mode, monthlyReturnSubmission: MonthlyReturnSubmission): Call = mode match {
     case NormalMode =>

@@ -34,17 +34,19 @@ class NavigatorSpec extends SpecBase {
     "in Normal mode" - {
 
       "must go from MonthlyReportSubmissionPage to the file upload placeholder when the user is uploading a report" in {
-        navigator.nextPage(MonthlyReportSubmissionPage, NormalMode, submission(nilReport = false)) mustBe Call(
-          "GET",
-          "???"
-        )
+        navigator.nextPage(
+          MonthlyReportSubmissionPage,
+          NormalMode,
+          submission(nilReport = false)
+        ) mustBe routes.IndexController.onPageLoad()
       }
 
       "must go from MonthlyReportSubmissionPage to the nil report CYA placeholder when the user has a nil report" in {
-        navigator.nextPage(MonthlyReportSubmissionPage, NormalMode, submission(nilReport = true)) mustBe Call(
-          "GET",
-          "???"
-        )
+        navigator.nextPage(
+          MonthlyReportSubmissionPage,
+          NormalMode,
+          submission(nilReport = true)
+        ) mustBe routes.IndexController.onPageLoad()
       }
 
       "must go from a page that doesn't exist in the route map to Index" in {
