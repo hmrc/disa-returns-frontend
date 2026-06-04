@@ -35,8 +35,6 @@ trait ISpecBase
     with MockitoSugar {
 
   protected val testZReference: String            = SpecBase.randomZReference
-  protected val testProviderId: String            = SpecBase.randomProviderId
-  protected val secondTestProviderId: String      = SpecBase.randomProviderId
   protected val testSubmissionId: UUID            = SpecBase.randomSubmissionId
   protected val testTaxYear: String               = "2025-26"
   protected val testSubmissionPeriod: Month.Value = Month.MAR

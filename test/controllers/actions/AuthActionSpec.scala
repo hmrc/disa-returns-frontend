@@ -25,7 +25,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
+import uk.gov.hmrc.auth.core.retrieve.Retrieval
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -35,8 +35,6 @@ class AuthActionSpec extends SpecBase {
 
   class Harness(authAction: IdentifierAction) {
     def onPageLoad(): Action[AnyContent] = authAction(request => Results.Ok(request.zReference))
-
-    def providerId(): Action[AnyContent] = authAction(request => Results.Ok(request.providerId))
   }
 
   "Auth Action" - {
@@ -52,7 +50,7 @@ class AuthActionSpec extends SpecBase {
           val appConfig   = application.injector.instanceOf[FrontendAppConfig]
 
           val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(testZReference, providerId = testProviderId),
+            new FakeSuccessfulZReferenceAuthConnector(testZReference),
             appConfig,
             bodyParsers
           )
@@ -61,27 +59,6 @@ class AuthActionSpec extends SpecBase {
 
           status(result) mustBe OK
           contentAsString(result) mustBe testZReference
-        }
-      }
-
-      "must add the provider id to the request" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(testZReference, providerId = testProviderId),
-            appConfig,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.providerId()(FakeRequest())
-
-          status(result) mustBe OK
-          contentAsString(result) mustBe testProviderId
         }
       }
     }
@@ -290,8 +267,7 @@ class FakeFailingAuthConnector @Inject() (exceptionToReturn: Throwable) extends 
     Future.failed(exceptionToReturn)
 }
 
-class FakeSuccessfulZReferenceAuthConnector(zReference: String, providerId: String = SpecBase.randomProviderId)
-    extends AuthConnector {
+class FakeSuccessfulZReferenceAuthConnector(zReference: String) extends AuthConnector {
   val serviceUrl: String = ""
 
   override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit
@@ -299,18 +275,13 @@ class FakeSuccessfulZReferenceAuthConnector(zReference: String, providerId: Stri
     ec: ExecutionContext
   ): Future[A] =
     Future.successful(
-      (
-        new ~(
-          Enrolments(
-            Set(
-              Enrolment(
-                "HMRC-DISA-ORG",
-                Seq(EnrolmentIdentifier("ZREF", zReference)),
-                "Activated"
-              )
-            )
-          ),
-          Some(Credentials(providerId, "GovernmentGateway"))
+      Enrolments(
+        Set(
+          Enrolment(
+            "HMRC-DISA-ORG",
+            Seq(EnrolmentIdentifier("ZREF", zReference)),
+            "Activated"
+          )
         )
       ).asInstanceOf[A]
     )
@@ -323,7 +294,5 @@ class FakeMissingZReferenceAuthConnector extends AuthConnector {
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[A] =
-    Future.successful(
-      new ~(Enrolments(Set.empty), Some(Credentials(SpecBase.randomProviderId, "GovernmentGateway"))).asInstanceOf[A]
-    )
+    Future.successful(Enrolments(Set.empty).asInstanceOf[A])
 }

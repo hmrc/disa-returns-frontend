@@ -24,8 +24,7 @@ import play.api.Logging
 import play.api.mvc.Results.*
 import play.api.mvc.*
 import uk.gov.hmrc.auth.core.*
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{authorisedEnrolments, credentials}
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.authorisedEnrolments
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
@@ -48,27 +47,17 @@ class AuthenticatedIdentifierAction @Inject() (
 
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
-    authorised(Enrolment(enrolmentKey)).retrieve(authorisedEnrolments and credentials) {
-      case enrolments ~ Some(credentials) =>
-        enrolments
-          .getEnrolment(enrolmentKey)
-          .flatMap(_.getIdentifier(identifierKey))
-          .map(_.value)
-          .fold {
-            logger.warn(s"User with enrolment was missing $identifierKey identifier")
-            Future.successful(Redirect(routes.UnauthorisedController.onPageLoad()))
-          } { zReference =>
-            block(
-              IdentifierRequest(
-                request,
-                zReference = zReference,
-                providerId = credentials.providerId
-              )
-            )
-          }
-      case _ ~ None                       =>
-        logger.error("User with enrolment was missing credentials")
-        Future.successful(Redirect(routes.UnauthorisedController.onPageLoad()))
+    authorised(Enrolment(enrolmentKey)).retrieve(authorisedEnrolments) { enrolments =>
+      enrolments
+        .getEnrolment(enrolmentKey)
+        .flatMap(_.getIdentifier(identifierKey))
+        .map(_.value)
+        .fold {
+          logger.warn(s"User with enrolment was missing $identifierKey identifier")
+          Future.successful(Redirect(routes.UnauthorisedController.onPageLoad()))
+        } { zReference =>
+          block(IdentifierRequest(request, zReference))
+        }
     } recover {
       case _: NoActiveSession        =>
         Redirect(config.loginUrl, Map("continue" -> Seq(config.loginContinueUrl)))

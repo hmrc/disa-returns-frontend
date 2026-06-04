@@ -29,7 +29,7 @@ class DeclarationControllerSpec extends SpecBase {
     "must return OK and the correct view when nilReturn is false" in {
 
       val application =
-        applicationBuilder(userAnswers = None).build()
+        applicationBuilder().build()
 
       running(application) {
 
@@ -53,7 +53,7 @@ class DeclarationControllerSpec extends SpecBase {
     "must return OK and the correct view when nilReturn is true" in {
 
       val application =
-        applicationBuilder(userAnswers = None).build()
+        applicationBuilder().build()
 
       running(application) {
 

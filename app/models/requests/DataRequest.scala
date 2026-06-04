@@ -22,13 +22,11 @@ import play.api.mvc.{Request, WrappedRequest}
 case class OptionalDataRequest[A](
   request: Request[A],
   zReference: String,
-  providerId: String,
   monthlyReturnSubmission: Option[MonthlyReturnSubmission]
 ) extends WrappedRequest[A](request)
 
 case class DataRequest[A](
   request: Request[A],
   zReference: String,
-  providerId: String,
   monthlyReturnSubmission: MonthlyReturnSubmission
 ) extends WrappedRequest[A](request)

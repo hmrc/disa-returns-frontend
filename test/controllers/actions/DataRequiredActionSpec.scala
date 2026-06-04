@@ -39,7 +39,7 @@ class DataRequiredActionSpec extends SpecBase {
       val action = new Harness
 
       val result =
-        action.callRefine(OptionalDataRequest(FakeRequest(), testZReference, testProviderId, None)).futureValue
+        action.callRefine(OptionalDataRequest(FakeRequest(), testZReference, None)).futureValue
 
       result.left.value.header.status mustEqual SEE_OTHER
       result.left.value.header.headers(LOCATION) mustEqual routes.JourneyRecoveryController.onPageLoad().url
@@ -50,12 +50,11 @@ class DataRequiredActionSpec extends SpecBase {
 
       val result = action
         .callRefine(
-          OptionalDataRequest(FakeRequest(), testZReference, testProviderId, Some(emptyMonthlyReturnSubmission))
+          OptionalDataRequest(FakeRequest(), testZReference, Some(emptyMonthlyReturnSubmission))
         )
         .futureValue
 
       result.value.zReference mustEqual testZReference
-      result.value.providerId mustEqual testProviderId
       result.value.monthlyReturnSubmission mustEqual emptyMonthlyReturnSubmission
     }
   }

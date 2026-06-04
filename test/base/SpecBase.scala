@@ -43,8 +43,6 @@ trait SpecBase
     with IntegrationPatience {
 
   protected val testZReference: String                       = SpecBase.randomZReference
-  protected val testProviderId: String                       = SpecBase.randomProviderId
-  protected val secondTestProviderId: String                 = SpecBase.randomProviderId
   protected val testSubmissionId: UUID                       = SpecBase.randomSubmissionId
   protected val secondTestSubmissionId: UUID                 = SpecBase.randomSubmissionId
   protected val testReportingWindowInstant                   = Instant.parse("2026-03-15T12:00:00Z")
@@ -74,7 +72,7 @@ trait SpecBase
     new GuiceApplicationBuilder()
       .overrides(
         bind[DataRequiredAction].to[DataRequiredActionImpl],
-        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference, testProviderId)),
+        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference)),
         bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturnSubmission))
       )
   }
@@ -84,9 +82,6 @@ object SpecBase {
 
   def randomZReference: String =
     f"Z${Random.nextInt(10000)}%04d"
-
-  def randomProviderId: String =
-    s"provider-${UUID.randomUUID()}"
 
   def randomSubmissionId: UUID =
     UUID.randomUUID()

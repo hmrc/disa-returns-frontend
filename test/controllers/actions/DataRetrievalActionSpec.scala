@@ -45,10 +45,9 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
           .thenReturn(Future.successful(None))
         val action         = new Harness(storageService)
 
-        val result = action.callTransform(IdentifierRequest(FakeRequest(), testZReference, testProviderId)).futureValue
+        val result = action.callTransform(IdentifierRequest(FakeRequest(), testZReference)).futureValue
 
         result.zReference mustEqual testZReference
-        result.providerId mustEqual testProviderId
         result.monthlyReturnSubmission must not be defined
       }
     }
@@ -62,10 +61,9 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
           .thenReturn(Future.successful(Some(emptyMonthlyReturnSubmission)))
         val action         = new Harness(storageService)
 
-        val result = action.callTransform(IdentifierRequest(FakeRequest(), testZReference, testProviderId)).futureValue
+        val result = action.callTransform(IdentifierRequest(FakeRequest(), testZReference)).futureValue
 
         result.zReference mustEqual testZReference
-        result.providerId mustEqual testProviderId
         result.monthlyReturnSubmission.value mustEqual emptyMonthlyReturnSubmission
       }
     }

@@ -74,7 +74,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
       scala.concurrent.ExecutionContext.Implicits.global
 
     override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
-      block(IdentifierRequest(request, testZReference, testProviderId))
+      block(IdentifierRequest(request, testZReference))
   }
 
   private def fixedUuidGenerator(): UuidGenerator = {
