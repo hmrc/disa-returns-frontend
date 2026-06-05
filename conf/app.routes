@@ -35,3 +35,5 @@ GET         /file-password-protected                     controllers.FileUploadE
 GET         /invalid-file-type                           controllers.FileUploadErrorController.invalidFileType()
 
 GET         /duplicate-file-upload                       controllers.FileUploadErrorController.duplicateFileUpload()
+
+GET         /file-upload                                 controllers.UploadFileController.onPageLoad()

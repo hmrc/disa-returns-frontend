@@ -52,4 +52,8 @@ class FrontendAppConfig @Inject() (configuration: Configuration) {
   val countdown: Int = configuration.get[Int]("timeout-dialog.countdown")
 
   val cacheTtl: Long = configuration.get[Int]("mongodb.timeToLiveInSeconds")
+
+  lazy val upscanMinFileSize: Int          = configuration.get[Int]("upscan.minFileSize")
+  lazy val upscanMaxFileSize: Int          = configuration.get[Int]("upscan.maxFileSize")
+  lazy val upscanAcceptedMimeTypes: String = configuration.get[String]("upscan.acceptedMimeTypes")
 }
