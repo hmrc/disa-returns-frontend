@@ -16,12 +16,12 @@
 
 package navigation
 
-import models.{Mode, MonthlyReturnSubmission}
+import models.{Mode, MonthlyReturn}
 import pages._
 import play.api.mvc.Call
 
 class FakeNavigator(desiredRoute: Call) extends Navigator {
 
-  override def nextPage(page: Page, mode: Mode, monthlyReturnSubmission: MonthlyReturnSubmission): Call =
+  override def nextPage(page: Page, mode: Mode, monthlyReturn: MonthlyReturn): Call =
     desiredRoute
 }

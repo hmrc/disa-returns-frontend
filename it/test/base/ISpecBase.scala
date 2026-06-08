@@ -16,7 +16,7 @@
 
 package base
 
-import models.{Month, MonthlyReturnSubmission}
+import models.MonthlyReturn
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -34,14 +34,14 @@ trait ISpecBase
     with IntegrationPatience
     with MockitoSugar {
 
-  protected val testZReference: String            = SpecBase.randomZReference
-  protected val testSubmissionId: UUID            = SpecBase.randomSubmissionId
-  protected val testTaxYear: String               = "2025-26"
-  protected val testSubmissionPeriod: Month.Value = Month.MAR
+  protected val testZReference: String = SpecBase.randomZReference
+  protected val testSubmissionId: UUID = SpecBase.randomSubmissionId
+  protected val testTaxYear: String    = "2025-26"
+  protected val testMonth: Int         = 3
 
-  protected def emptyMonthlyReturnSubmission: MonthlyReturnSubmission =
-    MonthlyReturnSubmission(
+  protected def emptyMonthlyReturn: MonthlyReturn =
+    MonthlyReturn(
       submissionId = testSubmissionId,
-      nilReport = false
+      nilReturn = false
     )
 }

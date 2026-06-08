@@ -16,9 +16,6 @@
 
 package utils
 
-import models.Month
-import models.Month.Month
-
 import java.time.format.TextStyle
 import java.time.{Clock, LocalDate}
 import java.util.Locale
@@ -38,7 +35,7 @@ class DateHelper @Inject() (
 
   def reportingPeriodMonth: String = monthName(reportingWindowDate.minusMonths(1))
 
-  def submissionPeriod: Month = Month.fromLocalDate(reportingWindowDate)
+  def month: Int = reportingWindowDate.getMonthValue
 
   def taxYear: String = {
     val startYear =

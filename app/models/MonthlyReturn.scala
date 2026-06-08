@@ -21,12 +21,16 @@ import play.api.libs.json.{Format, JsError, JsString, JsSuccess, Json, OFormat, 
 import java.util.UUID
 import scala.util.Try
 
-case class MonthlyReturnSubmission(
+case class MonthlyReturn(
   submissionId: UUID,
-  nilReport: Boolean
+  nilReturn: Boolean
 )
 
-object MonthlyReturnSubmission {
+case class CreateMonthlyReturnResponse(
+  submissionId: UUID
+)
+
+object MonthlyReturn {
 
   implicit val uuidFormat: Format[UUID] =
     Format(
@@ -39,6 +43,14 @@ object MonthlyReturnSubmission {
       Writes(uuid => JsString(uuid.toString))
     )
 
-  implicit val format: OFormat[MonthlyReturnSubmission] =
-    Json.format[MonthlyReturnSubmission]
+  implicit val format: OFormat[MonthlyReturn] =
+    Json.format[MonthlyReturn]
+}
+
+object CreateMonthlyReturnResponse {
+
+  import models.MonthlyReturn.uuidFormat
+
+  implicit val format: OFormat[CreateMonthlyReturnResponse] =
+    Json.format[CreateMonthlyReturnResponse]
 }

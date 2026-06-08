@@ -36,9 +36,9 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
 
   "Data Retrieval Action" - {
 
-    "when there is no monthly return submission in backend storage" - {
+    "when there is no monthly return in backend storage" - {
 
-      "must set monthlyReturnSubmission to None in the request" in {
+      "must set monthlyReturn to None in the request" in {
 
         val storageService = mock[StorageService]
         when(storageService.retrieveForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
@@ -48,23 +48,23 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
         val result = action.callTransform(IdentifierRequest(FakeRequest(), testZReference)).futureValue
 
         result.zReference mustEqual testZReference
-        result.monthlyReturnSubmission must not be defined
+        result.monthlyReturn must not be defined
       }
     }
 
-    "when there is a monthly return submission in backend storage" - {
+    "when there is a monthly return in backend storage" - {
 
       "must add it to the request" in {
 
         val storageService = mock[StorageService]
         when(storageService.retrieveForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
-          .thenReturn(Future.successful(Some(emptyMonthlyReturnSubmission)))
+          .thenReturn(Future.successful(Some(emptyMonthlyReturn)))
         val action         = new Harness(storageService)
 
         val result = action.callTransform(IdentifierRequest(FakeRequest(), testZReference)).futureValue
 
         result.zReference mustEqual testZReference
-        result.monthlyReturnSubmission.value mustEqual emptyMonthlyReturnSubmission
+        result.monthlyReturn.value mustEqual emptyMonthlyReturn
       }
     }
   }

@@ -17,7 +17,7 @@
 package base
 
 import controllers.actions._
-import models.{Month, MonthlyReturnSubmission}
+import models.MonthlyReturn
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -51,21 +51,21 @@ trait SpecBase
   protected val testAprilReportingWindowInstant              = Instant.parse("2026-04-01T00:00:00Z")
   protected val testTaxYear: String                          = "2025-26"
   protected val nextTestTaxYear: String                      = "2026-27"
-  protected val testSubmissionPeriod: Month.Value            = Month.MAR
+  protected val testMonth: Int                               = 3
   protected val testReportingWindowMonthName: String         = "March"
   protected val testReportingPeriodMonthName: String         = "February"
   protected val previousYearReportingPeriodMonthName: String = "December"
 
-  def emptyMonthlyReturnSubmission: MonthlyReturnSubmission =
-    MonthlyReturnSubmission(
+  def emptyMonthlyReturn: MonthlyReturn =
+    MonthlyReturn(
       submissionId = testSubmissionId,
-      nilReport = false
+      nilReturn = false
     )
 
   def messages(app: Application): Messages = app.injector.instanceOf[MessagesApi].preferred(FakeRequest())
 
   protected def applicationBuilder(
-    monthlyReturnSubmission: Option[MonthlyReturnSubmission] = None
+    monthlyReturn: Option[MonthlyReturn] = None
   ): GuiceApplicationBuilder = {
     val bodyParsers = stubControllerComponents().parsers
 
@@ -73,7 +73,7 @@ trait SpecBase
       .overrides(
         bind[DataRequiredAction].to[DataRequiredActionImpl],
         bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference)),
-        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturnSubmission))
+        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturn))
       )
   }
 }

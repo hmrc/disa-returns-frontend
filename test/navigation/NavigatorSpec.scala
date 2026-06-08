@@ -18,7 +18,7 @@ package navigation
 
 import base.SpecBase
 import controllers.routes
-import models.{CheckMode, MonthlyReturnSubmission, NormalMode}
+import models.{CheckMode, MonthlyReturn, NormalMode}
 import pages._
 import play.api.mvc.Call
 
@@ -26,8 +26,8 @@ class NavigatorSpec extends SpecBase {
 
   val navigator = new Navigator
 
-  private def submission(nilReport: Boolean): MonthlyReturnSubmission =
-    MonthlyReturnSubmission(testSubmissionId, nilReport)
+  private def monthlyReturn(nilReturn: Boolean): MonthlyReturn =
+    MonthlyReturn(testSubmissionId, nilReturn)
 
   "Navigator" - {
 
@@ -37,7 +37,7 @@ class NavigatorSpec extends SpecBase {
         navigator.nextPage(
           MonthlyReportSubmissionPage,
           NormalMode,
-          submission(nilReport = false)
+          monthlyReturn(nilReturn = false)
         ) mustBe routes.IndexController.onPageLoad()
       }
 
@@ -45,13 +45,13 @@ class NavigatorSpec extends SpecBase {
         navigator.nextPage(
           MonthlyReportSubmissionPage,
           NormalMode,
-          submission(nilReport = true)
+          monthlyReturn(nilReturn = true)
         ) mustBe routes.IndexController.onPageLoad()
       }
 
       "must go from a page that doesn't exist in the route map to Index" in {
         case object UnknownPage extends Page
-        navigator.nextPage(UnknownPage, NormalMode, submission(nilReport = false)) mustBe routes.IndexController
+        navigator.nextPage(UnknownPage, NormalMode, monthlyReturn(nilReturn = false)) mustBe routes.IndexController
           .onPageLoad()
       }
     }
@@ -63,7 +63,7 @@ class NavigatorSpec extends SpecBase {
         navigator.nextPage(
           UnknownPage,
           CheckMode,
-          submission(nilReport = false)
+          monthlyReturn(nilReturn = false)
         ) mustBe routes.CheckYourAnswersController
           .onPageLoad()
       }

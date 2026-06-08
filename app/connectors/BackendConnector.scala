@@ -17,8 +17,7 @@
 package connectors
 
 import config.FrontendAppConfig
-import models.Month.Month
-import models.MonthlyReturnSubmission
+import models.{CreateMonthlyReturnResponse, MonthlyReturn}
 import play.api.libs.json.Json
 import play.api.libs.ws.writeableOf_JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits.*
@@ -35,26 +34,29 @@ class BackendConnector @Inject() (
 )(implicit ec: ExecutionContext) {
 
   private val backendUrl =
-    s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly-return-submissions"
+    s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly"
 
-  def retrieve(zRef: String, taxYear: String, submissionPeriod: Month)(implicit
+  def retrieve(zRef: String, taxYear: String, month: Int)(implicit
     hc: HeaderCarrier
-  ): Future[Option[MonthlyReturnSubmission]] = {
-    val period = submissionPeriod.toString
-
+  ): Future[Option[MonthlyReturn]] =
     httpClient
-      .get(url"$backendUrl/$zRef/$taxYear/$period")
-      .execute[Option[MonthlyReturnSubmission]]
-  }
+      .get(url"$backendUrl/$zRef/$taxYear/$month")
+      .execute[Option[MonthlyReturn]]
 
-  def upsert(submission: MonthlyReturnSubmission, zRef: String, taxYear: String, submissionPeriod: Month)(implicit
+  def createMonthlyReturn(nilReturn: Boolean, zRef: String, taxYear: String, month: Int)(implicit
     hc: HeaderCarrier
-  ): Future[MonthlyReturnSubmission] = {
-    val period = submissionPeriod.toString
-
+  ): Future[MonthlyReturn] =
     httpClient
-      .put(url"$backendUrl/$zRef/$taxYear/$period")
-      .withBody(Json.toJson(submission))
-      .execute[MonthlyReturnSubmission]
-  }
+      .post(url"$backendUrl/$zRef/$taxYear/$month")
+      .withBody(Json.obj("nilReturn" -> nilReturn))
+      .execute[CreateMonthlyReturnResponse]
+      .map(response => MonthlyReturn(response.submissionId, nilReturn))
+
+  def updateNilReturn(nilReturn: Boolean, zRef: String, taxYear: String, month: Int)(implicit
+    hc: HeaderCarrier
+  ): Future[MonthlyReturn] =
+    httpClient
+      .put(url"$backendUrl/$zRef/$taxYear/$month/nilReturn")
+      .withBody(Json.obj("value" -> nilReturn))
+      .execute[MonthlyReturn]
 }

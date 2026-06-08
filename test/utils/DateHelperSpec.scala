@@ -42,10 +42,10 @@ class DateHelperSpec extends SpecBase {
       helper.reportingPeriodMonth mustEqual previousYearReportingPeriodMonthName
     }
 
-    "must return the submission period enum for the reporting window month" in {
+    "must return the numeric month for the reporting window" in {
       val helper = new DateHelper(testReportingWindowClock)
 
-      helper.submissionPeriod mustEqual testSubmissionPeriod
+      helper.month mustEqual testMonth
     }
 
     "must return the tax year for a reporting window before April" in {

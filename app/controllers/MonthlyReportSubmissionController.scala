@@ -19,7 +19,7 @@ package controllers
 import controllers.actions.{DataRetrievalAction, IdentifierAction}
 import forms.MonthlyReportSubmissionFormProvider
 import models.YesNoAnswer.{No, Yes}
-import models.{MonthlyReturnSubmission, NormalMode}
+import models.NormalMode
 import navigation.Navigator
 import pages.MonthlyReportSubmissionPage
 import play.api.Logging
@@ -27,7 +27,6 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.StorageService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
-import utils.UuidGenerator
 import views.html.MonthlyReportSubmissionView
 
 import javax.inject.Inject
@@ -41,7 +40,6 @@ class MonthlyReportSubmissionController @Inject() (
   formProvider: MonthlyReportSubmissionFormProvider,
   navigator: Navigator,
   storageService: StorageService,
-  uuidGenerator: UuidGenerator,
   val controllerComponents: MessagesControllerComponents,
   view: MonthlyReportSubmissionView
 )(implicit ec: ExecutionContext)
@@ -52,8 +50,8 @@ class MonthlyReportSubmissionController @Inject() (
   private val form = formProvider()
 
   def onPageLoad(): Action[AnyContent] = (identify andThen getData).async { implicit request =>
-    val preparedForm = request.monthlyReturnSubmission
-      .map(submission => if (submission.nilReport) form.fill(No) else form.fill(Yes))
+    val preparedForm = request.monthlyReturn
+      .map(monthlyReturn => if (monthlyReturn.nilReturn) form.fill(No) else form.fill(Yes))
       .getOrElse(form)
 
     Future.successful(Ok(view(preparedForm)))
@@ -68,20 +66,16 @@ class MonthlyReportSubmissionController @Inject() (
             BadRequest(view(formWithErrors))
           ),
         answer => {
-          val submission = request.monthlyReturnSubmission.fold {
-            MonthlyReturnSubmission(uuidGenerator.generate(), nilReport = answer == No)
-          } {
-            _.copy(nilReport = answer == No)
-          }
+          val nilReturn = answer == No
 
           storageService
-            .upsertForThisWindow(request.zReference, submission)
-            .map { upsertedSubmission =>
-              Redirect(navigator.nextPage(MonthlyReportSubmissionPage, NormalMode, upsertedSubmission))
+            .saveForThisWindow(request.zReference, request.monthlyReturn, nilReturn)
+            .map { savedMonthlyReturn =>
+              Redirect(navigator.nextPage(MonthlyReportSubmissionPage, NormalMode, savedMonthlyReturn))
             }
             .recover { case NonFatal(e) =>
               logger.error(
-                s"Failed to save monthly return submission for zRef: [${request.zReference}]",
+                s"Failed to save monthly return for zRef: [${request.zReference}]",
                 e
               )
               InternalServerError

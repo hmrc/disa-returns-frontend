@@ -35,7 +35,7 @@ class DataRequiredActionSpec extends SpecBase {
 
   "Data Required Action" - {
 
-    "must redirect to Journey Recovery when there is no monthly return submission" in {
+    "must redirect to Journey Recovery when there is no monthly return" in {
       val action = new Harness
 
       val result =
@@ -45,17 +45,17 @@ class DataRequiredActionSpec extends SpecBase {
       result.left.value.header.headers(LOCATION) mustEqual routes.JourneyRecoveryController.onPageLoad().url
     }
 
-    "must build a DataRequest when there is a monthly return submission" in {
+    "must build a DataRequest when there is a monthly return" in {
       val action = new Harness
 
       val result = action
         .callRefine(
-          OptionalDataRequest(FakeRequest(), testZReference, Some(emptyMonthlyReturnSubmission))
+          OptionalDataRequest(FakeRequest(), testZReference, Some(emptyMonthlyReturn))
         )
         .futureValue
 
       result.value.zReference mustEqual testZReference
-      result.value.monthlyReturnSubmission mustEqual emptyMonthlyReturnSubmission
+      result.value.monthlyReturn mustEqual emptyMonthlyReturn
     }
   }
 }

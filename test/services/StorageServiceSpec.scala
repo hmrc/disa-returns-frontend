@@ -18,12 +18,14 @@ package services
 
 import base.SpecBase
 import connectors.BackendConnector
+import play.api.http.Status.{CONFLICT, NOT_FOUND}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import utils.DateHelper
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class StorageServiceSpec extends SpecBase with MockitoSugar {
@@ -32,42 +34,151 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
 
   "StorageService" - {
 
-    "must retrieve a submission for the current reporting window" in {
+    "must retrieve a monthly return for the current reporting window" in {
       val connector = mock[BackendConnector]
-      when(connector.retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testSubmissionPeriod))(any[HeaderCarrier]))
-        .thenReturn(Future.successful(Some(emptyMonthlyReturnSubmission)))
+      when(connector.retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(any[HeaderCarrier]))
+        .thenReturn(Future.successful(Some(emptyMonthlyReturn)))
       val service   = new StorageService(connector, dateHelper)
 
       val result = service.retrieveForThisWindow(testZReference)(HeaderCarrier()).futureValue
 
-      result.value mustEqual emptyMonthlyReturnSubmission
-      verify(connector).retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testSubmissionPeriod))(
+      result.value mustEqual emptyMonthlyReturn
+      verify(connector).retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(
         any[HeaderCarrier]
       )
     }
 
-    "must upsert a submission for the current reporting window" in {
+    "must create a monthly return when there is no existing monthly return for the current reporting window" in {
       val connector = mock[BackendConnector]
       when(
-        connector.upsert(
-          eqTo(emptyMonthlyReturnSubmission),
+        connector.createMonthlyReturn(
+          eqTo(true),
           eqTo(testZReference),
           eqTo(testTaxYear),
-          eqTo(testSubmissionPeriod)
+          eqTo(testMonth)
         )(any[HeaderCarrier])
       )
-        .thenReturn(Future.successful(emptyMonthlyReturnSubmission))
+        .thenReturn(Future.successful(emptyMonthlyReturn))
       val service   = new StorageService(connector, dateHelper)
 
       val result =
-        service.upsertForThisWindow(testZReference, emptyMonthlyReturnSubmission)(HeaderCarrier()).futureValue
+        service.saveForThisWindow(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
 
-      result mustEqual emptyMonthlyReturnSubmission
-      verify(connector).upsert(
-        eqTo(emptyMonthlyReturnSubmission),
+      result mustEqual emptyMonthlyReturn
+      verify(connector).createMonthlyReturn(
+        eqTo(true),
         eqTo(testZReference),
         eqTo(testTaxYear),
-        eqTo(testSubmissionPeriod)
+        eqTo(testMonth)
+      )(any[HeaderCarrier])
+    }
+
+    "must update nilReturn when a monthly return already exists for the current reporting window" in {
+      val connector = mock[BackendConnector]
+      when(
+        connector.updateNilReturn(
+          eqTo(false),
+          eqTo(testZReference),
+          eqTo(testTaxYear),
+          eqTo(testMonth)
+        )(any[HeaderCarrier])
+      )
+        .thenReturn(Future.successful(emptyMonthlyReturn))
+      val service   = new StorageService(connector, dateHelper)
+
+      val result =
+        service
+          .saveForThisWindow(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
+          .futureValue
+
+      result mustEqual emptyMonthlyReturn
+      verify(connector).updateNilReturn(
+        eqTo(false),
+        eqTo(testZReference),
+        eqTo(testTaxYear),
+        eqTo(testMonth)
+      )(any[HeaderCarrier])
+    }
+
+    "must update nilReturn when create conflicts because the monthly return was created after retrieval" in {
+      val connector = mock[BackendConnector]
+      when(
+        connector.createMonthlyReturn(
+          eqTo(true),
+          eqTo(testZReference),
+          eqTo(testTaxYear),
+          eqTo(testMonth)
+        )(any[HeaderCarrier])
+      )
+        .thenReturn(Future.failed(UpstreamErrorResponse("conflict", CONFLICT, CONFLICT)))
+      when(
+        connector.updateNilReturn(
+          eqTo(true),
+          eqTo(testZReference),
+          eqTo(testTaxYear),
+          eqTo(testMonth)
+        )(any[HeaderCarrier])
+      )
+        .thenReturn(Future.successful(emptyMonthlyReturn))
+      val service   = new StorageService(connector, dateHelper)
+
+      val result =
+        service.saveForThisWindow(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
+
+      result mustEqual emptyMonthlyReturn
+      verify(connector).createMonthlyReturn(
+        eqTo(true),
+        eqTo(testZReference),
+        eqTo(testTaxYear),
+        eqTo(testMonth)
+      )(any[HeaderCarrier])
+      verify(connector).updateNilReturn(
+        eqTo(true),
+        eqTo(testZReference),
+        eqTo(testTaxYear),
+        eqTo(testMonth)
+      )(any[HeaderCarrier])
+    }
+
+    "must create the monthly return when update fails because the return was missing after retrieval" in {
+      val connector = mock[BackendConnector]
+      when(
+        connector.updateNilReturn(
+          eqTo(false),
+          eqTo(testZReference),
+          eqTo(testTaxYear),
+          eqTo(testMonth)
+        )(any[HeaderCarrier])
+      )
+        .thenReturn(Future.failed(UpstreamErrorResponse("not found", NOT_FOUND, NOT_FOUND)))
+      when(
+        connector.createMonthlyReturn(
+          eqTo(false),
+          eqTo(testZReference),
+          eqTo(testTaxYear),
+          eqTo(testMonth)
+        )(any[HeaderCarrier])
+      )
+        .thenReturn(Future.successful(emptyMonthlyReturn))
+      val service   = new StorageService(connector, dateHelper)
+
+      val result =
+        service
+          .saveForThisWindow(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
+          .futureValue
+
+      result mustEqual emptyMonthlyReturn
+      verify(connector).updateNilReturn(
+        eqTo(false),
+        eqTo(testZReference),
+        eqTo(testTaxYear),
+        eqTo(testMonth)
+      )(any[HeaderCarrier])
+      verify(connector).createMonthlyReturn(
+        eqTo(false),
+        eqTo(testZReference),
+        eqTo(testTaxYear),
+        eqTo(testMonth)
       )(any[HeaderCarrier])
     }
   }

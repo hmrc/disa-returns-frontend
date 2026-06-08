@@ -26,18 +26,17 @@ import models._
 @Singleton
 class Navigator @Inject() () {
 
-  private val normalRoutes: Page => MonthlyReturnSubmission => Call = {
+  private val normalRoutes: Page => MonthlyReturn => Call = {
     case MonthlyReportSubmissionPage =>
-      answers => monthlyReportSubmissionRoute(answers)
+      monthlyReturn => monthlyReturnRoute(monthlyReturn)
     case _                           => _ => routes.IndexController.onPageLoad()
   }
 
-  private val checkRouteMap: Page => MonthlyReturnSubmission => Call = _ =>
-    _ => routes.CheckYourAnswersController.onPageLoad()
+  private val checkRouteMap: Page => MonthlyReturn => Call = _ => _ => routes.CheckYourAnswersController.onPageLoad()
 
-  private def monthlyReportSubmissionRoute(monthlyReturnSubmission: MonthlyReturnSubmission): Call =
-    if (monthlyReturnSubmission.nilReport) {
-      nilReportCheckYourAnswersRoute
+  private def monthlyReturnRoute(monthlyReturn: MonthlyReturn): Call =
+    if (monthlyReturn.nilReturn) {
+      nilReturnCheckYourAnswersRoute
     } else {
       fileUploadJourneyRoute
     }
@@ -46,14 +45,14 @@ class Navigator @Inject() () {
     // TODO DFI-2156: replace placeholder with file upload journey route.
     routes.IndexController.onPageLoad()
 
-  private def nilReportCheckYourAnswersRoute: Call =
+  private def nilReturnCheckYourAnswersRoute: Call =
     // TODO DFI-2120: replace placeholder with nil report CYA journey route.
     routes.IndexController.onPageLoad()
 
-  def nextPage(page: Page, mode: Mode, monthlyReturnSubmission: MonthlyReturnSubmission): Call = mode match {
+  def nextPage(page: Page, mode: Mode, monthlyReturn: MonthlyReturn): Call = mode match {
     case NormalMode =>
-      normalRoutes(page)(monthlyReturnSubmission)
+      normalRoutes(page)(monthlyReturn)
     case CheckMode  =>
-      checkRouteMap(page)(monthlyReturnSubmission)
+      checkRouteMap(page)(monthlyReturn)
   }
 }

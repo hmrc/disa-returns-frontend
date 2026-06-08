@@ -19,11 +19,10 @@ package controllers
 import base.SpecBase
 import controllers.actions.{DataRetrievalAction, FakeDataRetrievalAction, IdentifierAction}
 import forms.MonthlyReportSubmissionFormProvider
-import models.MonthlyReturnSubmission
+import models.MonthlyReturn
 import models.YesNoAnswer.{No, Yes}
 import models.requests.IdentifierRequest
 import navigation.{FakeNavigator, Navigator}
-import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{never, verify, when}
 import org.scalatestplus.mockito.MockitoSugar
@@ -34,7 +33,6 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.StorageService
 import uk.gov.hmrc.http.HeaderCarrier
-import utils.UuidGenerator
 import views.html.MonthlyReportSubmissionView
 
 import java.util.UUID
@@ -42,25 +40,22 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
-  private val onwardRoute           = Call("GET", "/foo")
-  private val generatedSubmissionId = secondTestSubmissionId
-  private val existingSubmissionId  = testSubmissionId
+  private val onwardRoute          = Call("GET", "/foo")
+  private val existingSubmissionId = testSubmissionId
 
   private val formProvider = new MonthlyReportSubmissionFormProvider()
   private val form         = formProvider()
 
   private def applicationWith(
-    monthlyReturnSubmission: Option[MonthlyReturnSubmission] = None,
-    storageService: StorageService = mockStorageService(),
-    uuidGenerator: UuidGenerator = fixedUuidGenerator()
+    monthlyReturn: Option[MonthlyReturn] = None,
+    storageService: StorageService = mockStorageService()
   ) =
     new GuiceApplicationBuilder()
       .overrides(
-        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturnSubmission)),
+        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturn)),
         bind[IdentifierAction].toInstance(new TestIdentifierAction),
         bind[java.time.Clock].toInstance(testReportingWindowClock),
         bind[StorageService].toInstance(storageService),
-        bind[UuidGenerator].toInstance(uuidGenerator),
         bind[Navigator].toInstance(new FakeNavigator(onwardRoute))
       )
       .build()
@@ -77,24 +72,24 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
       block(IdentifierRequest(request, testZReference))
   }
 
-  private def fixedUuidGenerator(): UuidGenerator = {
-    val uuidGenerator = mock[UuidGenerator]
-    when(uuidGenerator.generate()).thenReturn(generatedSubmissionId)
-    uuidGenerator
-  }
-
   private def mockStorageService(): StorageService = {
     val storageService = mock[StorageService]
-    when(storageService.upsertForThisWindow(any[String], any[MonthlyReturnSubmission])(any[HeaderCarrier]))
-      .thenReturn(Future.successful(uploadReportSubmission()))
+    when(
+      storageService.saveForThisWindow(
+        any[String],
+        any[Option[MonthlyReturn]],
+        any[Boolean]
+      )(any[HeaderCarrier])
+    )
+      .thenReturn(Future.successful(uploadReportMonthlyReturn()))
     storageService
   }
 
-  private def nilReportSubmission(submissionId: UUID = existingSubmissionId): MonthlyReturnSubmission =
-    MonthlyReturnSubmission(submissionId = submissionId, nilReport = true)
+  private def nilReturnMonthlyReturn(submissionId: UUID = existingSubmissionId): MonthlyReturn =
+    MonthlyReturn(submissionId = submissionId, nilReturn = true)
 
-  private def uploadReportSubmission(submissionId: UUID = existingSubmissionId): MonthlyReturnSubmission =
-    MonthlyReturnSubmission(submissionId = submissionId, nilReport = false)
+  private def uploadReportMonthlyReturn(submissionId: UUID = existingSubmissionId): MonthlyReturn =
+    MonthlyReturn(submissionId = submissionId, nilReturn = false)
 
   "MonthlyReportSubmissionController" - {
 
@@ -114,7 +109,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
     }
 
     "must prepopulate No for a GET when backend storage has a nil report" in {
-      val app = applicationWith(monthlyReturnSubmission = Some(nilReportSubmission()))
+      val app = applicationWith(monthlyReturn = Some(nilReturnMonthlyReturn()))
 
       running(app) {
         val request = FakeRequest(GET, routes.MonthlyReportSubmissionController.onPageLoad().url)
@@ -129,7 +124,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
     }
 
     "must prepopulate Yes for a GET when backend storage has an upload report" in {
-      val app = applicationWith(monthlyReturnSubmission = Some(uploadReportSubmission()))
+      val app = applicationWith(monthlyReturn = Some(uploadReportMonthlyReturn()))
 
       running(app) {
         val request = FakeRequest(GET, routes.MonthlyReportSubmissionController.onPageLoad().url)
@@ -157,13 +152,17 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual BAD_REQUEST
         contentAsString(result) mustEqual view(boundForm)(request, messages(app)).toString
-        verify(storageService, never()).upsertForThisWindow(any[String], any[MonthlyReturnSubmission])(
+        verify(storageService, never()).saveForThisWindow(
+          any[String],
+          any[Option[MonthlyReturn]],
+          any[Boolean]
+        )(
           any[HeaderCarrier]
         )
       }
     }
 
-    "must create a new nil report submission and redirect to the next page" in {
+    "must save a new nil return and redirect to the next page" in {
       val storageService = mockStorageService()
       val app            = applicationWith(storageService = storageService)
 
@@ -176,19 +175,16 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual SEE_OTHER
 
-        val captor = ArgumentCaptor.forClass(classOf[MonthlyReturnSubmission])
-        verify(storageService).upsertForThisWindow(eqTo(testZReference), captor.capture())(any[HeaderCarrier])
-
-        captor.getValue.submissionId mustEqual generatedSubmissionId
-        captor.getValue.nilReport mustEqual true
+        verify(storageService).saveForThisWindow(eqTo(testZReference), eqTo(None), eqTo(true))(any[HeaderCarrier])
         redirectLocation(result).value mustEqual onwardRoute.url
       }
     }
 
-    "must preserve the existing submission id when updating an existing answer" in {
+    "must save an updated answer against the existing monthly return and redirect to the next page" in {
       val storageService = mockStorageService()
+      val existing       = nilReturnMonthlyReturn()
       val app            = applicationWith(
-        monthlyReturnSubmission = Some(nilReportSubmission()),
+        monthlyReturn = Some(existing),
         storageService = storageService
       )
 
@@ -201,18 +197,22 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual SEE_OTHER
 
-        val captor = ArgumentCaptor.forClass(classOf[MonthlyReturnSubmission])
-        verify(storageService).upsertForThisWindow(eqTo(testZReference), captor.capture())(any[HeaderCarrier])
-
-        captor.getValue.submissionId mustEqual existingSubmissionId
-        captor.getValue.nilReport mustEqual false
+        verify(storageService).saveForThisWindow(eqTo(testZReference), eqTo(Some(existing)), eqTo(false))(
+          any[HeaderCarrier]
+        )
         redirectLocation(result).value mustEqual onwardRoute.url
       }
     }
 
     "must return InternalServerError when the backend save fails" in {
       val storageService = mock[StorageService]
-      when(storageService.upsertForThisWindow(any[String], any[MonthlyReturnSubmission])(any[HeaderCarrier]))
+      when(
+        storageService.saveForThisWindow(
+          any[String],
+          any[Option[MonthlyReturn]],
+          any[Boolean]
+        )(any[HeaderCarrier])
+      )
         .thenReturn(Future.failed(new RuntimeException("boom")))
 
       val app = applicationWith(storageService = storageService)

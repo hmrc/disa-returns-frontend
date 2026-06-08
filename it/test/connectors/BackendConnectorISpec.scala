@@ -20,7 +20,7 @@ import base.ISpecBase
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import models.MonthlyReturnSubmission
+import models.MonthlyReturn
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -31,15 +31,39 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
 
   private val wireMockServer = new WireMockServer(wireMockConfig().dynamicPort())
 
-  private val submission     = MonthlyReturnSubmission(
+  private val monthlyReturn      = MonthlyReturn(
     submissionId = testSubmissionId,
-    nilReport = true
+    nilReturn = true
   )
-  private val submissionJson =
+  private val monthlyReturnJson  =
     s"""
       |{
+      |  "zReference": "$testZReference",
       |  "submissionId": "$testSubmissionId",
-      |  "nilReport": true
+      |  "taxYear": "$testTaxYear",
+      |  "month": $testMonth,
+      |  "nilReturn": true,
+      |  "fileUploads": [],
+      |  "createdOn": "2026-03-15T12:00:00Z",
+      |  "lastUpdated": "2026-03-15T12:00:00Z"
+      |}
+      |""".stripMargin
+  private val createRequestJson  =
+    """
+      |{
+      |  "nilReturn": true
+      |}
+      |""".stripMargin
+  private val createResponseJson =
+    s"""
+      |{
+      |  "submissionId": "$testSubmissionId"
+      |}
+      |""".stripMargin
+  private val updateRequestJson  =
+    """
+      |{
+      |  "value": true
       |}
       |""".stripMargin
 
@@ -67,30 +91,31 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
       )
       .build()
 
-  private val submissionPath =
-    s"/disa-returns-backend/monthly-return-submissions/$testZReference/$testTaxYear/$testSubmissionPeriod"
+  private val monthlyReturnPath   =
+    s"/disa-returns-backend/monthly/$testZReference/$testTaxYear/$testMonth"
+  private val updateNilReturnPath = s"$monthlyReturnPath/nilReturn"
 
   "BackendConnector" - {
 
-    "must retrieve a stored monthly return submission" in {
+    "must retrieve a stored monthly return" in {
       wireMockServer.stubFor(
-        get(urlEqualTo(submissionPath))
-          .willReturn(okJson(submissionJson))
+        get(urlEqualTo(monthlyReturnPath))
+          .willReturn(okJson(monthlyReturnJson))
       )
 
       val app = application
       running(app) {
         val connector = appConnector(app)
 
-        val result = connector.retrieve(testZReference, testTaxYear, testSubmissionPeriod)(HeaderCarrier()).futureValue
+        val result = connector.retrieve(testZReference, testTaxYear, testMonth)(HeaderCarrier()).futureValue
 
-        result.value mustEqual submission
+        result.value mustEqual monthlyReturn
       }
     }
 
     "must return None when retrieve returns NotFound" in {
       wireMockServer.stubFor(
-        get(urlEqualTo(submissionPath))
+        get(urlEqualTo(monthlyReturnPath))
           .willReturn(notFound())
       )
 
@@ -98,17 +123,17 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
       running(app) {
         val connector = appConnector(app)
 
-        val result = connector.retrieve(testZReference, testTaxYear, testSubmissionPeriod)(HeaderCarrier()).futureValue
+        val result = connector.retrieve(testZReference, testTaxYear, testMonth)(HeaderCarrier()).futureValue
 
         result must not be defined
       }
     }
 
-    "must upsert a monthly return submission" in {
+    "must create a monthly return" in {
       wireMockServer.stubFor(
-        put(urlEqualTo(submissionPath))
-          .withRequestBody(equalToJson(submissionJson))
-          .willReturn(created().withHeader("Content-Type", "application/json").withBody(submissionJson))
+        post(urlEqualTo(monthlyReturnPath))
+          .withRequestBody(equalToJson(createRequestJson))
+          .willReturn(created().withHeader("Content-Type", "application/json").withBody(createResponseJson))
       )
 
       val app = application
@@ -116,15 +141,39 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
         val connector = appConnector(app)
 
         val result = connector
-          .upsert(submission, testZReference, testTaxYear, testSubmissionPeriod)(HeaderCarrier())
+          .createMonthlyReturn(true, testZReference, testTaxYear, testMonth)(HeaderCarrier())
           .futureValue
 
-        result mustEqual submission
+        result mustEqual monthlyReturn
       }
 
       wireMockServer.verify(
-        putRequestedFor(urlEqualTo(submissionPath))
-          .withRequestBody(equalToJson(submissionJson))
+        postRequestedFor(urlEqualTo(monthlyReturnPath))
+          .withRequestBody(equalToJson(createRequestJson))
+      )
+    }
+
+    "must update nilReturn on an existing monthly return" in {
+      wireMockServer.stubFor(
+        put(urlEqualTo(updateNilReturnPath))
+          .withRequestBody(equalToJson(updateRequestJson))
+          .willReturn(okJson(monthlyReturnJson))
+      )
+
+      val app = application
+      running(app) {
+        val connector = appConnector(app)
+
+        val result = connector
+          .updateNilReturn(true, testZReference, testTaxYear, testMonth)(HeaderCarrier())
+          .futureValue
+
+        result mustEqual monthlyReturn
+      }
+
+      wireMockServer.verify(
+        putRequestedFor(urlEqualTo(updateNilReturnPath))
+          .withRequestBody(equalToJson(updateRequestJson))
       )
     }
   }

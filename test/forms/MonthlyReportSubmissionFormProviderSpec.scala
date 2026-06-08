@@ -17,7 +17,6 @@
 package forms
 
 import forms.behaviours.OptionFieldBehaviours
-import models.YesNoAnswer
 import play.api.data.FormError
 
 class MonthlyReportSubmissionFormProviderSpec extends OptionFieldBehaviours {
