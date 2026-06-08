@@ -22,6 +22,9 @@ GET         /unauthorised                                controllers.Unauthorise
 
 GET         /download-report-template                    controllers.DownloadReportTemplateController.onPageLoad()
 
+GET         /monthly-report-submission                   controllers.MonthlyReportSubmissionController.onPageLoad()
+POST        /monthly-report-submission                   controllers.MonthlyReportSubmissionController.onSubmit()
+
 GET         /problem-with-uploaded-file                  controllers.ProblemWithUploadedFileController.onPageLoad()
 
 GET         /file-formatting-errors                      controllers.FileFormattingErrorsController.onPageLoad()

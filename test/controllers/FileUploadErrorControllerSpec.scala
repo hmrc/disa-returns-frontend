@@ -27,7 +27,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "filePasswordProtected must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 
@@ -51,7 +51,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "fileContainsVirus must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 
@@ -75,7 +75,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "emptyFileUploaded must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 
@@ -99,7 +99,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "invalidFileType must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder(monthlyReturn = None).build()
 
       running(application) {
 
@@ -123,7 +123,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "duplicateFileUpload must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder(monthlyReturn = None).build()
 
       running(application) {
 
@@ -147,7 +147,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "fileUploadFailed must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 

@@ -6,6 +6,7 @@ site.change = Change
 site.no = No
 site.yes = Yes
 site.continue = Continue
+site.saveAndContinue = Save and continue
 site.start = Start now
 site.startAgain = Start again
 site.signIn = Sign in
@@ -57,6 +58,17 @@ downloadReportTemplate.h3 = Download the file
 downloadReportTemplate.p3 = and enter all the required information.
 downloadReportTemplate.p3.link = Download the CSV template file
 downloadReportTemplate.callToAction = Return to manage reports
+
+monthlyReportSubmission.title = Monthly report submission
+monthlyReportSubmission.heading = Monthly report submission
+monthlyReportSubmission.p1 = ISA managers must provide a report to HMRC for all accounts held where there has been a subscription event in any reporting period.
+monthlyReportSubmission.noUpdates.heading = If you do not have any updates
+monthlyReportSubmission.noUpdates.p1 = If there are no changes to all accounts held and you are submitting a nil report, you do not need to upload a file. You must still agree to the declaration later on, to confirm that there are no changes.
+monthlyReportSubmission.question = Are you submitting a report file for {0} window?
+monthlyReportSubmission.hint = You should submit your report for {0} in this window. Select no if you have a nil report.
+monthlyReportSubmission.yes = Yes - I am uploading a report
+monthlyReportSubmission.no = No - I have a nil report
+monthlyReportSubmission.error.required = Select yes, if you are uploading a monthly report
 
 problemWithUploadedFile.title = There is a problem with your uploaded file
 problemWithUploadedFile.heading = There is a problem with your uploaded file

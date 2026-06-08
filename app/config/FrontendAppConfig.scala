@@ -40,6 +40,9 @@ class FrontendAppConfig @Inject() (configuration: Configuration) {
   private val exitSurveyBaseUrl: String = configuration.get[Service]("microservice.services.feedback-frontend").baseUrl
   val exitSurveyUrl: String             = s"$exitSurveyBaseUrl/feedback/disa-returns-frontend"
 
+  val disaReturnsBackendBaseUrl: String =
+    configuration.get[Service]("microservice.services.disa-returns-backend").baseUrl
+
   val languageTranslationEnabled: Boolean =
     configuration.get[Boolean]("features.welsh-translation")
 
@@ -50,6 +53,4 @@ class FrontendAppConfig @Inject() (configuration: Configuration) {
 
   val timeout: Int   = configuration.get[Int]("timeout-dialog.timeout")
   val countdown: Int = configuration.get[Int]("timeout-dialog.countdown")
-
-  val cacheTtl: Long = configuration.get[Int]("mongodb.timeToLiveInSeconds")
 }

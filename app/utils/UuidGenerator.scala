@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package models.requests
+package utils
 
-import play.api.mvc.{Request, WrappedRequest}
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 
-case class IdentifierRequest[A](request: Request[A], zReference: String) extends WrappedRequest[A](request)
+@Singleton
+class UuidGenerator @Inject() () {
+  def generate(): UUID = UUID.randomUUID()
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,14 @@
 
 package pages
 
-import queries.{Gettable, Settable}
+import base.SpecBase
 
-trait QuestionPage[A] extends Page with Gettable[A] with Settable[A]
+class MonthlyReportSubmissionPageSpec extends SpecBase {
+
+  "MonthlyReportSubmissionPage" - {
+
+    "must have a stable page identifier" in {
+      MonthlyReportSubmissionPage.toString mustEqual "monthlyReportSubmission"
+    }
+  }
+}

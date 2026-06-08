@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-package queries
+package forms
 
-import models.UserAnswers
-import play.api.libs.json.JsPath
+import forms.behaviours.OptionFieldBehaviours
+import play.api.data.FormError
 
-import scala.util.{Success, Try}
+class MonthlyReportSubmissionFormProviderSpec extends OptionFieldBehaviours {
 
-sealed trait Query {
+  private val form = new MonthlyReportSubmissionFormProvider()()
 
-  def path: JsPath
-}
+  ".value" - {
 
-trait Gettable[A] extends Query
+    val fieldName = "value"
 
-trait Settable[A] extends Query {
-
-  def cleanup(value: Option[A], userAnswers: UserAnswers): Try[UserAnswers] =
-    Success(userAnswers)
+    behave like mandatoryField(
+      form,
+      fieldName,
+      requiredError = FormError(fieldName, "monthlyReportSubmission.error.required")
+    )
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package models.requests
+package pages
 
-import play.api.mvc.{Request, WrappedRequest}
+case object MonthlyReportSubmissionPage extends Page {
 
-case class IdentifierRequest[A](request: Request[A], zReference: String) extends WrappedRequest[A](request)
+  override def toString: String = "monthlyReportSubmission"
+}

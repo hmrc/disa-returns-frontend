@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,20 @@
  * limitations under the License.
  */
 
-package models.requests
+package forms
 
-import play.api.mvc.{Request, WrappedRequest}
+import forms.mappings.Mappings
+import models.YesNoAnswer
+import play.api.data.Form
 
-case class IdentifierRequest[A](request: Request[A], zReference: String) extends WrappedRequest[A](request)
+import javax.inject.Inject
+
+class MonthlyReportSubmissionFormProvider @Inject() extends Mappings {
+
+  def apply(): Form[YesNoAnswer] =
+    Form(
+      "value" -> enumerable[YesNoAnswer](
+        requiredKey = "monthlyReportSubmission.error.required"
+      )
+    )
+}
