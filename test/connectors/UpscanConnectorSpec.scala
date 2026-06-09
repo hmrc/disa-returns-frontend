@@ -61,8 +61,7 @@ class UpscanConnectorSpec extends SpecBase {
         val response =
           UpscanInitiateResponse(
             reference = "ref123",
-            uploadRequest = UploadRequest(href = "https://upscan/upload",
-              fields = Map("key" -> "value"))
+            uploadRequest = UploadRequest(href = "https://upscan/upload", fields = Map("key" -> "value"))
           )
 
         when(mockRequestBuilder.execute[UpscanInitiateResponse](any(), any()))
@@ -90,8 +89,7 @@ class UpscanConnectorSpec extends SpecBase {
             Future.successful(
               UpscanInitiateResponse(
                 reference = "123",
-                uploadRequest = UploadRequest(href = "https://upscan/upload",
-                  fields =  Map.empty)
+                uploadRequest = UploadRequest(href = "https://upscan/upload", fields = Map.empty)
               )
             )
           )

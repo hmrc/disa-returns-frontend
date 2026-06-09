@@ -14,36 +14,33 @@
  * limitations under the License.
  */
 
-package service
+package services
 
 import com.google.inject.Inject
 import config.FrontendAppConfig
 import connectors.UpscanConnector
 import models.upscan.{UpscanInitiateRequest, UpscanInitiateResponse}
 import uk.gov.hmrc.http.HeaderCarrier
+import utils.DateHelper
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
-class UpscanService @Inject()(
-                               upscanConnector: UpscanConnector,
-                               appConfig: FrontendAppConfig
-                             ) {
+class UpscanService @Inject() (
+  upscanConnector: UpscanConnector,
+  dateHelper: DateHelper,
+  appConfig: FrontendAppConfig
+) {
 
-
-  def initiate(): Future[UpscanInitiateResponse] = {
-    implicit val hc: HeaderCarrier = HeaderCarrier()
-
-    val upscanCallback = s"${appConfig.disaReturnsBackendBase}/monthly/upscan/callback/:zReference/:taxYear/:month"
-
+  def initiate(zReference: String)(implicit hc: HeaderCarrier): Future[UpscanInitiateResponse] =
     upscanConnector.initiateUpload(
       UpscanInitiateRequest(
-        callbackUrl = appConfig.disaReturnsBackendBase,
-        successRedirect = Some("https://success"),
-        errorRedirect = Some("https://error"),
+        callbackUrl =
+          s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly/upscan/callback/$zReference/${dateHelper.taxYear}/${dateHelper.month}",
+        successRedirect = Some(s"${appConfig.host}/upscan/success"),
+        errorRedirect = Some(s"${appConfig.host}/file-upload"),
         minimumFileSize = Some(appConfig.upscanMinFileSize),
         maximumFileSize = Some(appConfig.upscanMaxFileSize),
         expectedFileType = Some(appConfig.upscanAcceptedMimeTypes)
       )
     )
-  }
 }

@@ -17,33 +17,29 @@
 package connectors
 
 import config.FrontendAppConfig
+import models.upscan.*
+import play.api.libs.json.Json
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
+import uk.gov.hmrc.http.*
+import uk.gov.hmrc.http.HttpReads.Implicits.*
+import uk.gov.hmrc.http.client.HttpClientV2
 
 import javax.inject.{Inject, Singleton}
-import models.upscan.*
-import play.api.Configuration
-import play.api.libs.json.Json
-import uk.gov.hmrc.http.*
-import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.HttpReads.Implicits.*
-import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class UpscanConnector @Inject() (
-                                  httpClient: HttpClientV2,
-                                  appConfig: FrontendAppConfig
-                                )(implicit ec: ExecutionContext) {
+  httpClient: HttpClientV2,
+  appConfig: FrontendAppConfig
+)(implicit ec: ExecutionContext) {
 
   private val initiateUrl = s"${appConfig.upscanInitiateBase}/upscan/v2/initiate"
 
-
   def initiateUpload(
-                      request: UpscanInitiateRequest
-                    )(implicit hc: HeaderCarrier): Future[UpscanInitiateResponse] = {
+    request: UpscanInitiateRequest
+  )(implicit hc: HeaderCarrier): Future[UpscanInitiateResponse] =
     httpClient
       .post(url"$initiateUrl")
       .withBody(Json.toJson(request))
       .execute[UpscanInitiateResponse]
-  }
 }

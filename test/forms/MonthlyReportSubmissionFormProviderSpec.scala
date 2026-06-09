@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,23 @@
  * limitations under the License.
  */
 
-package pages
+package forms
 
-import queries.{Gettable, Settable}
+import forms.behaviours.OptionFieldBehaviours
+import play.api.data.FormError
 
-trait QuestionPage[A] extends Page with Gettable[A] with Settable[A]
+class MonthlyReportSubmissionFormProviderSpec extends OptionFieldBehaviours {
+
+  private val form = new MonthlyReportSubmissionFormProvider()()
+
+  ".value" - {
+
+    val fieldName = "value"
+
+    behave like mandatoryField(
+      form,
+      fieldName,
+      requiredError = FormError(fieldName, "monthlyReportSubmission.error.required")
+    )
+  }
+}

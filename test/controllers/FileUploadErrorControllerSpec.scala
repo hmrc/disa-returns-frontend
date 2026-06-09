@@ -19,7 +19,7 @@ package controllers
 import base.SpecBase
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import views.html.{DuplicateFileUploadView, EmptyUploadedFileView, FileContainsVirusView, FilePasswordProtectedView, InvalidFileTypeView}
+import views.html.{DuplicateFileUploadView, EmptyUploadedFileView, FileContainsVirusView, FilePasswordProtectedView, FileUploadFailedView, InvalidFileTypeView}
 
 class FileUploadErrorControllerSpec extends SpecBase {
 
@@ -27,7 +27,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "filePasswordProtected must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 
@@ -51,7 +51,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "fileContainsVirus must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 
@@ -75,7 +75,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "emptyFileUploaded must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 
@@ -99,7 +99,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "invalidFileType must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 
@@ -123,7 +123,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
     "duplicateFileUpload must return OK and the correct view for a GET" in {
 
-      val application = applicationBuilder(userAnswers = None).build()
+      val application = applicationBuilder().build()
 
       running(application) {
 
@@ -137,6 +137,30 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
         val view =
           application.injector.instanceOf[DuplicateFileUploadView]
+
+        status(result) mustEqual OK
+
+        contentAsString(result) mustEqual
+          view()(request, messages(application)).toString
+      }
+    }
+
+    "fileUploadFailed must return OK and the correct view for a GET" in {
+
+      val application = applicationBuilder().build()
+
+      running(application) {
+
+        val request =
+          FakeRequest(
+            GET,
+            routes.FileUploadErrorController.fileUploadFailed().url
+          )
+
+        val result = route(application, request).value
+
+        val view =
+          application.injector.instanceOf[FileUploadFailedView]
 
         status(result) mustEqual OK
 

@@ -27,8 +27,8 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
 
   val host: String    = getString("host")
   val appName: String = getString("appName")
-  
-  lazy val disaReturnsBackendBase: String      = baseUrl("disa-returns-backend")
+
+  lazy val disaReturnsBackendBaseUrl: String = baseUrl("disa-returns-backend")
 
   private val contactHost                  = getString("contact-frontend.host")
   private val contactFormServiceIdentifier = "disa-returns-frontend"
@@ -43,8 +43,7 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   private val exitSurveyBaseUrl: String = baseUrl("feedback-frontend")
   val exitSurveyUrl: String             = s"$exitSurveyBaseUrl/feedback/disa-returns-frontend"
 
-  val languageTranslationEnabled: Boolean =
-    getBoolean("features.welsh-translation")
+  val languageTranslationEnabled: Boolean = getBoolean("features.welsh-translation")
 
   def languageMap: Map[String, Lang] = Map(
     "en" -> Lang("en"),
@@ -53,7 +52,6 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
 
   val timeout: Int   = getInt("timeout-dialog.timeout")
   val countdown: Int = getInt("timeout-dialog.countdown")
-  val cacheTtl: Long = getInt("mongodb.timeToLiveInSeconds")
 
   lazy val upscanInitiateBase: String      = baseUrl("upscan-initiate")
   lazy val upscanMinFileSize: Int          = getInt("upscan.minFileSize")

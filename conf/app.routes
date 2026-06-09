@@ -22,6 +22,10 @@ GET         /unauthorised                                controllers.Unauthorise
 
 GET         /download-report-template                    controllers.DownloadReportTemplateController.onPageLoad()
 
+GET         /monthly-report-submission                   controllers.MonthlyReportSubmissionController.onPageLoad()
+
+POST        /monthly-report-submission                   controllers.MonthlyReportSubmissionController.onSubmit()
+
 GET         /problem-with-uploaded-file                  controllers.ProblemWithUploadedFileController.onPageLoad()
 
 GET         /file-formatting-errors                      controllers.FileFormattingErrorsController.onPageLoad()
@@ -37,3 +41,9 @@ GET         /invalid-file-type                           controllers.FileUploadE
 GET         /duplicate-file-upload                       controllers.FileUploadErrorController.duplicateFileUpload()
 
 GET         /file-upload                                 controllers.UploadFileController.onPageLoad()
+
+GET         /file-upload-failed                          controllers.FileUploadErrorController.fileUploadFailed()
+
+GET         /declaration                                 controllers.DeclarationController.onPageLoad(nilReturn: Boolean)
+
+GET         /upscan/success                              controllers.UpscanResultController.success

@@ -16,13 +16,15 @@
 
 package controllers
 
-import controllers.actions.IdentifierAction
+import controllers.actions.{DataRetrievalAction, IdentifierAction}
 import handlers.ErrorHandler
+import models.upscan.UploadError
 import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import service.UpscanService
+import services.UpscanService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
+import viewmodels.UploadViewModel
 import views.html.UploadFileView
 
 import javax.inject.Inject
@@ -35,24 +37,30 @@ class UploadFileController @Inject() (
   upscanService: UpscanService,
   val controllerComponents: MessagesControllerComponents,
   view: UploadFileView,
-  errorHandler: ErrorHandler
+  errorHandler: ErrorHandler,
+  getData: DataRetrievalAction
 )(implicit ec: ExecutionContext)
     extends FrontendBaseController
     with I18nSupport
     with Logging {
 
-  def onPageLoad(): Action[AnyContent] =
-    identify.async { implicit request =>
-      upscanService
-        .initiate()
-        .map { upscanResponse =>
-          Ok(view(upscanResponse))
-        }
-        .recoverWith { case NonFatal(ex) =>
-          logger.error(
-            s"[UploadFileController][onPageLoad] Request to upscan initiate failed with exception: [$ex]"
-          )
-          errorHandler.internalServerError(request)
-        }
-    }
+  def onPageLoad(): Action[AnyContent] = (identify andThen getData).async { implicit request =>
+
+    val error: Option[String] =
+      request.getQueryString("errorCode").map(UploadError.toMessageKey)
+
+    upscanService
+      .initiate(request.zReference)
+      .map { upscanResponse =>
+        val model = UploadViewModel(
+          upscan = upscanResponse,
+          error = error
+        )
+        Ok(view(model))
+      }
+      .recoverWith { case NonFatal(ex) =>
+        logger.error(s"[UploadFileController] initiate failed: $ex")
+        errorHandler.internalServerError(request)
+      }
+  }
 }

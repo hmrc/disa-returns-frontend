@@ -19,14 +19,14 @@ package models.upscan
 import play.api.libs.json.*
 
 case class UpscanInitiateResponse(
-                                   reference: String,
-                                   uploadRequest: UploadRequest
-                                 )
+  reference: String,
+  uploadRequest: UploadRequest
+)
 
 case class UploadRequest(
-                          href: String,
-                          fields: Map[String, String]
-                        )
+  href: String,
+  fields: Map[String, String]
+)
 
 object UploadRequest {
   implicit val format: OFormat[UploadRequest] =

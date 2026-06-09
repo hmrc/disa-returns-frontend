@@ -14,21 +14,20 @@
  * limitations under the License.
  *@
 
-@import uk.gov.hmrc.govukfrontend.views.html.components.GovukButton
-@import uk.gov.hmrc.govukfrontend.views.html.components.GovukFileUpload
 @import uk.gov.hmrc.govukfrontend.views.html.components._
 @import config.FrontendAppConfig
 @import models.upscan.UpscanInitiateResponse
+@import viewmodels.UploadViewModel
 
 @this(
         layout: templates.Layout,
         govukButton: GovukButton,
         govukFileUpload: GovukFileUpload,
+        govukErrorSummary: GovukErrorSummary,
         appConfig: FrontendAppConfig
 )
 
-@(upscanResponse: UpscanInitiateResponse)(implicit request: Request[_], messages: Messages)
-
+@(model: UploadViewModel)(implicit request: Request[_], messages: Messages)
 
 @layout(pageTitle = titleNoForm(messages("uploadFile.title"))) {
 
@@ -36,40 +35,53 @@
 
     <div class="govuk-body">
 
+        @model.error.map { messageKey =>
+            @govukErrorSummary(ErrorSummary(
+                title = Text(messages("error.summary.title")),
+                errorList = Seq(
+                    ErrorLink(
+                        href = Some("#file"),
+                        content = Text(messages(messageKey))
+                    )
+                )
+            ))
+        }
+
         <p>@messages("uploadFile.p1")</p>
 
-        <p>@messages("uploadFile.p2.preLink")
-            <a href="#" class="govuk-link">@messages("uploadFile.p2.link")</a> @messages("uploadFile.p2.afterLink")</p>
+        <p>
+            @messages("uploadFile.p2.preLink")
+            <a href="#" class="govuk-link">@messages("uploadFile.p2.link")</a>
+            @messages("uploadFile.p2.afterLink")
+        </p>
 
         <p>@messages("uploadFile.p3")</p>
         <p>@messages("uploadFile.p4")</p>
 
-
-        <form method="POST" action="@upscanResponse.uploadRequest.href" id="file-upload-form" enctype="multipart/form-data">
-
-            @for((key, value) <- upscanResponse.uploadRequest.fields) {
+        <form method="POST" action="@model.upscan.uploadRequest.href" id="file-upload-form" enctype="multipart/form-data">
+            @for((key, value) <- model.upscan.uploadRequest.fields) {
                 <input type="hidden" name="@key" value="@value"/>
             }
 
             @govukFileUpload(FileUpload(
                 id = "file",
                 name = "file",
+                errorMessage = model.error.map { messageKey =>
+                    ErrorMessage(content = Text(messages(messageKey)))},
                 noFileChosenText = Some(messages("uploadFile.noFileChosen")),
                 chooseFilesButtonText = Some(messages("uploadFile.chooseFile")),
                 dropInstructionText = Some(messages("uploadFile.dropFile")),
                 label = Label(
-                    content = Text(messages("uploadFile.label"))
-                ),
+                    content = Text(messages("uploadFile.label"))),
                 javascript = Some(true),
                 attributes = Map(
-                    "accept" -> appConfig.upscanAcceptedMimeTypes,
-                    "required" -> "required"
-                )
+                    "accept" -> appConfig.upscanAcceptedMimeTypes)
             ))
 
             @govukButton(Button(
                 content = Text(messages("uploadFile.callToAction"))
             ))
+
         </form>
     </div>
 }

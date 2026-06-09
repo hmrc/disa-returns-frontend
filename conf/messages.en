@@ -6,6 +6,7 @@ site.change = Change
 site.no = No
 site.yes = Yes
 site.continue = Continue
+site.saveAndContinue = Save and continue
 site.start = Start now
 site.startAgain = Start again
 site.signIn = Sign in
@@ -58,6 +59,17 @@ downloadReportTemplate.p3 = and enter all the required information.
 downloadReportTemplate.p3.link = Download the CSV template file
 downloadReportTemplate.callToAction = Return to manage reports
 
+monthlyReportSubmission.title = Monthly report submission
+monthlyReportSubmission.heading = Monthly report submission
+monthlyReportSubmission.p1 = ISA managers must provide a report to HMRC for all accounts held where there has been a subscription event in any reporting period.
+monthlyReportSubmission.noUpdates.heading = If you do not have any updates
+monthlyReportSubmission.noUpdates.p1 = If there are no changes to all accounts held and you are submitting a nil report, you do not need to upload a file. You must still agree to the declaration later on, to confirm that there are no changes.
+monthlyReportSubmission.question = Are you submitting a report file for {0} window?
+monthlyReportSubmission.hint = You should submit your report for {0} in this window. Select no if you have a nil report.
+monthlyReportSubmission.yes = Yes - I am uploading a report
+monthlyReportSubmission.no = No - I have a nil report
+monthlyReportSubmission.error.required = Select yes, if you are uploading a monthly report
+
 problemWithUploadedFile.title = There is a problem with your uploaded file
 problemWithUploadedFile.heading = There is a problem with your uploaded file
 problemWithUploadedFile.p1 = The header rows or columns have been changed.
@@ -100,8 +112,8 @@ duplicateFileUpload.heading = The files you uploaded are the same
 duplicateFileUpload.p1 = Check if this is correct.
 duplicateFileUpload.callToAction = Back to file upload
 
-uploadFile.title = The files you uploaded are the same
-uploadFile.heading = The files you uploaded are the same
+uploadFile.title = Upload your report file
+uploadFile.heading = Upload your report file
 uploadFile.p1 = Your file can be in CSV or Excel format and you need to use the Excel template provided.
 uploadFile.p2.preLink = Once you have
 uploadFile.p2.link = downloaded the Excel template
@@ -114,3 +126,26 @@ uploadFile.noFileChosen = No file chosen
 uploadFile.label = Upload a file
 uploadFile.dropFile = or drop file
 uploadFile.caption = Upload a file
+uploadFile.entityTooLarge = The selected file must be either in CSV or Excel format. The file size must be smaller than 1GB
+uploadFile.rejected = The file you uploaded is not recognised. The selected file must be in CSV or Excel format
+uploadFile.invalidArgument = Select a file that you want to submit as your monthly report
+uploadFile.failed = There was a problem uploading your file
+
+fileUploadFailed.title = The selected file could not be uploaded
+fileUploadFailed.heading = The selected file could not be uploaded
+fileUploadFailed.p1 = There was a problem uploading the selected file - try again.
+fileUploadFailed.callToAction = Back to file upload
+
+declaration.title = Declaration
+declaration.heading = Declaration
+declaration.p1 = By agreeing to this declaration, I confirm that:
+declaration.li1 = the monthly report is a complete record of subscription events and transfers in the relevant period in relation to each account
+declaration.li2 = it has been submitted on time
+declaration.li3 = I understand that if my circumstances change I'll notify HM Revenue and Customs immediately
+declaration.p4 = This means that you have met the reporting requirements.
+declaration.button = I agree - submit
+
+declaration.title.nilReturn = Declaration for nil report
+declaration.heading.nilReturn = Declaration for nil report
+declaration.p2.nilReturn = If there are no changes to all accounts held and you are submitting a nil report - you do not need to upload a file.
+declaration.p3.nilReturn = You must still agree to this declaration to confirm that there are no changes.

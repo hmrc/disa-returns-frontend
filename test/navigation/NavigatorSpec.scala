@@ -18,30 +18,53 @@ package navigation
 
 import base.SpecBase
 import controllers.routes
+import models.{CheckMode, MonthlyReturn, NormalMode}
 import pages._
-import models._
+import play.api.mvc.Call
 
 class NavigatorSpec extends SpecBase {
 
   val navigator = new Navigator
 
+  private def monthlyReturn(nilReturn: Boolean): MonthlyReturn =
+    MonthlyReturn(testSubmissionId, nilReturn)
+
   "Navigator" - {
 
     "in Normal mode" - {
 
-      "must go from a page that doesn't exist in the route map to Index" in {
+      "must go from MonthlyReportSubmissionPage to the file upload placeholder when the user is uploading a report" in {
+        navigator.nextPage(
+          MonthlyReportSubmissionPage,
+          NormalMode,
+          monthlyReturn(nilReturn = false)
+        ) mustBe routes.UploadFileController.onPageLoad()
+      }
 
+      "must go from MonthlyReportSubmissionPage to the nil report CYA placeholder when the user has a nil report" in {
+        navigator.nextPage(
+          MonthlyReportSubmissionPage,
+          NormalMode,
+          monthlyReturn(nilReturn = true)
+        ) mustBe routes.IndexController.onPageLoad()
+      }
+
+      "must go from a page that doesn't exist in the route map to Index" in {
         case object UnknownPage extends Page
-        navigator.nextPage(UnknownPage, NormalMode, UserAnswers("id")) mustBe routes.IndexController.onPageLoad()
+        navigator.nextPage(UnknownPage, NormalMode, monthlyReturn(nilReturn = false)) mustBe routes.IndexController
+          .onPageLoad()
       }
     }
 
     "in Check mode" - {
 
       "must go from a page that doesn't exist in the edit route map to CheckYourAnswers" in {
-
         case object UnknownPage extends Page
-        navigator.nextPage(UnknownPage, CheckMode, UserAnswers("id")) mustBe routes.CheckYourAnswersController
+        navigator.nextPage(
+          UnknownPage,
+          CheckMode,
+          monthlyReturn(nilReturn = false)
+        ) mustBe routes.CheckYourAnswersController
           .onPageLoad()
       }
     }

@@ -18,13 +18,16 @@ package controllers
 
 import base.SpecBase
 import models.upscan.{UploadRequest, UpscanInitiateResponse}
-import org.mockito.Mockito.*
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.inject.bind
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import service.UpscanService
+import services.UpscanService
 import views.html.UploadFileView
+import uk.gov.hmrc.http.HeaderCarrier
+import viewmodels.UploadViewModel
 
 import scala.concurrent.Future
 
@@ -50,7 +53,7 @@ class UploadFileControllerSpec extends SpecBase {
         )
       )
 
-      when(mockUpscanService.initiate())
+      when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
         .thenReturn(Future.successful(upscanResponse))
 
       val application = applicationBuilder()
@@ -67,7 +70,10 @@ class UploadFileControllerSpec extends SpecBase {
         val view = application.injector.instanceOf[UploadFileView]
 
         status(result) mustEqual OK
-        contentAsString(result) mustEqual view(upscanResponse)(request, messages(application)).toString
+        contentAsString(result) mustEqual view(UploadViewModel(upscan = upscanResponse, error = None))(
+          request,
+          messages(application)
+        ).toString
       }
     }
 
@@ -75,7 +81,7 @@ class UploadFileControllerSpec extends SpecBase {
 
       val mockUpscanService = mock[UpscanService]
 
-      when(mockUpscanService.initiate())
+      when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
         .thenReturn(Future.failed(new RuntimeException("Upscan failed")))
 
       val application = applicationBuilder()
