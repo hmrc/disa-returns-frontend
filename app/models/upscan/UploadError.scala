@@ -19,13 +19,14 @@ package models.upscan
 object UploadError {
 
   def toMessageKey(errorCode: String): String = errorCode.takeWhile(_ != ' ') match {
-    case "EntityTooLarge"  => "uploadFile.entityTooLarge"
-    case "InvalidArgument" => "uploadFile.invalidArgument"
-    case "EntityTooSmall"  =>
+    case "EntityTooLarge"    => "uploadFile.entityTooLarge"
+    case "InvalidArgument"   => "uploadFile.invalidArgument"
+    case "UnexpectedContent" => "uploadFile.rejected"
+    case "EntityTooSmall"    =>
       // Upscan has an issue detecting whether a file has been selected when minimum file size is 0.
       // Setting a positive minimum file size causes an unselected file to produce EntityTooSmall,
       // which we map to the same message as InvalidArgument so the user sees the expected error.
       "uploadFile.invalidArgument"
-    case _                 => "uploadFile.failed"
+    case _                   => "uploadFile.failed"
   }
 }
