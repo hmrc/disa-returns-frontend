@@ -17,18 +17,45 @@
 package controllers
 
 import base.SpecBase
-import models.upscan.UpscanInitiateResponse
+import models.upscan.{UploadRequest, UpscanInitiateResponse}
+import org.mockito.Mockito.*
+import org.scalatestplus.mockito.MockitoSugar.mock
+import play.api.inject.bind
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
+import service.UpscanService
 import views.html.UploadFileView
+
+import scala.concurrent.Future
 
 class UploadFileControllerSpec extends SpecBase {
 
   "UploadFile Controller" - {
 
-    "must return OK and the correct view for a GET" in {
+    "must return OK and render the view when Upscan service succeeds" in {
 
-      val application = applicationBuilder().build()
+      val mockUpscanService = mock[UpscanService]
+
+      val upscanResponse = UpscanInitiateResponse(
+        reference = "test-reference",
+        uploadRequest = UploadRequest(
+          href = "https://upscan/upload",
+          fields = Map(
+            "key"              -> "mock-key",
+            "policy"           -> "mock-policy",
+            "x-amz-algorithm"  -> "mock-algorithm",
+            "x-amz-credential" -> "mock-credential",
+            "x-amz-signature"  -> "mock-signature"
+          )
+        )
+      )
+
+      when(mockUpscanService.initiate())
+        .thenReturn(Future.successful(upscanResponse))
+
+      val application = applicationBuilder()
+        .overrides(bind[UpscanService].toInstance(mockUpscanService))
+        .build()
 
       running(application) {
 
@@ -39,21 +66,30 @@ class UploadFileControllerSpec extends SpecBase {
 
         val view = application.injector.instanceOf[UploadFileView]
 
-        val upscanResponse = UpscanInitiateResponse(
-          uploadUrl = routes.IndexController.onPageLoad().url,
-          formFields = Map(
-            "key" -> "mock-key",
-            "policy" -> "mock-policy",
-            "x-amz-algorithm" -> "mock-algorithm",
-            "x-amz-credential" -> "mock-credential",
-            "x-amz-signature" -> "mock-signature"
-          )
-        )
-
         status(result) mustEqual OK
+        contentAsString(result) mustEqual view(upscanResponse)(request, messages(application)).toString
+      }
+    }
 
-        contentAsString(result) mustEqual
-          view(upscanResponse)(request, messages(application)).toString
+    "must return InternalServerError when Upscan service fails" in {
+
+      val mockUpscanService = mock[UpscanService]
+
+      when(mockUpscanService.initiate())
+        .thenReturn(Future.failed(new RuntimeException("Upscan failed")))
+
+      val application = applicationBuilder()
+        .overrides(bind[UpscanService].toInstance(mockUpscanService))
+        .build()
+
+      running(application) {
+
+        val request =
+          FakeRequest(GET, routes.UploadFileController.onPageLoad().url)
+
+        val result = route(application, request).value
+
+        status(result) mustEqual INTERNAL_SERVER_ERROR
       }
     }
   }

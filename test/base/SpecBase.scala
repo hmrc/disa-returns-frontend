@@ -16,17 +16,23 @@
 
 package base
 
-import controllers.actions._
+import controllers.actions.*
 import models.UserAnswers
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{OptionValues, TryValues}
+import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.Application
 import play.api.i18n.{Messages, MessagesApi}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeRequest
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
+
+import java.net.http.HttpRequest
+import scala.concurrent.ExecutionContext
 
 trait SpecBase
     extends AnyFreeSpec
@@ -38,15 +44,31 @@ trait SpecBase
 
   val userAnswersId: String = "id"
 
-  def emptyUserAnswers: UserAnswers = UserAnswers(userAnswersId)
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val hc: HeaderCarrier    = HeaderCarrier()
 
-  def messages(app: Application): Messages = app.injector.instanceOf[MessagesApi].preferred(FakeRequest())
+  protected val mockHttpClient: HttpClientV2       = mock[HttpClientV2]
+  protected val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
 
-  protected def applicationBuilder(userAnswers: Option[UserAnswers] = None): GuiceApplicationBuilder =
+  protected def emptyUserAnswers: UserAnswers = UserAnswers(userAnswersId)
+
+  protected def messages(app: Application): Messages =
+    app.injector
+      .instanceOf[MessagesApi]
+      .preferred(FakeRequest())
+
+  protected def applicationBuilder(
+    userAnswers: Option[UserAnswers] = None
+  ): GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
+      .configure(
+        "microservices.upscan.base-url" -> "http://localhost:9999"
+      )
       .overrides(
         bind[DataRequiredAction].to[DataRequiredActionImpl],
         bind[IdentifierAction].to[FakeIdentifierAction],
-        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(userAnswers))
+        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(userAnswers)),
+        bind[HttpClientV2].toInstance(mockHttpClient),
+        bind[RequestBuilder].toInstance(mockRequestBuilder)
       )
 }

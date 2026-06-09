@@ -45,9 +45,9 @@
         <p>@messages("uploadFile.p4")</p>
 
 
-        <form method="POST" action="@upscanResponse.uploadUrl" id="file-upload-form" enctype="multipart/form-data">
+        <form method="POST" action="@upscanResponse.uploadRequest.href" id="file-upload-form" enctype="multipart/form-data">
 
-            @for((key, value) <- upscanResponse.formFields) {
+            @for((key, value) <- upscanResponse.uploadRequest.fields) {
                 <input type="hidden" name="@key" value="@value"/>
             }
 

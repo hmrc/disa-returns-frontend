@@ -18,22 +18,17 @@ package models.upscan
 
 import play.api.libs.json.*
 
-case class UpscanInitiateResponse(
-                                   reference: String,
-                                   uploadRequest: UploadRequest
-                                 )
+case class UpscanInitiateRequest(
+                                  callbackUrl: String,
+                                  successRedirect: Option[String],
+                                  errorRedirect: Option[String],
+                                  minimumFileSize: Option[Long],
+                                  maximumFileSize: Option[Long],
+                                  expectedFileType: Option[String]
+                                )
 
-case class UploadRequest(
-                          href: String,
-                          fields: Map[String, String]
-                        )
+object UpscanInitiateRequest {
 
-object UploadRequest {
-  implicit val format: OFormat[UploadRequest] =
-    Json.format[UploadRequest]
-}
-
-object UpscanInitiateResponse {
-  implicit val format: OFormat[UpscanInitiateResponse] =
-    Json.format[UpscanInitiateResponse]
+  implicit val format: OFormat[UpscanInitiateRequest] =
+    Json.format[UpscanInitiateRequest]
 }

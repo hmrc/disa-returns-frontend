@@ -17,38 +17,42 @@
 package controllers
 
 import controllers.actions.IdentifierAction
+import handlers.ErrorHandler
+import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import service.UpscanService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import views.html.UploadFileView
-import models.upscan.UpscanInitiateResponse
 
 import javax.inject.Inject
+import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
 
+class UploadFileController @Inject() (
+  override val messagesApi: MessagesApi,
+  identify: IdentifierAction,
+  upscanService: UpscanService,
+  val controllerComponents: MessagesControllerComponents,
+  view: UploadFileView,
+  errorHandler: ErrorHandler
+)(implicit ec: ExecutionContext)
+    extends FrontendBaseController
+    with I18nSupport
+    with Logging {
 
-
-class UploadFileController @Inject()(
-                                      override val messagesApi: MessagesApi,
-                                      identify: IdentifierAction,
-                                      val controllerComponents: MessagesControllerComponents,
-                                      view: UploadFileView
-                                    ) extends FrontendBaseController
-  with I18nSupport {
-
-
-  def onPageLoad(): Action[AnyContent] = identify { implicit request =>
-    val upscanResponse = UpscanInitiateResponse(
-      uploadUrl = routes.IndexController.onPageLoad().url,
-      formFields = Map(
-        "key" -> "mock-key",
-        "policy" -> "mock-policy",
-        "x-amz-algorithm" -> "mock-algorithm",
-        "x-amz-credential" -> "mock-credential",
-        "x-amz-signature" -> "mock-signature"
-      )
-    )
-
-    Ok(view(upscanResponse))
-  }
-
+  def onPageLoad(): Action[AnyContent] =
+    identify.async { implicit request =>
+      upscanService
+        .initiate()
+        .map { upscanResponse =>
+          Ok(view(upscanResponse))
+        }
+        .recoverWith { case NonFatal(ex) =>
+          logger.error(
+            s"[UploadFileController][onPageLoad] Request to upscan initiate failed with exception: [$ex]"
+          )
+          errorHandler.internalServerError(request)
+        }
+    }
 }
