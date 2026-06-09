@@ -23,8 +23,9 @@ import javax.inject.{Inject, Singleton}
 
 @Singleton
 class UpscanResultController @Inject() (
-                                         cc: ControllerComponents,
-                                       ) extends AbstractController(cc) with Logging {
+  cc: ControllerComponents
+) extends AbstractController(cc)
+    with Logging {
 
   def success: Action[AnyContent] = Action { implicit request =>
     Ok("✅ Upscan SUCCESS redirect received")

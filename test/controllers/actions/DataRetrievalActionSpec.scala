@@ -18,7 +18,7 @@ package controllers.actions
 
 import base.SpecBase
 import models.requests.{IdentifierRequest, OptionalDataRequest}
-import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.FakeRequest

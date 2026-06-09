@@ -40,6 +40,8 @@ GET         /invalid-file-type                           controllers.FileUploadE
 
 GET         /duplicate-file-upload                       controllers.FileUploadErrorController.duplicateFileUpload()
 
+GET         /file-upload/error                           controllers.UploadFileController.onError()
+
 GET         /file-upload                                 controllers.UploadFileController.onPageLoad()
 
 GET         /file-upload-failed                          controllers.FileUploadErrorController.fileUploadFailed()

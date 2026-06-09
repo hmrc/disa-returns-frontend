@@ -20,7 +20,7 @@ import base.SpecBase
 import config.FrontendAppConfig
 import connectors.UpscanConnector
 import models.upscan.{UpscanInitiateRequest, UpscanInitiateResponse}
-import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
 import utils.DateHelper
@@ -72,7 +72,7 @@ class UpscanServiceSpec extends SpecBase with MockitoSugar {
         callbackUrl =
           s"http://backend/disa-returns-backend/monthly/upscan/callback/$testZReference/${dateHelper.taxYear}/${dateHelper.month}",
         successRedirect = Some("http://localhost:12804/upscan/success"),
-        errorRedirect = Some("http://localhost:12804/file-upload"),
+        errorRedirect = Some("http://localhost:12804/file-upload/error"),
         minimumFileSize = Some(1L),
         maximumFileSize = Some(1000L),
         expectedFileType = Some("application/pdf")

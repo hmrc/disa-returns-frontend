@@ -18,7 +18,7 @@ package services
 
 import base.SpecBase
 import connectors.BackendConnector
-import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status.{CONFLICT, NOT_FOUND}

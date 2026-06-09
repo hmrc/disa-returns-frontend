@@ -44,8 +44,12 @@ class UploadFileController @Inject() (
     with I18nSupport
     with Logging {
 
-  def onPageLoad(): Action[AnyContent] = (identify andThen getData).async { implicit request =>
+  def onError(): Action[AnyContent] = Action { implicit request =>
+    val errorCode = request.getQueryString("errorCode").getOrElse("failed")
+    Redirect(routes.UploadFileController.onPageLoad().url, Map("errorCode" -> Seq(errorCode)))
+  }
 
+  def onPageLoad(): Action[AnyContent] = (identify andThen getData).async { implicit request =>
     val error: Option[String] =
       request.getQueryString("errorCode").map(UploadError.toMessageKey)
 

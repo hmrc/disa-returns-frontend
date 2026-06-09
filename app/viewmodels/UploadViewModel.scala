@@ -19,6 +19,6 @@ package viewmodels
 import models.upscan.UpscanInitiateResponse
 
 final case class UploadViewModel(
-                                  upscan: UpscanInitiateResponse,
-                                  error: Option[String]
-                                )
+  upscan: UpscanInitiateResponse,
+  error: Option[String]
+)

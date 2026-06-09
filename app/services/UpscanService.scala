@@ -37,7 +37,7 @@ class UpscanService @Inject() (
         callbackUrl =
           s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly/upscan/callback/$zReference/${dateHelper.taxYear}/${dateHelper.month}",
         successRedirect = Some(s"${appConfig.host}/upscan/success"),
-        errorRedirect = Some(s"${appConfig.host}/file-upload"),
+        errorRedirect = Some(s"${appConfig.host}/file-upload/error"),
         minimumFileSize = Some(appConfig.upscanMinFileSize),
         maximumFileSize = Some(appConfig.upscanMaxFileSize),
         expectedFileType = Some(appConfig.upscanAcceptedMimeTypes)

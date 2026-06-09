@@ -42,7 +42,6 @@ class Navigator @Inject() () {
     }
 
   private def fileUploadJourneyRoute: Call =
-    // TODO DFI-2156: replace placeholder with file upload journey route.
     routes.UploadFileController.onPageLoad()
 
   private def nilReturnCheckYourAnswersRoute: Call =

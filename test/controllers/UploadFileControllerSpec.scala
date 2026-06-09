@@ -18,7 +18,7 @@ package controllers
 
 import base.SpecBase
 import models.upscan.{UploadRequest, UpscanInitiateResponse}
-import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.inject.bind
@@ -77,6 +77,41 @@ class UploadFileControllerSpec extends SpecBase {
       }
     }
 
+    "must return OK and render the view with an error when Upscan service succeeds and errorCode is present" in {
+
+      val mockUpscanService = mock[UpscanService]
+
+      val upscanResponse = UpscanInitiateResponse(
+        reference = "test-reference",
+        uploadRequest = UploadRequest(
+          href = "https://upscan/upload",
+          fields = Map.empty
+        )
+      )
+
+      when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
+        .thenReturn(Future.successful(upscanResponse))
+
+      val application = applicationBuilder()
+        .overrides(bind[UpscanService].toInstance(mockUpscanService))
+        .build()
+
+      running(application) {
+
+        val request =
+          FakeRequest(GET, routes.UploadFileController.onPageLoad().url + "?errorCode=EntityTooLarge")
+
+        val result = route(application, request).value
+
+        val view = application.injector.instanceOf[UploadFileView]
+
+        status(result) mustEqual OK
+        contentAsString(result) mustEqual view(
+          UploadViewModel(upscan = upscanResponse, error = Some("uploadFile.entityTooLarge"))
+        )(request, messages(application)).toString
+      }
+    }
+
     "must return InternalServerError when Upscan service fails" in {
 
       val mockUpscanService = mock[UpscanService]
@@ -96,6 +131,46 @@ class UploadFileControllerSpec extends SpecBase {
         val result = route(application, request).value
 
         status(result) mustEqual INTERNAL_SERVER_ERROR
+      }
+    }
+  }
+
+  "onError" - {
+
+    "must redirect to onPageLoad with the errorCode query parameter" in {
+
+      val application = applicationBuilder().build()
+
+      running(application) {
+
+        val request =
+          FakeRequest(
+            GET,
+            routes.UploadFileController.onError().url +
+              "?errorCode=EntityTooLarge&key=some-key&errorMessage=some+message&errorRequestId=some-id&errorResource=some-resource"
+          )
+
+        val result = route(application, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual
+          routes.UploadFileController.onPageLoad().url + "?errorCode=EntityTooLarge"
+      }
+    }
+
+    "must redirect to onPageLoad with errorCode=failed when no errorCode is present" in {
+
+      val application = applicationBuilder().build()
+
+      running(application) {
+
+        val request = FakeRequest(GET, routes.UploadFileController.onError().url)
+
+        val result = route(application, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual
+          routes.UploadFileController.onPageLoad().url + "?errorCode=failed"
       }
     }
   }
