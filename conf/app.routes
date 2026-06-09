@@ -25,6 +25,10 @@ GET         /download-report-template                    controllers.DownloadRep
 GET         /monthly-report-submission                   controllers.MonthlyReportSubmissionController.onPageLoad()
 POST        /monthly-report-submission                   controllers.MonthlyReportSubmissionController.onSubmit()
 
+# TODO: Wire onward upload and remove-confirmation routes when the related journeys are available.
+GET         /uploaded-report-files                       controllers.UploadedReportFilesController.onPageLoad()
+POST        /uploaded-report-files                       controllers.UploadedReportFilesController.onSubmit()
+
 GET         /problem-with-uploaded-file                  controllers.ProblemWithUploadedFileController.onPageLoad()
 
 GET         /file-formatting-errors                      controllers.FileFormattingErrorsController.onPageLoad()

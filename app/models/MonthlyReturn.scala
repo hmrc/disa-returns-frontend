@@ -23,12 +23,31 @@ import scala.util.Try
 
 case class MonthlyReturn(
   submissionId: UUID,
-  nilReturn: Boolean
+  nilReturn: Boolean,
+  fileUploads: Seq[FileUpload] = Seq.empty
 )
 
 case class CreateMonthlyReturnResponse(
   submissionId: UUID
 )
+
+case class FileUpload(
+  reference: String,
+  status: String,
+  fileUploadDetails: Option[FileUploadDetails] = None
+) {
+
+  def isSuccessful: Boolean =
+    status == FileUploadStatus.UpscanSuccess
+}
+
+case class FileUploadDetails(
+  fileName: String
+)
+
+object FileUploadStatus {
+  val UpscanSuccess: String = "UPSCAN_SUCCESS"
+}
 
 object MonthlyReturn {
 
@@ -43,8 +62,14 @@ object MonthlyReturn {
       Writes(uuid => JsString(uuid.toString))
     )
 
+  implicit val fileUploadDetailsFormat: OFormat[FileUploadDetails] =
+    Json.format[FileUploadDetails]
+
+  implicit val fileUploadFormat: OFormat[FileUpload] =
+    Json.using[Json.WithDefaultValues].format[FileUpload]
+
   implicit val format: OFormat[MonthlyReturn] =
-    Json.format[MonthlyReturn]
+    Json.using[Json.WithDefaultValues].format[MonthlyReturn]
 }
 
 object CreateMonthlyReturnResponse {

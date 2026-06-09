@@ -1,0 +1,94 @@
+@*
+ * Copyright 2026 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import controllers.routes.IndexController
+@import controllers.routes.UploadedReportFilesController
+@import models.{FileUpload, YesNoAnswer}
+@import uk.gov.hmrc.hmrcfrontend.views.html.components.{HmrcListWithActions, HmrcPageHeading}
+@import uk.gov.hmrc.hmrcfrontend.views.viewmodels.listwithactions.{ListWithActions, ListWithActionsAction, ListWithActionsItem}
+@import uk.gov.hmrc.hmrcfrontend.views.viewmodels.pageheading.PageHeading
+
+@this(
+    layout: templates.Layout,
+    formHelper: FormWithCSRF,
+    govukErrorSummary: GovukErrorSummary,
+    govukRadios: GovukRadios,
+    govukButton: GovukButton,
+    hmrcPageHeading: HmrcPageHeading,
+    hmrcListWithActions: HmrcListWithActions
+)
+
+@(form: Form[_], files: Seq[FileUpload])(implicit request: Request[_], messages: Messages)
+
+@pageTitleKey = @{
+    if (files.size == 1) "uploadedReportFiles.title.one"
+    else "uploadedReportFiles.title.many"
+}
+
+@headingText = @{
+    if (files.size == 1) messages("uploadedReportFiles.heading.one")
+    else messages("uploadedReportFiles.heading.many", files.size)
+}
+
+@fileList = @{
+    ListWithActions(
+        classes = "hmrc-list-with-actions--short",
+        items = files.flatMap(_.fileUploadDetails).map { details =>
+            ListWithActionsItem(
+                name = Text(details.fileName),
+                actions = Seq(
+                    ListWithActionsAction(
+                        href = IndexController.onPageLoad().url,
+                        content = Text(messages("site.remove")),
+                        visuallyHiddenText = Some(details.fileName)
+                    )
+                )
+            )
+        }
+    )
+}
+
+@layout(pageTitle = title(form, messages(pageTitleKey, files.size)), showBackLink = false) {
+
+    @formHelper(action = UploadedReportFilesController.onSubmit(), Symbol("autoComplete") -> "off") {
+
+        @if(form.errors.nonEmpty) {
+            @govukErrorSummary(ErrorSummaryViewModel(form, errorLinkOverrides = Map("value" -> "value_0")))
+        }
+
+        @hmrcPageHeading(PageHeading(
+            text = headingText,
+            headingClasses = Some("govuk-heading-l")
+        ))
+
+        @if(files.nonEmpty) {
+            @* TODO: Wire remove actions to the remove file confirmation journey once that route is available. *@
+            @hmrcListWithActions(fileList)
+        }
+
+        @govukRadios(
+            RadiosViewModel(
+                field = form("value"),
+                legend = LegendViewModel(Text(messages("uploadedReportFiles.question"))).withCssClass("govuk-fieldset__legend--m"),
+                items = YesNoAnswer.options()
+            ).inline()
+        )
+
+        @govukButton(
+            ButtonViewModel(Text(messages("site.continue")))
+        )
+    }
+}
