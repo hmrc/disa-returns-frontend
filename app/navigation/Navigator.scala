@@ -36,7 +36,7 @@ class Navigator @Inject() () {
 
   private def monthlyReturnRoute(monthlyReturn: MonthlyReturn): Call =
     if (monthlyReturn.nilReturn) {
-      nilReturnCheckYourAnswersRoute
+      checkYourAnswersRoute
     } else {
       fileUploadJourneyRoute
     }
@@ -45,8 +45,14 @@ class Navigator @Inject() () {
     // TODO DFI-2156: replace placeholder with file upload journey route.
     routes.IndexController.onPageLoad()
 
-  private def nilReturnCheckYourAnswersRoute: Call =
-    // TODO DFI-2120: replace placeholder with nil report CYA journey route.
+  private def uploadedReportFilesRoute(answer: YesNoAnswer): Call =
+    answer match {
+      case YesNoAnswer.Yes => fileUploadJourneyRoute
+      case YesNoAnswer.No  => checkYourAnswersRoute
+    }
+
+  private def checkYourAnswersRoute: Call =
+    // TODO DFI-2120: replace placeholder with n CYA journey route.
     routes.IndexController.onPageLoad()
 
   def nextPage(page: Page, mode: Mode, monthlyReturn: MonthlyReturn): Call = mode match {
@@ -54,5 +60,15 @@ class Navigator @Inject() () {
       normalRoutes(page)(monthlyReturn)
     case CheckMode  =>
       checkRouteMap(page)(monthlyReturn)
+  }
+
+  def nextPage(page: Page, mode: Mode, answer: YesNoAnswer): Call = mode match {
+    case NormalMode =>
+      page match {
+        case UploadedReportFilesPage => uploadedReportFilesRoute(answer)
+        case _                       => routes.IndexController.onPageLoad()
+      }
+    case CheckMode  =>
+      routes.CheckYourAnswersController.onPageLoad()
   }
 }

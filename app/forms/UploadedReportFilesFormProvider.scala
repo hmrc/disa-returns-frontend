@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package navigation
+package forms
 
-import models.{Mode, MonthlyReturn, YesNoAnswer}
-import pages._
-import play.api.mvc.Call
+import forms.mappings.Mappings
+import models.YesNoAnswer
+import play.api.data.Form
 
-class FakeNavigator(desiredRoute: Call) extends Navigator {
+import javax.inject.Inject
 
-  override def nextPage(page: Page, mode: Mode, monthlyReturn: MonthlyReturn): Call =
-    desiredRoute
+class UploadedReportFilesFormProvider @Inject() extends Mappings {
 
-  override def nextPage(page: Page, mode: Mode, answer: YesNoAnswer): Call =
-    desiredRoute
+  def apply(): Form[YesNoAnswer] =
+    Form(
+      "value" -> enumerable[YesNoAnswer](
+        requiredKey = "uploadedReportFiles.error.required"
+      )
+    )
 }

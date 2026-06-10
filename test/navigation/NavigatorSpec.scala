@@ -18,6 +18,7 @@ package navigation
 
 import base.SpecBase
 import controllers.routes
+import models.YesNoAnswer.{No, Yes}
 import models.{CheckMode, MonthlyReturn, NormalMode}
 import pages._
 import play.api.mvc.Call
@@ -54,6 +55,22 @@ class NavigatorSpec extends SpecBase {
         navigator.nextPage(UnknownPage, NormalMode, monthlyReturn(nilReturn = false)) mustBe routes.IndexController
           .onPageLoad()
       }
+
+      "must go from UploadedReportFilesPage to the file upload placeholder when the user wants to add another file" in {
+        navigator.nextPage(
+          UploadedReportFilesPage,
+          NormalMode,
+          Yes
+        ) mustBe routes.IndexController.onPageLoad()
+      }
+
+      "must go from UploadedReportFilesPage to Check Your Answers when the user does not want to add another file" in {
+        navigator.nextPage(
+          UploadedReportFilesPage,
+          NormalMode,
+          No
+        ) mustBe routes.IndexController.onPageLoad()
+      }
     }
 
     "in Check mode" - {
@@ -64,6 +81,15 @@ class NavigatorSpec extends SpecBase {
           UnknownPage,
           CheckMode,
           monthlyReturn(nilReturn = false)
+        ) mustBe routes.CheckYourAnswersController
+          .onPageLoad()
+      }
+
+      "must go from UploadedReportFilesPage to Check Your Answers" in {
+        navigator.nextPage(
+          UploadedReportFilesPage,
+          CheckMode,
+          Yes
         ) mustBe routes.CheckYourAnswersController
           .onPageLoad()
       }

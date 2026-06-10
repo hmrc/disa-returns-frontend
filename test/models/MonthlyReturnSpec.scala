@@ -48,6 +48,49 @@ class MonthlyReturnSpec extends SpecBase {
         MonthlyReturn(testSubmissionId, nilReturn = true)
       )
     }
+
+    "must read successful file upload details returned by the backend" in {
+      val json = Json.obj(
+        "zReference"   -> testZReference,
+        "submissionId" -> testSubmissionId,
+        "taxYear"      -> testTaxYear,
+        "month"        -> testMonth,
+        "nilReturn"    -> false,
+        "fileUploads"  -> Json.arr(
+          Json.obj(
+            "reference"         -> "successful-reference",
+            "status"            -> FileUploadStatus.UpscanSuccess,
+            "createdOn"         -> "2026-03-15T12:00:00Z",
+            "fileUploadDetails" -> Json.obj(
+              "fileName"          -> "return.csv",
+              "fileMimeType"      -> "text/csv",
+              "uploadTimestamp"   -> "2026-03-15T12:01:00Z",
+              "checksum"          -> "checksum",
+              "size"              -> 123,
+              "upscanDownloadUrl" -> "https://example.com/file",
+              "upscanCompletedOn" -> "2026-03-15T12:02:00Z"
+            )
+          )
+        ),
+        "declaredOn"   -> "2026-03-15T12:03:00Z",
+        "createdOn"    -> "2026-03-15T12:00:00Z",
+        "lastUpdated"  -> "2026-03-15T12:00:00Z"
+      )
+
+      json.validate[MonthlyReturn] mustEqual JsSuccess(
+        MonthlyReturn(
+          testSubmissionId,
+          nilReturn = false,
+          fileUploads = Seq(
+            FileUpload(
+              reference = "successful-reference",
+              status = FileUploadStatus.UpscanSuccess,
+              fileUploadDetails = Some(FileUploadDetails("return.csv"))
+            )
+          )
+        )
+      )
+    }
   }
 
   "CreateMonthlyReturnResponse" - {

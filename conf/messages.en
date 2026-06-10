@@ -70,6 +70,13 @@ monthlyReportSubmission.yes = Yes - I am uploading a report
 monthlyReportSubmission.no = No - I have a nil report
 monthlyReportSubmission.error.required = Select yes, if you are uploading a monthly report
 
+uploadedReportFiles.title.one = You have added 1 report file
+uploadedReportFiles.title.many = You have added {0} report files
+uploadedReportFiles.heading.one = You have added 1 report file
+uploadedReportFiles.heading.many = You have added {0} report files
+uploadedReportFiles.question = Do you need to add another file?
+uploadedReportFiles.error.required = Select yes, if you are uploading another file
+
 problemWithUploadedFile.title = There is a problem with your uploaded file
 problemWithUploadedFile.heading = There is a problem with your uploaded file
 problemWithUploadedFile.p1 = The header rows or columns have been changed.
