@@ -61,7 +61,7 @@ class NavigatorSpec extends SpecBase {
           UploadedReportFilesPage,
           NormalMode,
           Yes
-        ) mustBe routes.IndexController.onPageLoad()
+        ) mustBe routes.UploadFileController.onPageLoad()
       }
 
       "must go from UploadedReportFilesPage to Check Your Answers when the user does not want to add another file" in {
