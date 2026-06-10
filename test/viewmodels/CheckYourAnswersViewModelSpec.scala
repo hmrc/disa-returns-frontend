@@ -86,7 +86,7 @@ class CheckYourAnswersViewModelSpec extends SpecBase {
         rows.head.actions.value.items.head.href mustEqual routes.MonthlyReportSubmissionController.onPageLoad().url
 
         rows(1).key.content mustEqual Text("Files")
-        rows(1).value.content mustEqual HtmlContent("file1.csv<br>file2.csv")
+        rows(1).value.content mustEqual HtmlContent("file1.csv,<br>file2.csv")
         rows(1).actions.value.items.head.href mustEqual routes.UploadedReportFilesController.onPageLoad().url
       }
     }

@@ -65,7 +65,9 @@ object CheckYourAnswersViewModel {
           actions = Seq(
             changeAction(
               routes.UploadedReportFilesController.onPageLoad().url,
-              messages("checkYourAnswers.files.change.hidden")
+              if (monthlyReturn.fileUploads.sizeIs == 1)
+                monthlyReturn.fileUploads.head.fileUploadDetails.fold("missing filename")(_.fileName)
+              else messages("checkYourAnswers.files.change.hidden")
             )
           )
         )
@@ -85,7 +87,7 @@ object CheckYourAnswersViewModel {
       .flatMap(_.fileUploadDetails)
       .map(details => HtmlFormat.escape(details.fileName).toString)
 
-    HtmlContent(fileNames.mkString("<br>"))
+    HtmlContent(fileNames.mkString(",<br>"))
   }
 
   private def changeAction(href: String, visuallyHiddenText: String)(implicit messages: Messages): ActionItem =
