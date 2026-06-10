@@ -46,10 +46,10 @@ class UpscanServiceSpec extends SpecBase with MockitoSugar {
         .thenReturn("http://localhost:12804")
 
       when(appConfig.upscanMinFileSize)
-        .thenReturn(1)
+        .thenReturn(testUpscanMinFileSize)
 
       when(appConfig.upscanMaxFileSize)
-        .thenReturn(1000)
+        .thenReturn(testUpscanMaxFileSize)
 
       when(appConfig.upscanAcceptedMimeTypes)
         .thenReturn("application/pdf")
@@ -73,8 +73,8 @@ class UpscanServiceSpec extends SpecBase with MockitoSugar {
           s"http://backend/disa-returns-backend/monthly/upscan/callback/$testZReference/${dateHelper.taxYear}/${dateHelper.month}",
         successRedirect = Some("http://localhost:12804/upscan/success"),
         errorRedirect = Some("http://localhost:12804/file-upload/error"),
-        minimumFileSize = Some(1L),
-        maximumFileSize = Some(1000L),
+        minimumFileSize = Some(testUpscanMinFileSize),
+        maximumFileSize = Some(testUpscanMaxFileSize),
         expectedFileType = Some("application/pdf")
       )
 

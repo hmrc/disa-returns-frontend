@@ -53,8 +53,8 @@ class UpscanConnectorSpec extends SpecBase {
             callbackUrl = "http://test/callback",
             successRedirect = Some("http://test/success"),
             errorRedirect = Some("http://test/error"),
-            minimumFileSize = Some(1),
-            maximumFileSize = Some(1000000),
+            minimumFileSize = Some(testUpscanMinFileSize.toLong),
+            maximumFileSize = Some(testUpscanMaxFileSize.toLong),
             expectedFileType = Some("application/pdf")
           )
 
