@@ -19,7 +19,7 @@ package navigation
 import base.SpecBase
 import controllers.routes
 import models.YesNoAnswer.{No, Yes}
-import models.{CheckMode, MonthlyReturn, NormalMode}
+import models.MonthlyReturn
 import pages._
 import play.api.mvc.Call
 
@@ -42,24 +42,28 @@ class NavigatorSpec extends SpecBase {
         ) mustBe routes.UploadFileController.onPageLoad()
       }
 
-      "must go from MonthlyReportSubmissionPage to the nil report CYA placeholder when the user has a nil report" in {
+      "must go from MonthlyReportSubmissionPage to Check Your Answers when the user has a nil report" in {
         navigator.nextPage(
           MonthlyReportSubmissionPage,
-          NormalMode,
+          monthlyReturn(nilReturn = true)
+        ) mustBe routes.CheckYourAnswersController.onPageLoad()
+      }
+
+      "must go from CheckYourAnswersPage to the declaration placeholder" in {
+        navigator.nextPage(
+          CheckYourAnswersPage,
           monthlyReturn(nilReturn = true)
         ) mustBe routes.IndexController.onPageLoad()
       }
 
       "must go from a page that doesn't exist in the route map to Index" in {
         case object UnknownPage extends Page
-        navigator.nextPage(UnknownPage, NormalMode, monthlyReturn(nilReturn = false)) mustBe routes.IndexController
-          .onPageLoad()
+        navigator.nextPage(UnknownPage, monthlyReturn(nilReturn = false)) mustBe routes.IndexController.onPageLoad()
       }
 
       "must go from UploadedReportFilesPage to the file upload placeholder when the user wants to add another file" in {
         navigator.nextPage(
           UploadedReportFilesPage,
-          NormalMode,
           Yes
         ) mustBe routes.UploadFileController.onPageLoad()
       }
@@ -67,31 +71,8 @@ class NavigatorSpec extends SpecBase {
       "must go from UploadedReportFilesPage to Check Your Answers when the user does not want to add another file" in {
         navigator.nextPage(
           UploadedReportFilesPage,
-          NormalMode,
           No
-        ) mustBe routes.IndexController.onPageLoad()
-      }
-    }
-
-    "in Check mode" - {
-
-      "must go from a page that doesn't exist in the edit route map to CheckYourAnswers" in {
-        case object UnknownPage extends Page
-        navigator.nextPage(
-          UnknownPage,
-          CheckMode,
-          monthlyReturn(nilReturn = false)
-        ) mustBe routes.CheckYourAnswersController
-          .onPageLoad()
-      }
-
-      "must go from UploadedReportFilesPage to Check Your Answers" in {
-        navigator.nextPage(
-          UploadedReportFilesPage,
-          CheckMode,
-          Yes
-        ) mustBe routes.CheckYourAnswersController
-          .onPageLoad()
+        ) mustBe routes.CheckYourAnswersController.onPageLoad()
       }
     }
   }

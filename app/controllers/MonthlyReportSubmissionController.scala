@@ -19,7 +19,6 @@ package controllers
 import controllers.actions.{DataRetrievalAction, IdentifierAction}
 import forms.MonthlyReportSubmissionFormProvider
 import models.YesNoAnswer.{No, Yes}
-import models.NormalMode
 import navigation.Navigator
 import pages.MonthlyReportSubmissionPage
 import play.api.Logging
@@ -71,7 +70,7 @@ class MonthlyReportSubmissionController @Inject() (
           storageService
             .saveForThisWindow(request.zReference, request.monthlyReturn, nilReturn)
             .map { savedMonthlyReturn =>
-              Redirect(navigator.nextPage(MonthlyReportSubmissionPage, NormalMode, savedMonthlyReturn))
+              Redirect(navigator.nextPage(MonthlyReportSubmissionPage, savedMonthlyReturn))
             }
             .recover { case NonFatal(e) =>
               logger.error(

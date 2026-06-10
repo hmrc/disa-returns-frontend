@@ -18,7 +18,6 @@ package controllers
 
 import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
 import forms.UploadedReportFilesFormProvider
-import models.NormalMode
 import navigation.Navigator
 import pages.UploadedReportFilesPage
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -61,7 +60,7 @@ class UploadedReportFilesController @Inject() (
           ),
         answer =>
           Future.successful(
-            Redirect(navigator.nextPage(UploadedReportFilesPage, NormalMode, answer))
+            Redirect(navigator.nextPage(UploadedReportFilesPage, answer))
           )
       )
   }

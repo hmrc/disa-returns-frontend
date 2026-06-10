@@ -34,6 +34,9 @@ index.guidance = Welcome to your new frontend. Please see the README file for a 
 
 checkYourAnswers.title = Check your answers
 checkYourAnswers.heading = Check your answers
+checkYourAnswers.files = Files
+checkYourAnswers.reportSubmission.change.hidden = whether you are submitting a report file
+checkYourAnswers.files.change.hidden = uploaded files
 
 journeyRecovery.continue.title = Sorry, there is a problem with the service
 journeyRecovery.continue.heading = Sorry, there is a problem with the service
