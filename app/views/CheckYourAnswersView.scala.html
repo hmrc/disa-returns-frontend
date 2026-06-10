@@ -15,6 +15,7 @@
  *@
 
 @import controllers.routes.CheckYourAnswersController
+@import viewmodels.CheckYourAnswersViewModel
 
 @this(
     layout: templates.Layout,
@@ -23,7 +24,7 @@
     govukButton: GovukButton
 )
 
-@(list: SummaryList)(implicit request: Request[_], messages: Messages)
+@(viewModel: CheckYourAnswersViewModel)(implicit request: Request[_], messages: Messages)
 
 @layout(pageTitle = titleNoForm(messages("checkYourAnswers.title"))) {
 
@@ -31,7 +32,7 @@
 
         <h1 class="govuk-heading-l">@messages("checkYourAnswers.heading")</h1>
 
-        @govukSummaryList(list)
+        @govukSummaryList(viewModel.summaryList)
 
         @govukButton(
             ButtonViewModel(Text(messages("site.saveAndContinue")))

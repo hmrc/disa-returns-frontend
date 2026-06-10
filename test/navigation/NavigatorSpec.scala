@@ -32,48 +32,44 @@ class NavigatorSpec extends SpecBase {
 
   "Navigator" - {
 
-    "in Normal mode" - {
+    "must go from MonthlyReportSubmissionPage to the file upload placeholder when the user is uploading a report" in {
+      navigator.nextPage(
+        MonthlyReportSubmissionPage,
+        monthlyReturn(nilReturn = false)
+      ) mustBe routes.UploadFileController.onPageLoad()
+    }
 
-      "must go from MonthlyReportSubmissionPage to the file upload placeholder when the user is uploading a report" in {
-        navigator.nextPage(
-          MonthlyReportSubmissionPage,
-          NormalMode,
-          monthlyReturn(nilReturn = false)
-        ) mustBe routes.UploadFileController.onPageLoad()
-      }
+    "must go from MonthlyReportSubmissionPage to Check Your Answers when the user has a nil report" in {
+      navigator.nextPage(
+        MonthlyReportSubmissionPage,
+        monthlyReturn(nilReturn = true)
+      ) mustBe routes.CheckYourAnswersController.onPageLoad()
+    }
 
-      "must go from MonthlyReportSubmissionPage to Check Your Answers when the user has a nil report" in {
-        navigator.nextPage(
-          MonthlyReportSubmissionPage,
-          monthlyReturn(nilReturn = true)
-        ) mustBe routes.CheckYourAnswersController.onPageLoad()
-      }
+    "must go from CheckYourAnswersPage to the declaration page" in {
+      navigator.nextPage(
+        CheckYourAnswersPage,
+        monthlyReturn(nilReturn = true)
+      ) mustBe routes.DeclarationController.onPageLoad(true)
+    }
 
-      "must go from CheckYourAnswersPage to the declaration placeholder" in {
-        navigator.nextPage(
-          CheckYourAnswersPage,
-          monthlyReturn(nilReturn = true)
-        ) mustBe routes.IndexController.onPageLoad()
-      }
+    "must go from a page that doesn't exist in the route map to Index" in {
+      case object UnknownPage extends Page
+      navigator.nextPage(UnknownPage, monthlyReturn(nilReturn = false)) mustBe routes.IndexController.onPageLoad()
+    }
 
-      "must go from a page that doesn't exist in the route map to Index" in {
-        case object UnknownPage extends Page
-        navigator.nextPage(UnknownPage, monthlyReturn(nilReturn = false)) mustBe routes.IndexController.onPageLoad()
-      }
+    "must go from UploadedReportFilesPage to the file upload placeholder when the user wants to add another file" in {
+      navigator.nextPage(
+        UploadedReportFilesPage,
+        Yes
+      ) mustBe routes.UploadFileController.onPageLoad()
+    }
 
-      "must go from UploadedReportFilesPage to the file upload placeholder when the user wants to add another file" in {
-        navigator.nextPage(
-          UploadedReportFilesPage,
-          Yes
-        ) mustBe routes.UploadFileController.onPageLoad()
-      }
-
-      "must go from UploadedReportFilesPage to Check Your Answers when the user does not want to add another file" in {
-        navigator.nextPage(
-          UploadedReportFilesPage,
-          No
-        ) mustBe routes.CheckYourAnswersController.onPageLoad()
-      }
+    "must go from UploadedReportFilesPage to Check Your Answers when the user does not want to add another file" in {
+      navigator.nextPage(
+        UploadedReportFilesPage,
+        No
+      ) mustBe routes.CheckYourAnswersController.onPageLoad()
     }
   }
 }
