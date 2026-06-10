@@ -20,9 +20,8 @@ import base.SpecBase
 import controllers.routes
 import models.requests.{DataRequest, OptionalDataRequest}
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class DataRequiredActionSpec extends SpecBase {

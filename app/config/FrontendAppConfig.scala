@@ -20,37 +20,41 @@ import com.google.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.i18n.Lang
 import play.api.mvc.RequestHeader
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
-class FrontendAppConfig @Inject() (configuration: Configuration) {
+class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(config) {
 
-  val host: String    = configuration.get[String]("host")
-  val appName: String = configuration.get[String]("appName")
+  val host: String    = getString("host")
+  val appName: String = getString("appName")
 
-  private val contactHost                  = configuration.get[String]("contact-frontend.host")
+  lazy val disaReturnsBackendBaseUrl: String = baseUrl("disa-returns-backend")
+
+  private val contactHost                  = getString("contact-frontend.host")
   private val contactFormServiceIdentifier = "disa-returns-frontend"
 
   def feedbackUrl(implicit request: RequestHeader): String =
     s"$contactHost/contact/beta-feedback?service=$contactFormServiceIdentifier&backUrl=${host + request.uri}"
 
-  val loginUrl: String         = configuration.get[String]("urls.login")
-  val loginContinueUrl: String = configuration.get[String]("urls.loginContinue")
-  val signOutUrl: String       = configuration.get[String]("urls.signOut")
+  val loginUrl: String         = getString("urls.login")
+  val loginContinueUrl: String = getString("urls.loginContinue")
+  val signOutUrl: String       = getString("urls.signOut")
 
-  private val exitSurveyBaseUrl: String = configuration.get[Service]("microservice.services.feedback-frontend").baseUrl
+  private val exitSurveyBaseUrl: String = baseUrl("feedback-frontend")
   val exitSurveyUrl: String             = s"$exitSurveyBaseUrl/feedback/disa-returns-frontend"
 
-  val disaReturnsBackendBaseUrl: String =
-    configuration.get[Service]("microservice.services.disa-returns-backend").baseUrl
-
-  val languageTranslationEnabled: Boolean =
-    configuration.get[Boolean]("features.welsh-translation")
+  val languageTranslationEnabled: Boolean = getBoolean("features.welsh-translation")
 
   def languageMap: Map[String, Lang] = Map(
     "en" -> Lang("en"),
     "cy" -> Lang("cy")
   )
 
-  val timeout: Int   = configuration.get[Int]("timeout-dialog.timeout")
-  val countdown: Int = configuration.get[Int]("timeout-dialog.countdown")
+  val timeout: Int   = getInt("timeout-dialog.timeout")
+  val countdown: Int = getInt("timeout-dialog.countdown")
+
+  lazy val upscanInitiateBase: String      = baseUrl("upscan-initiate")
+  lazy val upscanMinFileSize: Int          = getInt("upscan.minFileSize")
+  lazy val upscanMaxFileSize: Int          = getInt("upscan.maxFileSize")
+  lazy val upscanAcceptedMimeTypes: String = getString("upscan.acceptedMimeTypes")
 }

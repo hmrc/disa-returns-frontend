@@ -18,14 +18,13 @@ package services
 
 import base.SpecBase
 import connectors.BackendConnector
-import play.api.http.Status.{CONFLICT, NOT_FOUND}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.http.Status.{CONFLICT, NOT_FOUND}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import utils.DateHelper
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class StorageServiceSpec extends SpecBase with MockitoSugar {

@@ -16,21 +16,25 @@
 
 package base
 
-import controllers.actions._
+import controllers.actions.*
 import models.MonthlyReturn
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{EitherValues, OptionValues, TryValues}
+import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.Application
 import play.api.i18n.{Messages, MessagesApi}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeRequest
 import play.api.test.Helpers.stubControllerComponents
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
 import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 import scala.util.Random
 
 trait SpecBase
@@ -52,11 +56,16 @@ trait SpecBase
   protected val testTaxYear: String                          = "2025-26"
   protected val nextTestTaxYear: String                      = "2026-27"
   protected val testMonth: Int                               = 3
+  protected val testUpscanMinFileSize: Int                   = 1
+  protected val testUpscanMaxFileSize: Int                   = 10485760
   protected val testReportingWindowMonthName: String         = "March"
   protected val testReportingPeriodMonthName: String         = "February"
   protected val previousYearReportingPeriodMonthName: String = "December"
-
-  def emptyMonthlyReturn: MonthlyReturn =
+  implicit val ec: ExecutionContext                          = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val hc: HeaderCarrier                             = HeaderCarrier()
+  protected val mockHttpClient: HttpClientV2                 = mock[HttpClientV2]
+  protected val mockRequestBuilder: RequestBuilder           = mock[RequestBuilder]
+  def emptyMonthlyReturn: MonthlyReturn                      =
     MonthlyReturn(
       submissionId = testSubmissionId,
       nilReturn = false
@@ -73,7 +82,9 @@ trait SpecBase
       .overrides(
         bind[DataRequiredAction].to[DataRequiredActionImpl],
         bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference)),
-        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturn))
+        bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturn)),
+        bind[HttpClientV2].toInstance(mockHttpClient),
+        bind[RequestBuilder].toInstance(mockRequestBuilder)
       )
   }
 }

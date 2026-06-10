@@ -23,6 +23,7 @@ GET         /unauthorised                                controllers.Unauthorise
 GET         /download-report-template                    controllers.DownloadReportTemplateController.onPageLoad()
 
 GET         /monthly-report-submission                   controllers.MonthlyReportSubmissionController.onPageLoad()
+
 POST        /monthly-report-submission                   controllers.MonthlyReportSubmissionController.onSubmit()
 
 # TODO: Wire onward upload and remove-confirmation routes when the related journeys are available.
@@ -43,6 +44,12 @@ GET         /invalid-file-type                           controllers.FileUploadE
 
 GET         /duplicate-file-upload                       controllers.FileUploadErrorController.duplicateFileUpload()
 
+GET         /file-upload/error                           controllers.UploadFileController.onError()
+
+GET         /file-upload                                 controllers.UploadFileController.onPageLoad()
+
 GET         /file-upload-failed                          controllers.FileUploadErrorController.fileUploadFailed()
 
 GET         /declaration                                 controllers.DeclarationController.onPageLoad(nilReturn: Boolean)
+
+GET         /upscan/success                              controllers.UpscanResultController.success

@@ -119,6 +119,25 @@ duplicateFileUpload.heading = The files you uploaded are the same
 duplicateFileUpload.p1 = Check if this is correct.
 duplicateFileUpload.callToAction = Back to file upload
 
+uploadFile.title = Upload your report file
+uploadFile.heading = Upload your report file
+uploadFile.p1 = Your file can be in CSV or Excel format and you need to use the Excel template provided.
+uploadFile.p2.preLink = Once you have
+uploadFile.p2.link = downloaded the Excel template
+uploadFile.p2.afterLink = and added your information, you can choose to convert it to a CSV file.
+uploadFile.p3 = You must not edit the first two rows of the template, or change the order of the columns.
+uploadFile.p4 = The file size must be smaller than 1GB.
+uploadFile.callToAction = Continue
+uploadFile.chooseFile = Choose file
+uploadFile.noFileChosen = No file chosen
+uploadFile.label = Upload a file
+uploadFile.dropFile = or drop file
+uploadFile.caption = Upload a file
+uploadFile.entityTooLarge = The selected file must be either in CSV or Excel format. The file size must be smaller than 1GB
+uploadFile.rejected = The file you uploaded is not recognised. The selected file must be in CSV or Excel format
+uploadFile.invalidArgument = Select a file that you want to submit as your monthly report
+uploadFile.failed = There was a problem uploading your file
+
 fileUploadFailed.title = The selected file could not be uploaded
 fileUploadFailed.heading = The selected file could not be uploaded
 fileUploadFailed.p1 = There was a problem uploading the selected file - try again.

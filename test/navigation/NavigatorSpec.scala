@@ -39,7 +39,7 @@ class NavigatorSpec extends SpecBase {
           MonthlyReportSubmissionPage,
           NormalMode,
           monthlyReturn(nilReturn = false)
-        ) mustBe routes.IndexController.onPageLoad()
+        ) mustBe routes.UploadFileController.onPageLoad()
       }
 
       "must go from MonthlyReportSubmissionPage to the nil report CYA placeholder when the user has a nil report" in {
