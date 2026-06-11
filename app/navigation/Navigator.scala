@@ -18,10 +18,10 @@ package navigation
 
 import javax.inject.{Inject, Singleton}
 
-import play.api.mvc.Call
 import controllers.routes
-import pages._
 import models._
+import pages._
+import play.api.mvc.Call
 
 @Singleton
 class Navigator @Inject() () {
@@ -29,10 +29,9 @@ class Navigator @Inject() () {
   private val normalRoutes: Page => MonthlyReturn => Call = {
     case MonthlyReportSubmissionPage =>
       monthlyReturn => monthlyReturnRoute(monthlyReturn)
+    case CheckYourAnswersPage        => monthlyReturn => declarationRoute(monthlyReturn)
     case _                           => _ => routes.IndexController.onPageLoad()
   }
-
-  private val checkRouteMap: Page => MonthlyReturn => Call = _ => _ => routes.CheckYourAnswersController.onPageLoad()
 
   private def monthlyReturnRoute(monthlyReturn: MonthlyReturn): Call =
     if (monthlyReturn.nilReturn) {
@@ -51,23 +50,17 @@ class Navigator @Inject() () {
     }
 
   private def checkYourAnswersRoute: Call =
-    // TODO DFI-2120: replace placeholder with n CYA journey route.
-    routes.IndexController.onPageLoad()
+    routes.CheckYourAnswersController.onPageLoad()
 
-  def nextPage(page: Page, mode: Mode, monthlyReturn: MonthlyReturn): Call = mode match {
-    case NormalMode =>
-      normalRoutes(page)(monthlyReturn)
-    case CheckMode  =>
-      checkRouteMap(page)(monthlyReturn)
-  }
+  private def declarationRoute(monthlyReturn: MonthlyReturn): Call =
+    routes.DeclarationController.onPageLoad(monthlyReturn.nilReturn)
 
-  def nextPage(page: Page, mode: Mode, answer: YesNoAnswer): Call = mode match {
-    case NormalMode =>
-      page match {
-        case UploadedReportFilesPage => uploadedReportFilesRoute(answer)
-        case _                       => routes.IndexController.onPageLoad()
-      }
-    case CheckMode  =>
-      routes.CheckYourAnswersController.onPageLoad()
-  }
+  def nextPage(page: Page, monthlyReturn: MonthlyReturn): Call =
+    normalRoutes(page)(monthlyReturn)
+
+  def nextPage(page: Page, answer: YesNoAnswer): Call =
+    page match {
+      case UploadedReportFilesPage => uploadedReportFilesRoute(answer)
+      case _                       => routes.IndexController.onPageLoad()
+    }
 }

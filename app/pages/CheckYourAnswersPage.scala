@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-package models
+package pages
 
-import play.api.mvc.JavascriptLiteral
+case object CheckYourAnswersPage extends Page {
 
-sealed trait Mode
-
-case object CheckMode extends Mode
-case object NormalMode extends Mode
-
-object Mode {
-
-  implicit val jsLiteral: JavascriptLiteral[Mode] = {
-    case NormalMode => "NormalMode"
-    case CheckMode  => "CheckMode"
-  }
+  override def toString: String = "checkYourAnswers"
 }
