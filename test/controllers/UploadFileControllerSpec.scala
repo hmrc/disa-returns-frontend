@@ -24,7 +24,7 @@ import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.inject.bind
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import services.UpscanService
+import services.{StorageService, UpscanService}
 import views.html.UploadFileView
 import uk.gov.hmrc.http.HeaderCarrier
 import viewmodels.UploadViewModel
@@ -56,8 +56,20 @@ class UploadFileControllerSpec extends SpecBase {
       when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
         .thenReturn(Future.successful(upscanResponse))
 
+      val mockStorageService = mock[StorageService]
+
+      when(
+        mockStorageService.createFileUploadForThisWindow(eqTo(testZReference), eqTo(upscanResponse.reference))(
+          any[HeaderCarrier]
+        )
+      )
+        .thenReturn(Future.successful(()))
+
       val application = applicationBuilder()
-        .overrides(bind[UpscanService].toInstance(mockUpscanService))
+        .overrides(
+          bind[UpscanService].toInstance(mockUpscanService),
+          bind[StorageService].toInstance(mockStorageService)
+        )
         .build()
 
       running(application) {
@@ -92,8 +104,20 @@ class UploadFileControllerSpec extends SpecBase {
       when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
         .thenReturn(Future.successful(upscanResponse))
 
+      val mockStorageService = mock[StorageService]
+
+      when(
+        mockStorageService.createFileUploadForThisWindow(eqTo(testZReference), eqTo(upscanResponse.reference))(
+          any[HeaderCarrier]
+        )
+      )
+        .thenReturn(Future.successful(()))
+
       val application = applicationBuilder()
-        .overrides(bind[UpscanService].toInstance(mockUpscanService))
+        .overrides(
+          bind[UpscanService].toInstance(mockUpscanService),
+          bind[StorageService].toInstance(mockStorageService)
+        )
         .build()
 
       running(application) {
@@ -121,6 +145,48 @@ class UploadFileControllerSpec extends SpecBase {
 
       val application = applicationBuilder()
         .overrides(bind[UpscanService].toInstance(mockUpscanService))
+        .build()
+
+      running(application) {
+
+        val request =
+          FakeRequest(GET, routes.UploadFileController.onPageLoad().url)
+
+        val result = route(application, request).value
+
+        status(result) mustEqual INTERNAL_SERVER_ERROR
+      }
+    }
+
+    "must return InternalServerError when registering the file upload with the backend fails" in {
+
+      val mockUpscanService = mock[UpscanService]
+
+      val upscanResponse = UpscanInitiateResponse(
+        reference = "test-reference",
+        uploadRequest = UploadRequest(
+          href = "https://upscan/upload",
+          fields = Map.empty
+        )
+      )
+
+      when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
+        .thenReturn(Future.successful(upscanResponse))
+
+      val mockStorageService = mock[StorageService]
+
+      when(
+        mockStorageService.createFileUploadForThisWindow(eqTo(testZReference), eqTo(upscanResponse.reference))(
+          any[HeaderCarrier]
+        )
+      )
+        .thenReturn(Future.failed(new RuntimeException("createFileUpload failed")))
+
+      val application = applicationBuilder()
+        .overrides(
+          bind[UpscanService].toInstance(mockUpscanService),
+          bind[StorageService].toInstance(mockStorageService)
+        )
         .build()
 
       running(application) {

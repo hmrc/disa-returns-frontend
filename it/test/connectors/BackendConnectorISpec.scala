@@ -25,17 +25,17 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.running
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
 class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val wireMockServer = new WireMockServer(wireMockConfig().dynamicPort())
 
-  private val monthlyReturn      = MonthlyReturn(
+  private val monthlyReturn               = MonthlyReturn(
     submissionId = testSubmissionId,
     nilReturn = true
   )
-  private val monthlyReturnJson  =
+  private val monthlyReturnJson           =
     s"""
       |{
       |  "zReference": "$testZReference",
@@ -48,22 +48,29 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
       |  "lastUpdated": "2026-03-15T12:00:00Z"
       |}
       |""".stripMargin
-  private val createRequestJson  =
+  private val createRequestJson           =
     """
       |{
       |  "nilReturn": true
       |}
       |""".stripMargin
-  private val createResponseJson =
+  private val createResponseJson          =
     s"""
       |{
       |  "submissionId": "$testSubmissionId"
       |}
       |""".stripMargin
-  private val updateRequestJson  =
+  private val updateRequestJson           =
     """
       |{
       |  "value": true
+      |}
+      |""".stripMargin
+  private val testReference               = "2b4d6f3a-8c1e-4e4b-9c7a-123456789abc"
+  private val createFileUploadRequestJson =
+    s"""
+      |{
+      |  "reference": "$testReference"
       |}
       |""".stripMargin
 
@@ -91,9 +98,10 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
       )
       .build()
 
-  private val monthlyReturnPath   =
+  private val monthlyReturnPath    =
     s"/disa-returns-backend/monthly/$testZReference/$testTaxYear/$testMonth"
-  private val updateNilReturnPath = s"$monthlyReturnPath/nilReturn"
+  private val updateNilReturnPath  = s"$monthlyReturnPath/nilReturn"
+  private val createFileUploadPath = s"$monthlyReturnPath/files"
 
   "BackendConnector" - {
 
@@ -175,6 +183,48 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
         putRequestedFor(urlEqualTo(updateNilReturnPath))
           .withRequestBody(equalToJson(updateRequestJson))
       )
+    }
+
+    "must create a file upload" in {
+      wireMockServer.stubFor(
+        post(urlEqualTo(createFileUploadPath))
+          .withRequestBody(equalToJson(createFileUploadRequestJson))
+          .willReturn(created().withHeader("Location", s"$createFileUploadPath/$testReference"))
+      )
+
+      val app = application
+      running(app) {
+        val connector = appConnector(app)
+
+        connector
+          .createFileUpload(testZReference, testTaxYear, testMonth, testReference)(HeaderCarrier())
+          .futureValue
+      }
+
+      wireMockServer.verify(
+        postRequestedFor(urlEqualTo(createFileUploadPath))
+          .withRequestBody(equalToJson(createFileUploadRequestJson))
+      )
+    }
+
+    "must fail when creating a file upload returns an error status" in {
+      wireMockServer.stubFor(
+        post(urlEqualTo(createFileUploadPath))
+          .withRequestBody(equalToJson(createFileUploadRequestJson))
+          .willReturn(notFound())
+      )
+
+      val app = application
+      running(app) {
+        val connector = appConnector(app)
+
+        val result = connector
+          .createFileUpload(testZReference, testTaxYear, testMonth, testReference)(HeaderCarrier())
+          .failed
+          .futureValue
+
+        result mustBe a[UpstreamErrorResponse]
+      }
     }
   }
 
