@@ -22,7 +22,7 @@ import models.upscan.UploadError
 import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import services.UpscanService
+import services.{StorageService, UpscanService}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import viewmodels.UploadViewModel
 import views.html.UploadFileView
@@ -35,6 +35,7 @@ class UploadFileController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   upscanService: UpscanService,
+  storageService: StorageService,
   val controllerComponents: MessagesControllerComponents,
   view: UploadFileView,
   errorHandler: ErrorHandler,
@@ -55,12 +56,16 @@ class UploadFileController @Inject() (
 
     upscanService
       .initiate(request.zReference)
-      .map { upscanResponse =>
-        val model = UploadViewModel(
-          upscan = upscanResponse,
-          error = error
-        )
-        Ok(view(model))
+      .flatMap { upscanResponse =>
+        storageService
+          .createFileUploadForThisWindow(request.zReference, upscanResponse.reference)
+          .map { _ =>
+            val model = UploadViewModel(
+              upscan = upscanResponse,
+              error = error
+            )
+            Ok(view(model))
+          }
       }
       .recoverWith { case NonFatal(ex) =>
         logger.error(s"[UploadFileController] initiate failed: $ex")

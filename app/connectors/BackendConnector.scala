@@ -18,11 +18,12 @@ package connectors
 
 import config.FrontendAppConfig
 import models.{CreateMonthlyReturnResponse, MonthlyReturn}
+import play.api.http.Status.CREATED
 import play.api.libs.json.Json
 import play.api.libs.ws.writeableOf_JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -59,4 +60,19 @@ class BackendConnector @Inject() (
       .put(url"$backendUrl/$zRef/$taxYear/$month/nilReturn")
       .withBody(Json.obj("value" -> nilReturn))
       .execute[MonthlyReturn]
+
+  def createFileUpload(zRef: String, taxYear: String, month: Int, reference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[Unit] =
+    httpClient
+      .post(url"$backendUrl/$zRef/$taxYear/$month/files")
+      .withBody(Json.obj("reference" -> reference))
+      .execute[HttpResponse]
+      .flatMap { response =>
+        response.status match {
+          case CREATED => Future.successful(())
+          case status  =>
+            Future.failed(UpstreamErrorResponse("createFileUpload failed", status, status, response.headers))
+        }
+      }
 }

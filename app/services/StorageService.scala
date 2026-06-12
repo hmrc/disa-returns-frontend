@@ -33,6 +33,11 @@ class StorageService @Inject() (
   def retrieveForThisWindow(zReference: String)(implicit hc: HeaderCarrier): Future[Option[MonthlyReturn]] =
     backendConnector.retrieve(zReference, dateHelper.taxYear, dateHelper.month)
 
+  def createFileUploadForThisWindow(zReference: String, reference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[Unit] =
+    backendConnector.createFileUpload(zReference, dateHelper.taxYear, dateHelper.month, reference)
+
   def saveForThisWindow(
     zReference: String,
     currentMonthlyReturn: Option[MonthlyReturn],
