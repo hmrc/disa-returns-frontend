@@ -139,6 +139,24 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
       )(any[HeaderCarrier])
     }
 
+    "must delete a file upload for the current reporting window" in {
+      val connector = mock[BackendConnector]
+      val reference = "test-reference"
+      when(
+        connector.deleteFileUpload(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth), eqTo(reference))(
+          any[HeaderCarrier]
+        )
+      )
+        .thenReturn(Future.successful(()))
+      val service   = new StorageService(connector, dateHelper)
+
+      service.deleteFileUploadForThisWindow(testZReference, reference)(HeaderCarrier()).futureValue
+
+      verify(connector).deleteFileUpload(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth), eqTo(reference))(
+        any[HeaderCarrier]
+      )
+    }
+
     "must create the monthly return when update fails because the return was missing after retrieval" in {
       val connector = mock[BackendConnector]
       when(
