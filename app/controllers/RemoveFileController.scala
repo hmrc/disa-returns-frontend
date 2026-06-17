@@ -19,6 +19,7 @@ package controllers
 import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
 import forms.RemoveFileFormProvider
 import models.YesNoAnswer
+import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.StorageService
@@ -27,6 +28,7 @@ import views.html.RemoveFileView
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class RemoveFileController @Inject() (
   override val messagesApi: MessagesApi,
@@ -39,7 +41,8 @@ class RemoveFileController @Inject() (
   view: RemoveFileView
 )(implicit ec: ExecutionContext)
     extends FrontendBaseController
-    with I18nSupport {
+    with I18nSupport
+    with Logging {
 
   private def fileNameFor(reference: String)(implicit request: models.requests.DataRequest[?]): Option[String] =
     request.monthlyReturn.fileUploads
@@ -75,6 +78,13 @@ class RemoveFileController @Inject() (
                         Redirect(routes.UploadFileController.onPageLoad())
                       else
                         Redirect(routes.UploadedReportFilesController.onPageLoad())
+                    }
+                    .recover { case NonFatal(e) =>
+                      logger.error(
+                        s"Failed to delete file upload for reference: [$reference] and zRef: [${request.zReference}]",
+                        e
+                      )
+                      InternalServerError
                     }
                 case YesNoAnswer.No  =>
                   Future.successful(Redirect(routes.UploadedReportFilesController.onPageLoad()))

@@ -51,8 +51,9 @@ class RemoveFileControllerSpec extends SpecBase {
     fileUploadDetails = Some(FileUploadDetails("return2.csv"))
   )
 
-  private val monthlyReturn         = emptyMonthlyReturn.copy(fileUploads = Seq(successfulUpload))
-  private val multiFileMonthlyReturn = emptyMonthlyReturn.copy(fileUploads = Seq(successfulUpload, secondSuccessfulUpload))
+  private val monthlyReturn          = emptyMonthlyReturn.copy(fileUploads = Seq(successfulUpload))
+  private val multiFileMonthlyReturn =
+    emptyMonthlyReturn.copy(fileUploads = Seq(successfulUpload, secondSuccessfulUpload))
 
   "RemoveFileController onPageLoad" - {
 
@@ -85,7 +86,8 @@ class RemoveFileControllerSpec extends SpecBase {
     "must redirect to UploadedReportFilesController when the file upload has no file details" in {
       val uploadWithoutDetails = FileUpload(reference = testReference, status = FileUploadStatus.UpscanSuccess)
       val application          =
-        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn.copy(fileUploads = Seq(uploadWithoutDetails)))).build()
+        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn.copy(fileUploads = Seq(uploadWithoutDetails))))
+          .build()
 
       running(application) {
         val request = FakeRequest(GET, routes.RemoveFileController.onPageLoad(testReference).url)
@@ -267,6 +269,27 @@ class RemoveFileControllerSpec extends SpecBase {
 
         status(result) mustEqual SEE_OTHER
         redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+      }
+    }
+
+    "must return InternalServerError when the backend delete fails" in {
+      val mockStorageService = mock[StorageService]
+      when(
+        mockStorageService.deleteFileUploadForThisWindow(any[String], any[String])(any[HeaderCarrier])
+      ).thenReturn(Future.failed(new RuntimeException("boom")))
+
+      val application = applicationBuilder(monthlyReturn = Some(monthlyReturn))
+        .overrides(bind[StorageService].toInstance(mockStorageService))
+        .build()
+
+      running(application) {
+        val request =
+          FakeRequest(POST, routes.RemoveFileController.onSubmit(testReference).url)
+            .withFormUrlEncodedBody("value" -> "yes")
+
+        val result = route(application, request).value
+
+        status(result) mustEqual INTERNAL_SERVER_ERROR
       }
     }
   }
