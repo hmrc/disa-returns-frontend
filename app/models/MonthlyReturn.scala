@@ -38,7 +38,7 @@ case class FileUpload(
 ) {
 
   def isSuccessful: Boolean =
-    status == FileUploadStatus.UpscanSuccess
+    status == FileUploadStatus.UpscanSuccess || status == FileUploadStatus.ValidationSuccess
 }
 
 case class FileUploadDetails(
@@ -46,7 +46,8 @@ case class FileUploadDetails(
 )
 
 object FileUploadStatus {
-  val UpscanSuccess: String = "UPSCAN_SUCCESS"
+  val UpscanSuccess: String     = "UPSCAN_SUCCESS"
+  val ValidationSuccess: String = "VALIDATION_SUCCESS"
 }
 
 object MonthlyReturn {

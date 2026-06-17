@@ -72,6 +72,10 @@ monthlyReportSubmission.yes = Yes - I am uploading a report
 monthlyReportSubmission.no = No - I have a nil report
 monthlyReportSubmission.error.required = Select yes, if you are uploading a monthly report
 
+removeFile.title = Do you want to remove {0}?
+removeFile.heading = Do you want to remove {0}?
+removeFile.error.required = Select yes, if you want to remove {0}
+
 uploadedReportFiles.title.one = You have added 1 report file
 uploadedReportFiles.title.many = You have added {0} report files
 uploadedReportFiles.heading.one = You have added 1 report file

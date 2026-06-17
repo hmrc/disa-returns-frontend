@@ -30,6 +30,9 @@ POST        /monthly-report-submission                   controllers.MonthlyRepo
 GET         /uploaded-report-files                       controllers.UploadedReportFilesController.onPageLoad()
 POST        /uploaded-report-files                       controllers.UploadedReportFilesController.onSubmit()
 
+GET         /remove-file/:reference                      controllers.RemoveFileController.onPageLoad(reference: String)
+POST        /remove-file/:reference                      controllers.RemoveFileController.onSubmit(reference: String)
+
 GET         /problem-with-uploaded-file                  controllers.ProblemWithUploadedFileController.onPageLoad()
 
 GET         /file-formatting-errors                      controllers.FileFormattingErrorsController.onPageLoad()

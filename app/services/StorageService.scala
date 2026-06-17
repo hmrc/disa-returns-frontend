@@ -38,6 +38,11 @@ class StorageService @Inject() (
   ): Future[Unit] =
     backendConnector.createFileUpload(zReference, dateHelper.taxYear, dateHelper.month, reference)
 
+  def deleteFileUploadForThisWindow(zReference: String, reference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[Unit] =
+    backendConnector.deleteFileUpload(zReference, dateHelper.taxYear, dateHelper.month, reference)
+
   def saveForThisWindow(
     zReference: String,
     currentMonthlyReturn: Option[MonthlyReturn],

@@ -102,6 +102,7 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
     s"/disa-returns-backend/monthly/$testZReference/$testTaxYear/$testMonth"
   private val updateNilReturnPath  = s"$monthlyReturnPath/nilReturn"
   private val createFileUploadPath = s"$monthlyReturnPath/files"
+  private val deleteFileUploadPath = s"$monthlyReturnPath/files/$testReference"
 
   "BackendConnector" - {
 
@@ -220,6 +221,45 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
 
         val result = connector
           .createFileUpload(testZReference, testTaxYear, testMonth, testReference)(HeaderCarrier())
+          .failed
+          .futureValue
+
+        result mustBe a[UpstreamErrorResponse]
+      }
+    }
+
+    "must delete a file upload" in {
+      wireMockServer.stubFor(
+        delete(urlEqualTo(deleteFileUploadPath))
+          .willReturn(noContent())
+      )
+
+      val app = application
+      running(app) {
+        val connector = appConnector(app)
+
+        connector
+          .deleteFileUpload(testZReference, testTaxYear, testMonth, testReference)(HeaderCarrier())
+          .futureValue
+      }
+
+      wireMockServer.verify(
+        deleteRequestedFor(urlEqualTo(deleteFileUploadPath))
+      )
+    }
+
+    "must fail when deleting a file upload returns an error status" in {
+      wireMockServer.stubFor(
+        delete(urlEqualTo(deleteFileUploadPath))
+          .willReturn(notFound())
+      )
+
+      val app = application
+      running(app) {
+        val connector = appConnector(app)
+
+        val result = connector
+          .deleteFileUpload(testZReference, testTaxYear, testMonth, testReference)(HeaderCarrier())
           .failed
           .futureValue
 

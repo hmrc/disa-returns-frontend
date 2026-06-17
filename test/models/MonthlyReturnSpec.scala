@@ -93,6 +93,23 @@ class MonthlyReturnSpec extends SpecBase {
     }
   }
 
+  "FileUpload.isSuccessful" - {
+
+    "must be true when status is UPSCAN_SUCCESS" in {
+      FileUpload("ref", FileUploadStatus.UpscanSuccess).isSuccessful mustEqual true
+    }
+
+    "must be true when status is VALIDATION_SUCCESS" in {
+      FileUpload("ref", FileUploadStatus.ValidationSuccess).isSuccessful mustEqual true
+    }
+
+    "must be false for any other status" in {
+      FileUpload("ref", "CREATED").isSuccessful mustEqual false
+      FileUpload("ref", "VALIDATION_FAILURE").isSuccessful mustEqual false
+      FileUpload("ref", "UPSCAN_QUARANTINE").isSuccessful mustEqual false
+    }
+  }
+
   "CreateMonthlyReturnResponse" - {
 
     "must read the create response returned by the backend" in {
