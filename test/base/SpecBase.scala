@@ -32,10 +32,7 @@ import play.api.test.Helpers.stubControllerComponents
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
-import java.time.{Clock, Instant, ZoneOffset}
-import java.util.UUID
 import scala.concurrent.ExecutionContext
-import scala.util.Random
 
 trait SpecBase
     extends AnyFreeSpec
@@ -44,32 +41,13 @@ trait SpecBase
     with EitherValues
     with OptionValues
     with ScalaFutures
-    with IntegrationPatience {
+    with IntegrationPatience
+    with TestData {
 
-  protected val testZReference: String                       = SpecBase.randomZReference
-  protected val testSubmissionId: UUID                       = SpecBase.randomSubmissionId
-  protected val secondTestSubmissionId: UUID                 = SpecBase.randomSubmissionId
-  protected val testReportingWindowInstant                   = Instant.parse("2026-03-15T12:00:00Z")
-  protected val testReportingWindowClock                     = Clock.fixed(testReportingWindowInstant, ZoneOffset.UTC)
-  protected val testJanuaryReportingWindowInstant            = Instant.parse("2026-01-15T12:00:00Z")
-  protected val testAprilReportingWindowInstant              = Instant.parse("2026-04-01T00:00:00Z")
-  protected val testTaxYear: String                          = "2025-26"
-  protected val nextTestTaxYear: String                      = "2026-27"
-  protected val testMonth: Int                               = 3
-  protected val testUpscanMinFileSize: Int                   = 1
-  protected val testUpscanMaxFileSize: Int                   = 10485760
-  protected val testReportingWindowMonthName: String         = "March"
-  protected val testReportingPeriodMonthName: String         = "February"
-  protected val previousYearReportingPeriodMonthName: String = "December"
-  implicit val ec: ExecutionContext                          = scala.concurrent.ExecutionContext.Implicits.global
-  implicit val hc: HeaderCarrier                             = HeaderCarrier()
-  protected val mockHttpClient: HttpClientV2                 = mock[HttpClientV2]
-  protected val mockRequestBuilder: RequestBuilder           = mock[RequestBuilder]
-  def emptyMonthlyReturn: MonthlyReturn                      =
-    MonthlyReturn(
-      submissionId = testSubmissionId,
-      nilReturn = false
-    )
+  implicit val ec: ExecutionContext                = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val hc: HeaderCarrier                   = HeaderCarrier()
+  protected val mockHttpClient: HttpClientV2       = mock[HttpClientV2]
+  protected val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
 
   def messages(app: Application): Messages = app.injector.instanceOf[MessagesApi].preferred(FakeRequest())
 
@@ -81,19 +59,10 @@ trait SpecBase
     new GuiceApplicationBuilder()
       .overrides(
         bind[DataRequiredAction].to[DataRequiredActionImpl],
-        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference)),
+        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference, testUserDetails)),
         bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturn)),
         bind[HttpClientV2].toInstance(mockHttpClient),
         bind[RequestBuilder].toInstance(mockRequestBuilder)
       )
   }
-}
-
-object SpecBase {
-
-  def randomZReference: String =
-    f"Z${Random.nextInt(10000)}%04d"
-
-  def randomSubmissionId: UUID =
-    UUID.randomUUID()
 }

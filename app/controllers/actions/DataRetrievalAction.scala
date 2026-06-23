@@ -35,7 +35,7 @@ class DataRetrievalActionImpl @Inject() (
       HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
     storageService.retrieveForThisWindow(request.zReference).map { monthlyReturn =>
-      OptionalDataRequest(request.request, request.zReference, monthlyReturn)
+      OptionalDataRequest(request.request, request.zReference, request.userDetails, monthlyReturn)
     }
   }
 }

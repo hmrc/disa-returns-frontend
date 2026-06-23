@@ -19,12 +19,15 @@ package controllers.actions
 import com.google.inject.Inject
 import config.FrontendAppConfig
 import controllers.routes
+import models.UserDetails
 import models.requests.IdentifierRequest
 import play.api.Logging
 import play.api.mvc.Results.*
 import play.api.mvc.*
 import uk.gov.hmrc.auth.core.*
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.authorisedEnrolments
+import uk.gov.hmrc.auth.core.AffinityGroup.Agent
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.*
+import uk.gov.hmrc.auth.core.retrieve.{AgentInformation, Credentials, ~}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
@@ -47,7 +50,9 @@ class AuthenticatedIdentifierAction @Inject() (
 
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
-    authorised(Enrolment(enrolmentKey)).retrieve(authorisedEnrolments) { enrolments =>
+    authorised(Enrolment(enrolmentKey)).retrieve(
+      authorisedEnrolments and credentials and credentialRole and affinityGroup and agentInformation and groupIdentifier
+    ) { case enrolments ~ maybeCredentials ~ maybeCredentialRole ~ maybeAffinityGroup ~ agentInfo ~ maybeGroupId =>
       enrolments
         .getEnrolment(enrolmentKey)
         .flatMap(_.getIdentifier(identifierKey))
@@ -56,7 +61,36 @@ class AuthenticatedIdentifierAction @Inject() (
           logger.warn(s"User with enrolment was missing $identifierKey identifier")
           Future.successful(Redirect(routes.UnauthorisedController.onPageLoad()))
         } { zReference =>
-          block(IdentifierRequest(request, zReference))
+          (maybeCredentials, maybeAffinityGroup, maybeGroupId) match {
+            case (_, Some(Agent), Some(groupId))             =>
+              block(
+                IdentifierRequest(
+                  request,
+                  zReference,
+                  agentDetails(groupId, agentInfo)
+                )
+              )
+            case (Some(credentials), Some(_), Some(groupId)) =>
+              maybeCredentialRole.fold {
+                logger.warn("User with DISA enrolment was missing credential role")
+                Future.successful(Redirect(routes.UnauthorisedController.onPageLoad()))
+              } { role =>
+                block(
+                  IdentifierRequest(
+                    request,
+                    zReference,
+                    UserDetails.IsaManager(
+                      groupId = groupId,
+                      credId = credentials.providerId,
+                      credentialRole = role.toString
+                    )
+                  )
+                )
+              }
+            case _                                           =>
+              logger.warn("User with DISA enrolment was missing audit identity details")
+              Future.successful(Redirect(routes.UnauthorisedController.onPageLoad()))
+          }
         }
     } recover {
       case _: NoActiveSession        =>
@@ -68,4 +102,14 @@ class AuthenticatedIdentifierAction @Inject() (
 
   private val enrolmentKey  = "HMRC-DISA-ORG"
   private val identifierKey = "ZREF"
+
+  private def agentDetails(
+    groupId: String,
+    agentInformation: AgentInformation
+  ): UserDetails.Agent =
+    UserDetails.Agent(
+      groupId = groupId,
+      agentId = agentInformation.agentId.getOrElse(UserDetails.unknown),
+      agentName = agentInformation.agentFriendlyName.getOrElse(UserDetails.unknown)
+    )
 }

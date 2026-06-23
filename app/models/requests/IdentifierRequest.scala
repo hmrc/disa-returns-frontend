@@ -16,6 +16,11 @@
 
 package models.requests
 
+import models.UserDetails
 import play.api.mvc.{Request, WrappedRequest}
 
-case class IdentifierRequest[A](request: Request[A], zReference: String) extends WrappedRequest[A](request)
+case class IdentifierRequest[A](
+  request: Request[A],
+  zReference: String,
+  userDetails: UserDetails
+) extends WrappedRequest[A](request)

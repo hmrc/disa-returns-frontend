@@ -17,7 +17,7 @@
 package services
 
 import connectors.BackendConnector
-import models.MonthlyReturn
+import models.{MonthlyReturn, MonthlyReturnSaveResult}
 import play.api.http.Status.{CONFLICT, NOT_FOUND}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import utils.DateHelper
@@ -49,7 +49,7 @@ class StorageService @Inject() (
     nilReturn: Boolean
   )(implicit
     hc: HeaderCarrier
-  ): Future[MonthlyReturn] = {
+  ): Future[MonthlyReturnSaveResult] = {
     val taxYear = dateHelper.taxYear
     val month   = dateHelper.month
 
@@ -61,19 +61,25 @@ class StorageService @Inject() (
 
   private def createWithUpdateFallback(zReference: String, taxYear: String, month: Int, nilReturn: Boolean)(implicit
     hc: HeaderCarrier
-  ): Future[MonthlyReturn] =
+  ): Future[MonthlyReturnSaveResult] =
     backendConnector
       .createMonthlyReturn(nilReturn, zReference, taxYear, month)
+      .map(monthlyReturn => MonthlyReturnSaveResult(monthlyReturn, created = true))
       .recoverWith { case UpstreamErrorResponse(_, CONFLICT, _, _) =>
-        backendConnector.updateNilReturn(nilReturn, zReference, taxYear, month)
+        backendConnector
+          .updateNilReturn(nilReturn, zReference, taxYear, month)
+          .map(monthlyReturn => MonthlyReturnSaveResult(monthlyReturn, created = false))
       }
 
   private def updateWithCreateFallback(zReference: String, taxYear: String, month: Int, nilReturn: Boolean)(implicit
     hc: HeaderCarrier
-  ): Future[MonthlyReturn] =
+  ): Future[MonthlyReturnSaveResult] =
     backendConnector
       .updateNilReturn(nilReturn, zReference, taxYear, month)
+      .map(monthlyReturn => MonthlyReturnSaveResult(monthlyReturn, created = false))
       .recoverWith { case UpstreamErrorResponse(_, NOT_FOUND, _, _) =>
-        backendConnector.createMonthlyReturn(nilReturn, zReference, taxYear, month)
+        backendConnector
+          .createMonthlyReturn(nilReturn, zReference, taxYear, month)
+          .map(monthlyReturn => MonthlyReturnSaveResult(monthlyReturn, created = true))
       }
 }

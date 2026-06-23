@@ -31,6 +31,11 @@ case class CreateMonthlyReturnResponse(
   submissionId: UUID
 )
 
+case class MonthlyReturnSaveResult(
+  monthlyReturn: MonthlyReturn,
+  created: Boolean
+)
+
 case class FileUpload(
   reference: String,
   status: String,

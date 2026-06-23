@@ -36,10 +36,22 @@ class DateHelperSpec extends SpecBase {
       helper.reportingPeriodMonth mustEqual testReportingPeriodMonthName
     }
 
+    "must return the reporting period month and year" in {
+      val helper = new DateHelper(testReportingWindowClock)
+
+      helper.reportingPeriod mustEqual testReportingPeriod
+    }
+
     "must return December as the reporting period month for a January reporting window" in {
       val helper = dateHelperAt(testJanuaryReportingWindowInstant)
 
       helper.reportingPeriodMonth mustEqual previousYearReportingPeriodMonthName
+    }
+
+    "must return December and the previous year for a January reporting window period" in {
+      val helper = dateHelperAt(testJanuaryReportingWindowInstant)
+
+      helper.reportingPeriod mustEqual previousYearReportingPeriod
     }
 
     "must return the numeric month for the reporting window" in {

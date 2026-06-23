@@ -18,14 +18,19 @@ package controllers
 
 import controllers.actions.{DataRetrievalAction, IdentifierAction}
 import forms.MonthlyReportSubmissionFormProvider
+import handlers.ErrorHandler
 import models.YesNoAnswer.{No, Yes}
 import navigation.Navigator
 import pages.MonthlyReportSubmissionPage
 import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import services.StorageService
+import models.MonthlyReturn
+import models.requests.OptionalDataRequest
+import services.{AuditService, StorageService}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
+import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import views.html.MonthlyReportSubmissionView
 
 import javax.inject.Inject
@@ -39,6 +44,8 @@ class MonthlyReportSubmissionController @Inject() (
   formProvider: MonthlyReportSubmissionFormProvider,
   navigator: Navigator,
   storageService: StorageService,
+  auditService: AuditService,
+  errorHandler: ErrorHandler,
   val controllerComponents: MessagesControllerComponents,
   view: MonthlyReportSubmissionView
 )(implicit ec: ExecutionContext)
@@ -69,17 +76,44 @@ class MonthlyReportSubmissionController @Inject() (
 
           storageService
             .saveForThisWindow(request.zReference, request.monthlyReturn, nilReturn)
-            .map { savedMonthlyReturn =>
-              Redirect(navigator.nextPage(MonthlyReportSubmissionPage, savedMonthlyReturn))
+            .map { saveResult =>
+              if (saveResult.created) {
+                auditFileUploadStarted(request, saveResult.monthlyReturn)
+              }
+
+              Redirect(navigator.nextPage(MonthlyReportSubmissionPage, saveResult.monthlyReturn))
             }
-            .recover { case NonFatal(e) =>
+            .recoverWith { case NonFatal(e) =>
               logger.error(
                 s"Failed to save monthly return for zRef: [${request.zReference}]",
                 e
               )
-              InternalServerError
+              errorHandler.internalServerError
             }
         }
       )
   }
+
+  private def auditFileUploadStarted[A](
+    request: OptionalDataRequest[A],
+    monthlyReturn: MonthlyReturn
+  ): Unit = {
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+
+    try
+      auditService
+        .auditFileUploadStarted(request, monthlyReturn)
+        .failed
+        .foreach(logAuditFailure(request.zReference))
+    catch {
+      case NonFatal(e) =>
+        logAuditFailure(request.zReference)(e)
+    }
+  }
+
+  private def logAuditFailure(zReference: String)(e: Throwable): Unit =
+    logger.warn(
+      s"Failed to audit FileUploadStarted for zRef: [$zReference]",
+      e
+    )
 }

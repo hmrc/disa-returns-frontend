@@ -19,9 +19,9 @@ package controllers
 import base.SpecBase
 import controllers.actions.{DataRetrievalAction, FakeDataRetrievalAction, IdentifierAction}
 import forms.MonthlyReportSubmissionFormProvider
-import models.MonthlyReturn
+import models.{MonthlyReturn, MonthlyReturnSaveResult}
 import models.YesNoAnswer.{No, Yes}
-import models.requests.IdentifierRequest
+import models.requests.{IdentifierRequest, OptionalDataRequest}
 import navigation.{FakeNavigator, Navigator}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{never, verify, when}
@@ -31,7 +31,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.{AnyContent, BodyParser, Call, Request, Result}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.StorageService
+import services.{AuditService, StorageService}
 import uk.gov.hmrc.http.HeaderCarrier
 import views.html.MonthlyReportSubmissionView
 
@@ -48,7 +48,8 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
   private def applicationWith(
     monthlyReturn: Option[MonthlyReturn] = None,
-    storageService: StorageService = mockStorageService()
+    storageService: StorageService = mockStorageService(),
+    auditService: AuditService = mockAuditService()
   ) =
     new GuiceApplicationBuilder()
       .overrides(
@@ -56,6 +57,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         bind[IdentifierAction].toInstance(new TestIdentifierAction),
         bind[java.time.Clock].toInstance(testReportingWindowClock),
         bind[StorageService].toInstance(storageService),
+        bind[AuditService].toInstance(auditService),
         bind[Navigator].toInstance(new FakeNavigator(onwardRoute))
       )
       .build()
@@ -69,10 +71,15 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
       scala.concurrent.ExecutionContext.Implicits.global
 
     override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
-      block(IdentifierRequest(request, testZReference))
+      block(IdentifierRequest(request, testZReference, testUserDetails))
   }
 
-  private def mockStorageService(): StorageService = {
+  private def mockStorageService(
+    saveResult: MonthlyReturnSaveResult = MonthlyReturnSaveResult(
+      uploadReportMonthlyReturn(),
+      created = false
+    )
+  ): StorageService = {
     val storageService = mock[StorageService]
     when(
       storageService.saveForThisWindow(
@@ -81,8 +88,20 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         any[Boolean]
       )(any[HeaderCarrier])
     )
-      .thenReturn(Future.successful(uploadReportMonthlyReturn()))
+      .thenReturn(Future.successful(saveResult))
     storageService
+  }
+
+  private def mockAuditService(): AuditService = {
+    val auditService = mock[AuditService]
+    when(
+      auditService.auditFileUploadStarted(
+        any[OptionalDataRequest[AnyContent]],
+        any[MonthlyReturn]
+      )(any[HeaderCarrier])
+    )
+      .thenReturn(Future.successful(()))
+    auditService
   }
 
   private def nilReturnMonthlyReturn(submissionId: UUID = existingSubmissionId): MonthlyReturn =
@@ -164,7 +183,8 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
     "must save a new nil return and redirect to the next page" in {
       val storageService = mockStorageService()
-      val app            = applicationWith(storageService = storageService)
+      val auditService   = mockAuditService()
+      val app            = applicationWith(storageService = storageService, auditService = auditService)
 
       running(app) {
         val request =
@@ -176,16 +196,22 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         status(result) mustEqual SEE_OTHER
 
         verify(storageService).saveForThisWindow(eqTo(testZReference), eqTo(None), eqTo(true))(any[HeaderCarrier])
+        verify(auditService, never()).auditFileUploadStarted(
+          any[OptionalDataRequest[AnyContent]],
+          any[MonthlyReturn]
+        )(any[HeaderCarrier])
         redirectLocation(result).value mustEqual onwardRoute.url
       }
     }
 
     "must save an updated answer against the existing monthly return and redirect to the next page" in {
       val storageService = mockStorageService()
+      val auditService   = mockAuditService()
       val existing       = nilReturnMonthlyReturn()
       val app            = applicationWith(
         monthlyReturn = Some(existing),
-        storageService = storageService
+        storageService = storageService,
+        auditService = auditService
       )
 
       running(app) {
@@ -200,6 +226,77 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         verify(storageService).saveForThisWindow(eqTo(testZReference), eqTo(Some(existing)), eqTo(false))(
           any[HeaderCarrier]
         )
+        verify(auditService, never()).auditFileUploadStarted(
+          any[OptionalDataRequest[AnyContent]],
+          any[MonthlyReturn]
+        )(any[HeaderCarrier])
+        redirectLocation(result).value mustEqual onwardRoute.url
+      }
+    }
+
+    "must audit FileUploadStarted when the save creates a monthly return" in {
+      val savedMonthlyReturn = uploadReportMonthlyReturn()
+      val storageService     = mockStorageService(MonthlyReturnSaveResult(savedMonthlyReturn, created = true))
+      val auditService       = mockAuditService()
+      val app                = applicationWith(storageService = storageService, auditService = auditService)
+
+      running(app) {
+        val request =
+          FakeRequest(POST, routes.MonthlyReportSubmissionController.onSubmit().url)
+            .withFormUrlEncodedBody("value" -> Yes.toString)
+
+        val result = route(app, request).value
+
+        status(result) mustEqual SEE_OTHER
+        verify(auditService).auditFileUploadStarted(
+          any[OptionalDataRequest[AnyContent]],
+          eqTo(savedMonthlyReturn)
+        )(any[HeaderCarrier])
+      }
+    }
+
+    "must audit FileUploadStarted when the save creates a nil monthly return" in {
+      val savedMonthlyReturn = nilReturnMonthlyReturn()
+      val storageService     = mockStorageService(MonthlyReturnSaveResult(savedMonthlyReturn, created = true))
+      val auditService       = mockAuditService()
+      val app                = applicationWith(storageService = storageService, auditService = auditService)
+
+      running(app) {
+        val request =
+          FakeRequest(POST, routes.MonthlyReportSubmissionController.onSubmit().url)
+            .withFormUrlEncodedBody("value" -> No.toString)
+
+        val result = route(app, request).value
+
+        status(result) mustEqual SEE_OTHER
+        verify(auditService).auditFileUploadStarted(
+          any[OptionalDataRequest[AnyContent]],
+          eqTo(savedMonthlyReturn)
+        )(any[HeaderCarrier])
+      }
+    }
+
+    "must redirect normally when the FileUploadStarted audit fails" in {
+      val savedMonthlyReturn = uploadReportMonthlyReturn()
+      val storageService     = mockStorageService(MonthlyReturnSaveResult(savedMonthlyReturn, created = true))
+      val auditService       = mock[AuditService]
+      when(
+        auditService.auditFileUploadStarted(
+          any[OptionalDataRequest[AnyContent]],
+          any[MonthlyReturn]
+        )(any[HeaderCarrier])
+      )
+        .thenReturn(Future.failed(new RuntimeException("audit failed")))
+      val app                = applicationWith(storageService = storageService, auditService = auditService)
+
+      running(app) {
+        val request =
+          FakeRequest(POST, routes.MonthlyReportSubmissionController.onSubmit().url)
+            .withFormUrlEncodedBody("value" -> Yes.toString)
+
+        val result = route(app, request).value
+
+        status(result) mustEqual SEE_OTHER
         redirectLocation(result).value mustEqual onwardRoute.url
       }
     }
