@@ -100,15 +100,9 @@ class MonthlyReportSubmissionController @Inject() (
   ): Unit = {
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
-    try
-      auditService
-        .auditFileUploadStarted(request, monthlyReturn)
-        .failed
-        .foreach(logAuditFailure(request.zReference))
-    catch {
-      case NonFatal(e) =>
-        logAuditFailure(request.zReference)(e)
-    }
+    auditService
+      .auditFileUploadStarted(request, monthlyReturn)
+      .recover { case NonFatal(e) => logAuditFailure(request.zReference)(e) }
   }
 
   private def logAuditFailure(zReference: String)(e: Throwable): Unit =
