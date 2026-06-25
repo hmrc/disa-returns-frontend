@@ -63,7 +63,8 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
       val result =
         service.saveForThisWindow(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
 
-      result mustEqual emptyMonthlyReturn
+      result.monthlyReturn mustEqual emptyMonthlyReturn
+      result.created mustEqual true
       verify(connector).createMonthlyReturn(
         eqTo(true),
         eqTo(testZReference),
@@ -90,7 +91,8 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
           .saveForThisWindow(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
           .futureValue
 
-      result mustEqual emptyMonthlyReturn
+      result.monthlyReturn mustEqual emptyMonthlyReturn
+      result.created mustEqual false
       verify(connector).updateNilReturn(
         eqTo(false),
         eqTo(testZReference),
@@ -124,7 +126,8 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
       val result =
         service.saveForThisWindow(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
 
-      result mustEqual emptyMonthlyReturn
+      result.monthlyReturn mustEqual emptyMonthlyReturn
+      result.created mustEqual false
       verify(connector).createMonthlyReturn(
         eqTo(true),
         eqTo(testZReference),
@@ -184,7 +187,8 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
           .saveForThisWindow(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
           .futureValue
 
-      result mustEqual emptyMonthlyReturn
+      result.monthlyReturn mustEqual emptyMonthlyReturn
+      result.created mustEqual true
       verify(connector).updateNilReturn(
         eqTo(false),
         eqTo(testZReference),

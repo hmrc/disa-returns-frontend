@@ -16,15 +16,20 @@
 
 package controllers.actions
 
+import models.UserDetails
 import models.requests.IdentifierRequest
 import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class FakeIdentifierAction(bodyParsers: PlayBodyParsers, zReference: String) extends IdentifierAction {
+class FakeIdentifierAction(
+  bodyParsers: PlayBodyParsers,
+  zReference: String,
+  userDetails: UserDetails
+) extends IdentifierAction {
 
   override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
-    block(IdentifierRequest(request, zReference))
+    block(IdentifierRequest(request, zReference, userDetails))
 
   override def parser: BodyParser[AnyContent] =
     bodyParsers.default

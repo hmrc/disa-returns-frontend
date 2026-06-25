@@ -16,17 +16,19 @@
 
 package models.requests
 
-import models.MonthlyReturn
+import models.{MonthlyReturn, UserDetails}
 import play.api.mvc.{Request, WrappedRequest}
 
 case class OptionalDataRequest[A](
   request: Request[A],
   zReference: String,
+  userDetails: UserDetails,
   monthlyReturn: Option[MonthlyReturn]
 ) extends WrappedRequest[A](request)
 
 case class DataRequest[A](
   request: Request[A],
   zReference: String,
+  userDetails: UserDetails,
   monthlyReturn: MonthlyReturn
 ) extends WrappedRequest[A](request)

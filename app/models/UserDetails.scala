@@ -14,20 +14,30 @@
  * limitations under the License.
  */
 
-package base
+package models
 
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.{OptionValues, TryValues}
-import org.scalatestplus.mockito.MockitoSugar
+sealed trait UserDetails {
+  def userType: String
+  def groupId: String
+}
 
-trait ISpecBase
-    extends AnyFreeSpec
-    with Matchers
-    with TryValues
-    with OptionValues
-    with ScalaFutures
-    with IntegrationPatience
-    with MockitoSugar
-    with TestData
+object UserDetails {
+
+  val unknown = "unknown"
+
+  case class IsaManager(
+    groupId: String,
+    credId: String,
+    credentialRole: String
+  ) extends UserDetails {
+    override val userType: String = "IM"
+  }
+
+  case class Agent(
+    groupId: String,
+    agentId: String,
+    agentName: String
+  ) extends UserDetails {
+    override val userType: String = "Agent"
+  }
+}

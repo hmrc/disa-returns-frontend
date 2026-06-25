@@ -16,6 +16,7 @@
 
 package utils
 
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.{Clock, LocalDate}
 import java.util.Locale
@@ -28,12 +29,17 @@ class DateHelper @Inject() (
 
   private def reportingWindowDate: LocalDate = LocalDate.now(clock)
 
+  private def reportingPeriodDate: LocalDate = reportingWindowDate.minusMonths(1)
+
   private def monthName(date: LocalDate): String =
     date.getMonth.getDisplayName(TextStyle.FULL, Locale.UK)
 
   def reportingWindowMonth: String = monthName(reportingWindowDate)
 
-  def reportingPeriodMonth: String = monthName(reportingWindowDate.minusMonths(1))
+  def reportingPeriodMonth: String = monthName(reportingPeriodDate)
+
+  def reportingPeriod: String =
+    reportingPeriodDate.format(DateTimeFormatter.ofPattern("MMMM uuuu", Locale.UK))
 
   def month: Int = reportingWindowDate.getMonthValue
 
