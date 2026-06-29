@@ -16,8 +16,7 @@
 
 package utils
 
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
+import java.time.format.{DateTimeFormatter, TextStyle}
 import java.time.{Clock, LocalDate}
 import java.util.Locale
 import javax.inject.{Inject, Singleton}
@@ -31,19 +30,21 @@ class DateHelper @Inject() (
 
   private def reportingPeriodDate: LocalDate = reportingWindowDate.minusMonths(1)
 
-  private def monthName(date: LocalDate): String =
-    date.getMonth.getDisplayName(TextStyle.FULL, Locale.UK)
-
-  def reportingWindowMonth: String = monthName(reportingWindowDate)
-
-  def reportingPeriodMonth: String = monthName(reportingPeriodDate)
-
   def reportingPeriod: String =
     reportingPeriodDate.format(DateTimeFormatter.ofPattern("MMMM uuuu", Locale.UK))
 
-  def month: Int = reportingWindowDate.getMonthValue
+  private def monthName(date: LocalDate): String =
+    date.getMonth.getDisplayName(TextStyle.FULL, Locale.UK)
 
-  def taxYear: String = {
+  def reportingWindowMonth: String =
+    monthName(reportingWindowDate)
+
+  def reportingPeriodMonth: String =
+    monthName(reportingPeriodDate)
+
+  def reportingWindowMonthNumber: Int = reportingWindowDate.getMonthValue
+
+  def reportingWindowTaxYear: String = {
     val startYear =
       if (reportingWindowDate.getMonthValue >= 4) reportingWindowDate.getYear else reportingWindowDate.getYear - 1
     s"$startYear-${(startYear + 1).toString.takeRight(2)}"

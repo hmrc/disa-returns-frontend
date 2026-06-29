@@ -29,7 +29,7 @@ class Navigator @Inject() () {
   private val normalRoutes: Page => MonthlyReturn => Call = {
     case MonthlyReportSubmissionPage =>
       monthlyReturn => monthlyReturnRoute(monthlyReturn)
-    case CheckYourAnswersPage        => monthlyReturn => declarationRoute(monthlyReturn)
+    case CheckYourAnswersPage        => _ => declarationRoute
     case _                           => _ => routes.IndexController.onPageLoad()
   }
 
@@ -52,8 +52,8 @@ class Navigator @Inject() () {
   private def checkYourAnswersRoute: Call =
     routes.CheckYourAnswersController.onPageLoad()
 
-  private def declarationRoute(monthlyReturn: MonthlyReturn): Call =
-    routes.DeclarationController.onPageLoad(monthlyReturn.nilReturn)
+  private def declarationRoute: Call =
+    routes.DeclarationController.onPageLoad()
 
   def nextPage(page: Page, monthlyReturn: MonthlyReturn): Call =
     normalRoutes(page)(monthlyReturn)

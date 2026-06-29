@@ -17,24 +17,33 @@
 package controllers
 
 import base.SpecBase
+import models.MonthlyReturnDeclarationResult.{Declared, Failed}
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.Mockito.{verify, when}
+import org.scalatestplus.mockito.MockitoSugar
+import play.api.inject.bind
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
+import services.StorageService
+import uk.gov.hmrc.http.HeaderCarrier
 import views.html.DeclarationView
 import viewmodels.DeclarationViewModel
 
-class DeclarationControllerSpec extends SpecBase {
+import scala.concurrent.Future
+
+class DeclarationControllerSpec extends SpecBase with MockitoSugar {
 
   "DeclarationController" - {
 
     "must return OK and the correct view when nilReturn is false" in {
 
       val application =
-        applicationBuilder().build()
+        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn.copy(nilReturn = false))).build()
 
       running(application) {
 
         val request =
-          FakeRequest(GET, routes.DeclarationController.onPageLoad(false).url)
+          FakeRequest(GET, routes.DeclarationController.onPageLoad().url)
 
         val result =
           route(application, request).value
@@ -53,12 +62,12 @@ class DeclarationControllerSpec extends SpecBase {
     "must return OK and the correct view when nilReturn is true" in {
 
       val application =
-        applicationBuilder().build()
+        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn.copy(nilReturn = true))).build()
 
       running(application) {
 
         val request =
-          FakeRequest(GET, routes.DeclarationController.onPageLoad(true).url)
+          FakeRequest(GET, routes.DeclarationController.onPageLoad().url)
 
         val result =
           route(application, request).value
@@ -71,6 +80,72 @@ class DeclarationControllerSpec extends SpecBase {
 
         status(result) mustEqual OK
         contentAsString(result) mustEqual expectedView.toString
+      }
+    }
+
+    "must redirect to SubmissionComplete when the declaration is submitted successfully" in {
+      val storageService = mock[StorageService]
+      when(storageService.declareForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
+        .thenReturn(Future.successful(Declared))
+
+      val application =
+        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
+          .overrides(bind[StorageService].toInstance(storageService))
+          .build()
+
+      running(application) {
+        val request = FakeRequest(POST, routes.DeclarationController.onSubmit().url)
+
+        val result = route(application, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.SubmissionCompleteController.onPageLoad().url
+        verify(storageService).declareForThisWindow(eqTo(testZReference))(any[HeaderCarrier])
+      }
+    }
+
+    "must return InternalServerError when the monthly return has already been declared" in {
+      val storageService = mock[StorageService]
+      when(storageService.declareForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
+        .thenReturn(Future.successful(Failed))
+
+      val application =
+        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
+          .overrides(bind[StorageService].toInstance(storageService))
+          .build()
+
+      running(application) {
+        val request = FakeRequest(POST, routes.DeclarationController.onSubmit().url)
+
+        val result = route(application, request).value
+
+        status(result) mustEqual INTERNAL_SERVER_ERROR
+      }
+    }
+
+    "must redirect to Journey Recovery for a GET if no existing data is found" in {
+      val application = applicationBuilder(monthlyReturn = None).build()
+
+      running(application) {
+        val request = FakeRequest(GET, routes.DeclarationController.onPageLoad().url)
+
+        val result = route(application, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+      }
+    }
+
+    "must redirect to Journey Recovery for a POST if no existing data is found" in {
+      val application = applicationBuilder(monthlyReturn = None).build()
+
+      running(application) {
+        val request = FakeRequest(POST, routes.DeclarationController.onSubmit().url)
+
+        val result = route(application, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
       }
     }
   }

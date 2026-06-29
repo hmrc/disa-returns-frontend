@@ -100,6 +100,7 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
 
   private val monthlyReturnPath    =
     s"/disa-returns-backend/monthly/$testZReference/$testTaxYear/$testMonth"
+  private val declarationPath      = s"$monthlyReturnPath/declarations"
   private val updateNilReturnPath  = s"$monthlyReturnPath/nilReturn"
   private val createFileUploadPath = s"$monthlyReturnPath/files"
   private val deleteFileUploadPath = s"$monthlyReturnPath/files/$testReference"
@@ -221,6 +222,45 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
 
         val result = connector
           .createFileUpload(testZReference, testTaxYear, testMonth, testReference)(HeaderCarrier())
+          .failed
+          .futureValue
+
+        result mustBe a[UpstreamErrorResponse]
+      }
+    }
+
+    "must declare a monthly return" in {
+      wireMockServer.stubFor(
+        post(urlEqualTo(declarationPath))
+          .willReturn(noContent())
+      )
+
+      val app = application
+      running(app) {
+        val connector = appConnector(app)
+
+        connector
+          .declareMonthlyReturn(testZReference, testTaxYear, testMonth)(HeaderCarrier())
+          .futureValue
+      }
+
+      wireMockServer.verify(
+        postRequestedFor(urlEqualTo(declarationPath))
+      )
+    }
+
+    "must fail when declaring a monthly return returns an error status" in {
+      wireMockServer.stubFor(
+        post(urlEqualTo(declarationPath))
+          .willReturn(aResponse().withStatus(409))
+      )
+
+      val app = application
+      running(app) {
+        val connector = appConnector(app)
+
+        val result = connector
+          .declareMonthlyReturn(testZReference, testTaxYear, testMonth)(HeaderCarrier())
           .failed
           .futureValue
 
