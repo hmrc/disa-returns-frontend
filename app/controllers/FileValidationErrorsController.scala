@@ -34,31 +34,32 @@ class FileValidationErrorsController @Inject() (
 ) extends FrontendBaseController
     with I18nSupport {
 
-  def onPageLoad(reference: String): Action[AnyContent] = (identify andThen getData andThen requireData) { implicit request =>
-    val inlineErrors = request.monthlyReturn.fileUploads
-      .find(_.reference == reference)
-      .flatMap(_.fileUploadDetails)
-      .flatMap(_.validation)
-      .toSeq
-      .flatMap(_.inlineErrors)
+  def onPageLoad(reference: String): Action[AnyContent] = (identify andThen getData andThen requireData) {
+    implicit request =>
+      val inlineErrors = request.monthlyReturn.fileUploads
+        .find(_.reference == reference)
+        .flatMap(_.fileUploadDetails)
+        .flatMap(_.validation)
+        .toSeq
+        .flatMap(_.inlineErrors)
 
-    if (inlineErrors.exists(_.errorCodes.contains("E001")))
-      Redirect(routes.ProblemWithUploadedFileController.onPageLoad())
-    else {
-      val errors = toFileValidationErrors(inlineErrors)
+      if (inlineErrors.exists(_.errorCodes.contains("E001")))
+        Redirect(routes.ProblemWithUploadedFileController.onPageLoad())
+      else {
+        val errors = toFileValidationErrors(inlineErrors)
 
-      if (errors.size > 25)
-        Redirect(routes.FileFormattingErrorsController.onPageLoad())
-      else
-        Ok(view(errors))
-    }
+        if (errors.size > 25)
+          Redirect(routes.FileFormattingErrorsController.onPageLoad())
+        else
+          Ok(view(errors))
+      }
   }
 
   private def toFileValidationErrors(inlineErrors: Seq[InlineError]): Seq[FileValidationError] =
     inlineErrors.flatMap { inlineError =>
       inlineError.errorCodes.map { code =>
         FileValidationError(
-          cell       = FileValidationErrorCodes.cellReference(code, inlineError.rowNumber),
+          cell = FileValidationErrorCodes.cellReference(code, inlineError.rowNumber),
           messageKey = FileValidationErrorCodes.messageKey(code)
         )
       }

@@ -28,17 +28,17 @@ class FileValidationErrorsControllerSpec extends SpecBase {
 
   private def fileUploadWithErrors(inlineErrors: Seq[InlineError]): FileUpload =
     FileUpload(
-      reference         = testReference,
-      status            = FileUploadStatus.ValidationSuccess,
+      reference = testReference,
+      status = FileUploadStatus.ValidationSuccess,
       fileUploadDetails = Some(
         FileUploadDetails(
-          fileName   = "return.csv",
+          fileName = "return.csv",
           validation = Some(
             ValidationResult(
-              rowsValidated    = inlineErrors.size,
+              rowsValidated = inlineErrors.size,
               validationErrors = inlineErrors.flatMap(_.errorCodes).size,
-              status           = "FAILURE",
-              inlineErrors     = inlineErrors
+              status = "FAILURE",
+              inlineErrors = inlineErrors
             )
           )
         )
@@ -70,7 +70,7 @@ class FileValidationErrorsControllerSpec extends SpecBase {
         val expectedErrors = twentyFiveInlineErrors.flatMap { inlineError =>
           inlineError.errorCodes.map { code =>
             FileValidationError(
-              cell       = FileValidationErrorCodes.cellReference(code, inlineError.rowNumber),
+              cell = FileValidationErrorCodes.cellReference(code, inlineError.rowNumber),
               messageKey = FileValidationErrorCodes.messageKey(code)
             )
           }
@@ -126,8 +126,8 @@ class FileValidationErrorsControllerSpec extends SpecBase {
 
     "must return OK with an empty error table when the file has no validation results" in {
       val uploadWithoutValidation = FileUpload(
-        reference         = testReference,
-        status            = FileUploadStatus.UpscanSuccess,
+        reference = testReference,
+        status = FileUploadStatus.UpscanSuccess,
         fileUploadDetails = Some(FileUploadDetails("return.csv"))
       )
       val monthlyReturn           = emptyMonthlyReturn.copy(fileUploads = Seq(uploadWithoutValidation))
