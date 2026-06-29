@@ -37,6 +37,8 @@ GET         /problem-with-uploaded-file                  controllers.ProblemWith
 
 GET         /file-formatting-errors                      controllers.FileFormattingErrorsController.onPageLoad()
 
+GET         /file-validation-errors                     controllers.FileValidationErrorsController.onPageLoad(reference: String)
+
 GET         /empty-uploaded-file                         controllers.FileUploadErrorController.emptyFileUploaded()
 
 GET         /file-contains-virus                         controllers.FileUploadErrorController.fileContainsVirus()
