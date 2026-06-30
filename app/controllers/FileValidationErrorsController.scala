@@ -17,6 +17,7 @@
 package controllers
 
 import com.google.inject.Inject
+import config.FrontendAppConfig
 import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
 import models.{FileValidationError, FileValidationErrorCodes, InlineError}
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -30,7 +31,8 @@ class FileValidationErrorsController @Inject() (
   getData: DataRetrievalAction,
   requireData: DataRequiredAction,
   val controllerComponents: MessagesControllerComponents,
-  view: FileValidationErrorsView
+  view: FileValidationErrorsView,
+  appConfig: FrontendAppConfig
 ) extends FrontendBaseController
     with I18nSupport {
 
@@ -45,7 +47,7 @@ class FileValidationErrorsController @Inject() (
 
       if (inlineErrors.exists(_.errorCodes.contains("E001")))
         Redirect(routes.ProblemWithUploadedFileController.onPageLoad())
-      else if (validation.exists(_.validationErrors > 25))
+      else if (validation.exists(_.validationErrors > appConfig.fileUploadMaxInlineErrors))
         Redirect(routes.FileFormattingErrorsController.onPageLoad())
       else
         Ok(view(toFileValidationErrors(inlineErrors)))
