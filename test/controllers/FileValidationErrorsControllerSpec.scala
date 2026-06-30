@@ -45,6 +45,25 @@ class FileValidationErrorsControllerSpec extends SpecBase {
       )
     )
 
+  private def fileUploadWithCappedErrors(inlineErrors: Seq[InlineError], totalValidationErrors: Int): FileUpload =
+    FileUpload(
+      reference = testReference,
+      status = FileUploadStatus.ValidationSuccess,
+      fileUploadDetails = Some(
+        FileUploadDetails(
+          fileName = "return.csv",
+          validation = Some(
+            ValidationResult(
+              rowsValidated = inlineErrors.size,
+              validationErrors = totalValidationErrors,
+              status = "FAILURE",
+              inlineErrors = inlineErrors
+            )
+          )
+        )
+      )
+    )
+
   private val twentyFiveInlineErrors: Seq[InlineError] = Seq(
     InlineError(rowNumber = 1, errorCodes = Seq("E010", "E020", "E030", "E040", "E050")),
     InlineError(rowNumber = 2, errorCodes = Seq("E060", "E070", "E080", "E090", "E100")),
@@ -95,6 +114,21 @@ class FileValidationErrorsControllerSpec extends SpecBase {
 
         status(result) mustEqual SEE_OTHER
         redirectLocation(result).value mustEqual routes.ProblemWithUploadedFileController.onPageLoad().url
+      }
+    }
+
+    "must redirect to FileFormattingErrorsController when validationErrors > 25 even if the backend capped inline errors at 25 rows" in {
+      val monthlyReturn = emptyMonthlyReturn.copy(
+        fileUploads = Seq(fileUploadWithCappedErrors(twentyFiveInlineErrors, totalValidationErrors = 26))
+      )
+      val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
+
+      running(application) {
+        val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
+        val result  = route(application, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.FileFormattingErrorsController.onPageLoad().url
       }
     }
 
