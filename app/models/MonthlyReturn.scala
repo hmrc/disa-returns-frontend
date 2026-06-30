@@ -47,7 +47,20 @@ case class FileUpload(
 }
 
 case class FileUploadDetails(
-  fileName: String
+  fileName: String,
+  validation: Option[ValidationResult] = None
+)
+
+case class ValidationResult(
+  rowsValidated: Int,
+  validationErrors: Int,
+  status: String,
+  inlineErrors: Seq[InlineError] = Seq.empty
+)
+
+case class InlineError(
+  rowNumber: Int,
+  errorCodes: Seq[String]
 )
 
 object FileUploadStatus {
@@ -68,8 +81,14 @@ object MonthlyReturn {
       Writes(uuid => JsString(uuid.toString))
     )
 
+  implicit val inlineErrorFormat: OFormat[InlineError] =
+    Json.format[InlineError]
+
+  implicit val validationResultFormat: OFormat[ValidationResult] =
+    Json.using[Json.WithDefaultValues].format[ValidationResult]
+
   implicit val fileUploadDetailsFormat: OFormat[FileUploadDetails] =
-    Json.format[FileUploadDetails]
+    Json.using[Json.WithDefaultValues].format[FileUploadDetails]
 
   implicit val fileUploadFormat: OFormat[FileUpload] =
     Json.using[Json.WithDefaultValues].format[FileUpload]
