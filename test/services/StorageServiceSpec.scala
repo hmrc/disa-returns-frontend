@@ -18,6 +18,7 @@ package services
 
 import base.SpecBase
 import connectors.BackendConnector
+import models.MonthlyReturnDeclarationResult.{Declared, Failed}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
@@ -158,6 +159,43 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
       verify(connector).deleteFileUpload(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth), eqTo(reference))(
         any[HeaderCarrier]
       )
+    }
+
+    "must declare the monthly return for the current reporting window" in {
+      val connector = mock[BackendConnector]
+      when(connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(any[HeaderCarrier]))
+        .thenReturn(Future.successful(()))
+      val service   = new StorageService(connector, dateHelper)
+
+      val result = service.declareForThisWindow(testZReference)(HeaderCarrier()).futureValue
+
+      result mustEqual Declared
+
+      verify(connector).declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(
+        any[HeaderCarrier]
+      )
+    }
+
+    "must return Failed when declaring the monthly return returns an upstream error" in {
+      val connector = mock[BackendConnector]
+      when(connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(any[HeaderCarrier]))
+        .thenReturn(Future.failed(UpstreamErrorResponse("already declared", CONFLICT, CONFLICT)))
+      val service   = new StorageService(connector, dateHelper)
+
+      val result = service.declareForThisWindow(testZReference)(HeaderCarrier()).futureValue
+
+      result mustEqual Failed
+    }
+
+    "must return Failed when declaring the monthly return fails" in {
+      val connector = mock[BackendConnector]
+      when(connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(any[HeaderCarrier]))
+        .thenReturn(Future.failed(new RuntimeException("boom")))
+      val service   = new StorageService(connector, dateHelper)
+
+      val result = service.declareForThisWindow(testZReference)(HeaderCarrier()).futureValue
+
+      result mustEqual Failed
     }
 
     "must create the monthly return when update fails because the return was missing after retrieval" in {

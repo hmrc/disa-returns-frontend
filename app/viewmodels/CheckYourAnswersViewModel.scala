@@ -22,6 +22,7 @@ import play.api.i18n.Messages
 import play.twirl.api.HtmlFormat
 import uk.gov.hmrc.govukfrontend.views.viewmodels.content.{HtmlContent, Text}
 import uk.gov.hmrc.govukfrontend.views.viewmodels.summarylist.{ActionItem, SummaryList, SummaryListRow}
+import utils.DateHelper
 import viewmodels.govuk.summarylist.*
 
 final case class CheckYourAnswersViewModel(
@@ -30,12 +31,14 @@ final case class CheckYourAnswersViewModel(
 
 object CheckYourAnswersViewModel {
 
-  def apply(monthlyReturn: MonthlyReturn, reportingWindowMonth: String)(implicit
-    messages: Messages
+  def apply(monthlyReturn: MonthlyReturn)(implicit
+    messages: Messages,
+    dateHelper: DateHelper
   ): CheckYourAnswersViewModel = {
-    val rows = Seq(reportSubmissionRow(monthlyReturn.nilReturn, reportingWindowMonth)) ++ fileRows(monthlyReturn)
+    val reportingWindowMonth = dateHelper.reportingWindowMonth
+    val rows                 = Seq(reportSubmissionRow(monthlyReturn.nilReturn, reportingWindowMonth)) ++ fileRows(monthlyReturn)
 
-    CheckYourAnswersViewModel(
+    new CheckYourAnswersViewModel(
       summaryList = SummaryListViewModel(rows)
     )
   }

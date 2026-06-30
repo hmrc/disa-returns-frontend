@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,31 +16,25 @@
 
 package controllers
 
-import com.google.inject.Inject
 import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
-import navigation.Navigator
-import pages.CheckYourAnswersPage
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
-import views.html.CheckYourAnswersView
+import views.html.SubmissionCompleteView
 
-class CheckYourAnswersController @Inject() (
+import javax.inject.Inject
+
+class SubmissionCompleteController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   getData: DataRetrievalAction,
   requireData: DataRequiredAction,
-  navigator: Navigator,
   val controllerComponents: MessagesControllerComponents,
-  view: CheckYourAnswersView
+  view: SubmissionCompleteView
 ) extends FrontendBaseController
     with I18nSupport {
 
   def onPageLoad(): Action[AnyContent] = (identify andThen getData andThen requireData) { implicit request =>
-    Ok(view(request.monthlyReturn))
-  }
-
-  def onSubmit(): Action[AnyContent] = (identify andThen getData andThen requireData) { implicit request =>
-    Redirect(navigator.nextPage(CheckYourAnswersPage, request.monthlyReturn))
+    Ok(view())
   }
 }

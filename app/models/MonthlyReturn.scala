@@ -36,6 +36,13 @@ case class MonthlyReturnSaveResult(
   created: Boolean
 )
 
+sealed trait MonthlyReturnDeclarationResult
+
+object MonthlyReturnDeclarationResult {
+  case object Declared extends MonthlyReturnDeclarationResult
+  case object Failed extends MonthlyReturnDeclarationResult
+}
+
 case class FileUpload(
   reference: String,
   status: String,

@@ -16,25 +16,47 @@
 
 package controllers
 
-import controllers.actions.IdentifierAction
+import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
+import handlers.ErrorHandler
+import models.MonthlyReturnDeclarationResult.{Declared, Failed}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import services.StorageService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
-import views.html.DeclarationView
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import viewmodels.DeclarationViewModel
+import views.html.DeclarationView
+
 import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
 
 class DeclarationController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
+  getData: DataRetrievalAction,
+  requireData: DataRequiredAction,
+  storageService: StorageService,
+  errorHandler: ErrorHandler,
   val controllerComponents: MessagesControllerComponents,
   view: DeclarationView
-) extends FrontendBaseController
+)(implicit ec: ExecutionContext)
+    extends FrontendBaseController
     with I18nSupport {
 
-  // Parametrised for now until stored user answers are available
-  def onPageLoad(nilReturn: Boolean): Action[AnyContent] =
-    identify { implicit request =>
-      Ok(view(DeclarationViewModel(nilReturn)))
+  def onPageLoad(): Action[AnyContent] =
+    (identify andThen getData andThen requireData) { implicit request =>
+      Ok(view(DeclarationViewModel(request.monthlyReturn.nilReturn)))
     }
+
+  def onSubmit(): Action[AnyContent] = (identify andThen getData andThen requireData).async { implicit request =>
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+
+    storageService
+      .declareForThisWindow(request.zReference)
+      .flatMap {
+        case Declared => Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
+        case Failed   => errorHandler.internalServerError
+      }
+  }
 }

@@ -70,7 +70,7 @@ class UpscanServiceSpec extends SpecBase with MockitoSugar {
 
       val expectedRequest = UpscanInitiateRequest(
         callbackUrl =
-          s"http://backend/disa-returns-backend/monthly/upscan/callback/$testZReference/${dateHelper.taxYear}/${dateHelper.month}",
+          s"http://backend/disa-returns-backend/monthly/upscan/callback/$testZReference/${dateHelper.reportingWindowTaxYear}/${dateHelper.reportingWindowMonthNumber}",
         successRedirect = Some("http://localhost:12804/upscan/success"),
         errorRedirect = Some("http://localhost:12804/file-upload/error"),
         minimumFileSize = Some(testUpscanMinFileSize),

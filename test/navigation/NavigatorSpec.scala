@@ -50,7 +50,7 @@ class NavigatorSpec extends SpecBase {
       navigator.nextPage(
         CheckYourAnswersPage,
         monthlyReturn(nilReturn = true)
-      ) mustBe routes.DeclarationController.onPageLoad(true)
+      ) mustBe routes.DeclarationController.onPageLoad()
     }
 
     "must go from a page that doesn't exist in the route map to Index" in {
