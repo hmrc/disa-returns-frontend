@@ -58,5 +58,5 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   lazy val upscanMaxFileSize: Int          = getInt("upscan.maxFileSize")
   lazy val upscanAcceptedMimeTypes: String = getString("upscan.acceptedMimeTypes")
 
-  val fileUploadMaxInlineErrors: Int = getInt("fileUploadMaxInlineErrors")
+  val fileUploadMaxInlineErrors: Int = getInt("fileUploadValidation.maxInlineErrors")
 }
