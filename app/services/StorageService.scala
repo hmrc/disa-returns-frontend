@@ -17,31 +17,64 @@
 package services
 
 import connectors.BackendConnector
-import models.{MonthlyReturn, MonthlyReturnSaveResult}
+import models.MonthlyReturnDeclarationResult.{Declared, Failed}
+import models.{MonthlyReturn, MonthlyReturnDeclarationResult, MonthlyReturnSaveResult}
+import play.api.Logging
 import play.api.http.Status.{CONFLICT, NOT_FOUND}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import utils.DateHelper
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class StorageService @Inject() (
   backendConnector: BackendConnector,
   dateHelper: DateHelper
-)(implicit ec: ExecutionContext) {
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   def retrieveForThisWindow(zReference: String)(implicit hc: HeaderCarrier): Future[Option[MonthlyReturn]] =
-    backendConnector.retrieve(zReference, dateHelper.taxYear, dateHelper.month)
+    backendConnector.retrieve(zReference, dateHelper.reportingWindowTaxYear, dateHelper.reportingWindowMonthNumber)
 
   def createFileUploadForThisWindow(zReference: String, reference: String)(implicit
     hc: HeaderCarrier
   ): Future[Unit] =
-    backendConnector.createFileUpload(zReference, dateHelper.taxYear, dateHelper.month, reference)
+    backendConnector.createFileUpload(
+      zReference,
+      dateHelper.reportingWindowTaxYear,
+      dateHelper.reportingWindowMonthNumber,
+      reference
+    )
 
   def deleteFileUploadForThisWindow(zReference: String, reference: String)(implicit
     hc: HeaderCarrier
   ): Future[Unit] =
-    backendConnector.deleteFileUpload(zReference, dateHelper.taxYear, dateHelper.month, reference)
+    backendConnector.deleteFileUpload(
+      zReference,
+      dateHelper.reportingWindowTaxYear,
+      dateHelper.reportingWindowMonthNumber,
+      reference
+    )
+
+  def declareForThisWindow(zReference: String)(implicit hc: HeaderCarrier): Future[MonthlyReturnDeclarationResult] =
+    backendConnector
+      .declareMonthlyReturn(zReference, dateHelper.reportingWindowTaxYear, dateHelper.reportingWindowMonthNumber)
+      .map(_ => Declared)
+      .recover {
+        case e: UpstreamErrorResponse =>
+          logger.warn(
+            s"Monthly return declaration failed. Upstream HTTP status: [${e.statusCode}]",
+            e
+          )
+          Failed
+        case NonFatal(e)              =>
+          logger.error(
+            s"Failed to declare monthly return for zRef: [$zReference]",
+            e
+          )
+          Failed
+      }
 
   def saveForThisWindow(
     zReference: String,
@@ -50,8 +83,8 @@ class StorageService @Inject() (
   )(implicit
     hc: HeaderCarrier
   ): Future[MonthlyReturnSaveResult] = {
-    val taxYear = dateHelper.taxYear
-    val month   = dateHelper.month
+    val taxYear = dateHelper.reportingWindowTaxYear
+    val month   = dateHelper.reportingWindowMonthNumber
 
     currentMonthlyReturn match {
       case Some(_) => updateWithCreateFallback(zReference, taxYear, month, nilReturn)

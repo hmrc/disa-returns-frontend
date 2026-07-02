@@ -55,6 +55,9 @@ GET         /file-upload                                 controllers.UploadFileC
 
 GET         /file-upload-failed                          controllers.FileUploadErrorController.fileUploadFailed()
 
-GET         /declaration                                 controllers.DeclarationController.onPageLoad(nilReturn: Boolean)
+GET         /declaration                                 controllers.DeclarationController.onPageLoad()
+POST        /declaration                                 controllers.DeclarationController.onSubmit()
+
+GET         /submission-complete                         controllers.SubmissionCompleteController.onPageLoad()
 
 GET         /upscan/success                              controllers.UpscanResultController.success

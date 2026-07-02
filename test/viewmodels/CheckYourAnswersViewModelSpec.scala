@@ -22,8 +22,12 @@ import models.{FileUpload, FileUploadDetails, FileUploadStatus, MonthlyReturn}
 import play.api.i18n.Messages
 import play.api.test.Helpers.running
 import uk.gov.hmrc.govukfrontend.views.viewmodels.content.{HtmlContent, Text}
+import utils.DateHelper
 
 class CheckYourAnswersViewModelSpec extends SpecBase {
+
+  private implicit val dateHelper: DateHelper =
+    new DateHelper(testReportingWindowClock)
 
   private val successfulUploadOne = FileUpload(
     reference = "successful-reference-1",
@@ -50,10 +54,7 @@ class CheckYourAnswersViewModelSpec extends SpecBase {
       running(application) {
         implicit val msgs: Messages = messages(application)
 
-        val viewModel = CheckYourAnswersViewModel(
-          emptyMonthlyReturn.copy(nilReturn = true),
-          testReportingWindowMonthName
-        )
+        val viewModel = CheckYourAnswersViewModel(emptyMonthlyReturn.copy(nilReturn = true))
 
         val rows = viewModel.summaryList.rows
 
@@ -76,7 +77,7 @@ class CheckYourAnswersViewModelSpec extends SpecBase {
           fileUploads = Seq(successfulUploadOne, inProgressUpload, successfulUploadTwo)
         )
 
-        val viewModel = CheckYourAnswersViewModel(monthlyReturn, testReportingWindowMonthName)
+        val viewModel = CheckYourAnswersViewModel(monthlyReturn)
 
         val rows = viewModel.summaryList.rows
 

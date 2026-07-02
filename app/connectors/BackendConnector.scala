@@ -61,6 +61,20 @@ class BackendConnector @Inject() (
       .withBody(Json.obj("value" -> nilReturn))
       .execute[MonthlyReturn]
 
+  def declareMonthlyReturn(zRef: String, taxYear: String, month: Int)(implicit
+    hc: HeaderCarrier
+  ): Future[Unit] =
+    httpClient
+      .post(url"$backendUrl/$zRef/$taxYear/$month/declarations")
+      .execute[HttpResponse]
+      .flatMap { response =>
+        response.status match {
+          case NO_CONTENT => Future.successful(())
+          case status     =>
+            Future.failed(UpstreamErrorResponse("declareMonthlyReturn failed", status, status, response.headers))
+        }
+      }
+
   def createFileUpload(zRef: String, taxYear: String, month: Int, reference: String)(implicit
     hc: HeaderCarrier
   ): Future[Unit] =

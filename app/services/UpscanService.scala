@@ -35,7 +35,7 @@ class UpscanService @Inject() (
     upscanConnector.initiateUpload(
       UpscanInitiateRequest(
         callbackUrl =
-          s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly/upscan/callback/$zReference/${dateHelper.taxYear}/${dateHelper.month}",
+          s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly/upscan/callback/$zReference/${dateHelper.reportingWindowTaxYear}/${dateHelper.reportingWindowMonthNumber}",
         successRedirect = Some(s"${appConfig.host}/upscan/success"),
         errorRedirect = Some(s"${appConfig.host}/file-upload/error"),
         minimumFileSize = Some(appConfig.upscanMinFileSize),
