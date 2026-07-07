@@ -85,7 +85,7 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
 
     "must redirect to SubmissionComplete when the declaration is submitted successfully" in {
       val storageService = mock[StorageService]
-      when(storageService.declareForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
+      when(storageService.declareForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
         .thenReturn(Future.successful(Declared))
 
       val application =
@@ -100,13 +100,13 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual SEE_OTHER
         redirectLocation(result).value mustEqual routes.SubmissionCompleteController.onPageLoad().url
-        verify(storageService).declareForThisWindow(eqTo(testZReference))(any[HeaderCarrier])
+        verify(storageService).declareForThisPeriod(eqTo(testZReference))(any[HeaderCarrier])
       }
     }
 
     "must return InternalServerError when the monthly return has already been declared" in {
       val storageService = mock[StorageService]
-      when(storageService.declareForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
+      when(storageService.declareForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
         .thenReturn(Future.successful(Failed))
 
       val application =

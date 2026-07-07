@@ -59,7 +59,7 @@ class UploadFileControllerSpec extends SpecBase {
       val mockStorageService = mock[StorageService]
 
       when(
-        mockStorageService.createFileUploadForThisWindow(eqTo(testZReference), eqTo(upscanResponse.reference))(
+        mockStorageService.createFileUploadForThisPeriod(eqTo(testZReference), eqTo(upscanResponse.reference))(
           any[HeaderCarrier]
         )
       )
@@ -107,7 +107,7 @@ class UploadFileControllerSpec extends SpecBase {
       val mockStorageService = mock[StorageService]
 
       when(
-        mockStorageService.createFileUploadForThisWindow(eqTo(testZReference), eqTo(upscanResponse.reference))(
+        mockStorageService.createFileUploadForThisPeriod(eqTo(testZReference), eqTo(upscanResponse.reference))(
           any[HeaderCarrier]
         )
       )
@@ -176,7 +176,7 @@ class UploadFileControllerSpec extends SpecBase {
       val mockStorageService = mock[StorageService]
 
       when(
-        mockStorageService.createFileUploadForThisWindow(eqTo(testZReference), eqTo(upscanResponse.reference))(
+        mockStorageService.createFileUploadForThisPeriod(eqTo(testZReference), eqTo(upscanResponse.reference))(
           any[HeaderCarrier]
         )
       )

@@ -44,9 +44,15 @@ class DateHelper @Inject() (
 
   def reportingWindowMonthNumber: Int = reportingWindowDate.getMonthValue
 
-  def reportingWindowTaxYear: String = {
+  def reportingPeriodMonthNumber: Int = reportingPeriodDate.getMonthValue
+
+  def reportingWindowTaxYear: String = taxYearFor(reportingWindowDate)
+
+  def reportingPeriodTaxYear: String = taxYearFor(reportingPeriodDate)
+
+  private def taxYearFor(date: LocalDate): String = {
     val startYear =
-      if (reportingWindowDate.getMonthValue >= 4) reportingWindowDate.getYear else reportingWindowDate.getYear - 1
+      if (date.getMonthValue >= 4) date.getYear else date.getYear - 1
     s"$startYear-${(startYear + 1).toString.takeRight(2)}"
   }
 }

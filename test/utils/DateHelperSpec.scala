@@ -60,6 +60,12 @@ class DateHelperSpec extends SpecBase {
       helper.reportingWindowMonthNumber mustEqual testMonth
     }
 
+    "must return the numeric month for the reporting period" in {
+      val helper = new DateHelper(testReportingWindowClock)
+
+      helper.reportingPeriodMonthNumber mustEqual testReportingPeriodMonthNumber
+    }
+
     "must return the tax year for a reporting window before April" in {
       val helper = new DateHelper(testReportingWindowClock)
 
@@ -70,6 +76,18 @@ class DateHelperSpec extends SpecBase {
       val helper = dateHelperAt(testAprilReportingWindowInstant)
 
       helper.reportingWindowTaxYear mustEqual nextTestTaxYear
+    }
+
+    "must return the tax year for the reporting period" in {
+      val helper = new DateHelper(testReportingWindowClock)
+
+      helper.reportingPeriodTaxYear mustEqual testTaxYear
+    }
+
+    "must return the tax year for an April reporting period" in {
+      val helper = dateHelperAt(Instant.parse("2026-05-01T00:00:00Z"))
+
+      helper.reportingPeriodTaxYear mustEqual nextTestTaxYear
     }
   }
 

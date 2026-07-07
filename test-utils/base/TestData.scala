@@ -35,6 +35,7 @@ trait TestData {
   protected val testTaxYear: String                          = TestData.testTaxYear
   protected val nextTestTaxYear: String                      = TestData.nextTestTaxYear
   protected val testMonth: Int                               = TestData.testMonth
+  protected val testReportingPeriodMonthNumber: Int          = TestData.testReportingPeriodMonthNumber
   protected val testUpscanMinFileSize: Int                   = TestData.testUpscanMinFileSize
   protected val testUpscanMaxFileSize: Int                   = TestData.testUpscanMaxFileSize
   protected val testReportingWindowMonthName: String         = TestData.testReportingWindowMonthName
@@ -74,6 +75,7 @@ object TestData {
   val testTaxYear: String                          = "2025-26"
   val nextTestTaxYear: String                      = "2026-27"
   val testMonth: Int                               = 3
+  val testReportingPeriodMonthNumber: Int          = 2
   val testUpscanMinFileSize: Int                   = 1
   val testUpscanMaxFileSize: Int                   = 10485760
   val testReportingWindowMonthName: String         = "March"

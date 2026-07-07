@@ -154,7 +154,7 @@ class RemoveFileControllerSpec extends SpecBase {
     "must delete the file and redirect to UploadedReportFilesController when the user selects Yes and other files remain" in {
       val mockStorageService = mock[StorageService]
       when(
-        mockStorageService.deleteFileUploadForThisWindow(eqTo(testZReference), eqTo(testReference))(any[HeaderCarrier])
+        mockStorageService.deleteFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(any[HeaderCarrier])
       ).thenReturn(Future.successful(()))
 
       val application = applicationBuilder(monthlyReturn = Some(multiFileMonthlyReturn))
@@ -170,7 +170,7 @@ class RemoveFileControllerSpec extends SpecBase {
 
         status(result) mustEqual SEE_OTHER
         redirectLocation(result).value mustEqual routes.UploadedReportFilesController.onPageLoad().url
-        verify(mockStorageService).deleteFileUploadForThisWindow(eqTo(testZReference), eqTo(testReference))(
+        verify(mockStorageService).deleteFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
           any[HeaderCarrier]
         )
       }
@@ -179,7 +179,7 @@ class RemoveFileControllerSpec extends SpecBase {
     "must delete the file and redirect to UploadFileController when the user removes the last remaining file" in {
       val mockStorageService = mock[StorageService]
       when(
-        mockStorageService.deleteFileUploadForThisWindow(eqTo(testZReference), eqTo(testReference))(any[HeaderCarrier])
+        mockStorageService.deleteFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(any[HeaderCarrier])
       ).thenReturn(Future.successful(()))
 
       val application = applicationBuilder(monthlyReturn = Some(monthlyReturn))
@@ -195,7 +195,7 @@ class RemoveFileControllerSpec extends SpecBase {
 
         status(result) mustEqual SEE_OTHER
         redirectLocation(result).value mustEqual routes.UploadFileController.onPageLoad().url
-        verify(mockStorageService).deleteFileUploadForThisWindow(eqTo(testZReference), eqTo(testReference))(
+        verify(mockStorageService).deleteFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
           any[HeaderCarrier]
         )
       }
@@ -275,7 +275,7 @@ class RemoveFileControllerSpec extends SpecBase {
     "must return InternalServerError when the backend delete fails" in {
       val mockStorageService = mock[StorageService]
       when(
-        mockStorageService.deleteFileUploadForThisWindow(any[String], any[String])(any[HeaderCarrier])
+        mockStorageService.deleteFileUploadForThisPeriod(any[String], any[String])(any[HeaderCarrier])
       ).thenReturn(Future.failed(new RuntimeException("boom")))
 
       val application = applicationBuilder(monthlyReturn = Some(monthlyReturn))
