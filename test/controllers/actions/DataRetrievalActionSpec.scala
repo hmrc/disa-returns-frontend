@@ -40,7 +40,7 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
       "must set monthlyReturn to None in the request" in {
 
         val storageService = mock[StorageService]
-        when(storageService.retrieveForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
+        when(storageService.retrieveForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
           .thenReturn(Future.successful(None))
         val action         = new Harness(storageService)
 
@@ -58,7 +58,7 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
       "must add it to the request" in {
 
         val storageService = mock[StorageService]
-        when(storageService.retrieveForThisWindow(eqTo(testZReference))(any[HeaderCarrier]))
+        when(storageService.retrieveForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(emptyMonthlyReturn)))
         val action         = new Harness(storageService)
 

@@ -75,7 +75,7 @@ class MonthlyReportSubmissionController @Inject() (
           val nilReturn = answer == No
 
           storageService
-            .saveForThisWindow(request.zReference, request.monthlyReturn, nilReturn)
+            .saveForThisPeriod(request.zReference, request.monthlyReturn, nilReturn)
             .map { saveResult =>
               if (saveResult.created) {
                 auditFileUploadStarted(request, saveResult.monthlyReturn)

@@ -58,7 +58,7 @@ class UploadFileController @Inject() (
       .initiate(request.zReference)
       .flatMap { upscanResponse =>
         storageService
-          .createFileUploadForThisWindow(request.zReference, upscanResponse.reference)
+          .createFileUploadForThisPeriod(request.zReference, upscanResponse.reference)
           .map { _ =>
             val model = UploadViewModel(
               upscan = upscanResponse,

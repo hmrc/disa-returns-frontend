@@ -53,7 +53,7 @@ class DeclarationController @Inject() (
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
     storageService
-      .declareForThisWindow(request.zReference)
+      .declareForThisPeriod(request.zReference)
       .flatMap {
         case Declared => Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
         case Failed   => errorHandler.internalServerError

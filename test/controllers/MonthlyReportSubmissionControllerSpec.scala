@@ -82,7 +82,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
   ): StorageService = {
     val storageService = mock[StorageService]
     when(
-      storageService.saveForThisWindow(
+      storageService.saveForThisPeriod(
         any[String],
         any[Option[MonthlyReturn]],
         any[Boolean]
@@ -171,7 +171,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual BAD_REQUEST
         contentAsString(result) mustEqual view(boundForm)(request, messages(app)).toString
-        verify(storageService, never()).saveForThisWindow(
+        verify(storageService, never()).saveForThisPeriod(
           any[String],
           any[Option[MonthlyReturn]],
           any[Boolean]
@@ -195,7 +195,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual SEE_OTHER
 
-        verify(storageService).saveForThisWindow(eqTo(testZReference), eqTo(None), eqTo(true))(any[HeaderCarrier])
+        verify(storageService).saveForThisPeriod(eqTo(testZReference), eqTo(None), eqTo(true))(any[HeaderCarrier])
         verify(auditService, never()).auditFileUploadStarted(
           any[OptionalDataRequest[AnyContent]],
           any[MonthlyReturn]
@@ -223,7 +223,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual SEE_OTHER
 
-        verify(storageService).saveForThisWindow(eqTo(testZReference), eqTo(Some(existing)), eqTo(false))(
+        verify(storageService).saveForThisPeriod(eqTo(testZReference), eqTo(Some(existing)), eqTo(false))(
           any[HeaderCarrier]
         )
         verify(auditService, never()).auditFileUploadStarted(
@@ -304,7 +304,7 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
     "must return InternalServerError when the backend save fails" in {
       val storageService = mock[StorageService]
       when(
-        storageService.saveForThisWindow(
+        storageService.saveForThisPeriod(
           any[String],
           any[Option[MonthlyReturn]],
           any[Boolean]

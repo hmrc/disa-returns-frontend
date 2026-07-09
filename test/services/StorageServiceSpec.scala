@@ -34,35 +34,39 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
 
   "StorageService" - {
 
-    "must retrieve a monthly return for the current reporting window" in {
+    "must retrieve a monthly return for the current reporting period" in {
       val connector = mock[BackendConnector]
-      when(connector.retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(any[HeaderCarrier]))
+      when(
+        connector.retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testReportingPeriodMonthNumber))(
+          any[HeaderCarrier]
+        )
+      )
         .thenReturn(Future.successful(Some(emptyMonthlyReturn)))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.retrieveForThisWindow(testZReference)(HeaderCarrier()).futureValue
+      val result = service.retrieveForThisPeriod(testZReference)(HeaderCarrier()).futureValue
 
       result.value mustEqual emptyMonthlyReturn
-      verify(connector).retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(
+      verify(connector).retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testReportingPeriodMonthNumber))(
         any[HeaderCarrier]
       )
     }
 
-    "must create a monthly return when there is no existing monthly return for the current reporting window" in {
+    "must create a monthly return when there is no existing monthly return for the current reporting period" in {
       val connector = mock[BackendConnector]
       when(
         connector.createMonthlyReturn(
           eqTo(true),
           eqTo(testZReference),
           eqTo(testTaxYear),
-          eqTo(testMonth)
+          eqTo(testReportingPeriodMonthNumber)
         )(any[HeaderCarrier])
       )
         .thenReturn(Future.successful(emptyMonthlyReturn))
       val service   = new StorageService(connector, dateHelper)
 
       val result =
-        service.saveForThisWindow(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
+        service.saveForThisPeriod(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
 
       result.monthlyReturn mustEqual emptyMonthlyReturn
       result.created mustEqual true
@@ -70,18 +74,18 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         eqTo(true),
         eqTo(testZReference),
         eqTo(testTaxYear),
-        eqTo(testMonth)
+        eqTo(testReportingPeriodMonthNumber)
       )(any[HeaderCarrier])
     }
 
-    "must update nilReturn when a monthly return already exists for the current reporting window" in {
+    "must update nilReturn when a monthly return already exists for the current reporting period" in {
       val connector = mock[BackendConnector]
       when(
         connector.updateNilReturn(
           eqTo(false),
           eqTo(testZReference),
           eqTo(testTaxYear),
-          eqTo(testMonth)
+          eqTo(testReportingPeriodMonthNumber)
         )(any[HeaderCarrier])
       )
         .thenReturn(Future.successful(emptyMonthlyReturn))
@@ -89,7 +93,7 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
 
       val result =
         service
-          .saveForThisWindow(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
+          .saveForThisPeriod(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
           .futureValue
 
       result.monthlyReturn mustEqual emptyMonthlyReturn
@@ -98,7 +102,7 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         eqTo(false),
         eqTo(testZReference),
         eqTo(testTaxYear),
-        eqTo(testMonth)
+        eqTo(testReportingPeriodMonthNumber)
       )(any[HeaderCarrier])
     }
 
@@ -109,7 +113,7 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
           eqTo(true),
           eqTo(testZReference),
           eqTo(testTaxYear),
-          eqTo(testMonth)
+          eqTo(testReportingPeriodMonthNumber)
         )(any[HeaderCarrier])
       )
         .thenReturn(Future.failed(UpstreamErrorResponse("conflict", CONFLICT, CONFLICT)))
@@ -118,14 +122,14 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
           eqTo(true),
           eqTo(testZReference),
           eqTo(testTaxYear),
-          eqTo(testMonth)
+          eqTo(testReportingPeriodMonthNumber)
         )(any[HeaderCarrier])
       )
         .thenReturn(Future.successful(emptyMonthlyReturn))
       val service   = new StorageService(connector, dateHelper)
 
       val result =
-        service.saveForThisWindow(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
+        service.saveForThisPeriod(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
 
       result.monthlyReturn mustEqual emptyMonthlyReturn
       result.created mustEqual false
@@ -133,67 +137,90 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         eqTo(true),
         eqTo(testZReference),
         eqTo(testTaxYear),
-        eqTo(testMonth)
+        eqTo(testReportingPeriodMonthNumber)
       )(any[HeaderCarrier])
       verify(connector).updateNilReturn(
         eqTo(true),
         eqTo(testZReference),
         eqTo(testTaxYear),
-        eqTo(testMonth)
+        eqTo(testReportingPeriodMonthNumber)
       )(any[HeaderCarrier])
     }
 
-    "must delete a file upload for the current reporting window" in {
+    "must delete a file upload for the current reporting period" in {
       val connector = mock[BackendConnector]
       val reference = "test-reference"
       when(
-        connector.deleteFileUpload(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth), eqTo(reference))(
+        connector.deleteFileUpload(
+          eqTo(testZReference),
+          eqTo(testTaxYear),
+          eqTo(testReportingPeriodMonthNumber),
+          eqTo(reference)
+        )(
           any[HeaderCarrier]
         )
       )
         .thenReturn(Future.successful(()))
       val service   = new StorageService(connector, dateHelper)
 
-      service.deleteFileUploadForThisWindow(testZReference, reference)(HeaderCarrier()).futureValue
+      service.deleteFileUploadForThisPeriod(testZReference, reference)(HeaderCarrier()).futureValue
 
-      verify(connector).deleteFileUpload(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth), eqTo(reference))(
+      verify(connector).deleteFileUpload(
+        eqTo(testZReference),
+        eqTo(testTaxYear),
+        eqTo(testReportingPeriodMonthNumber),
+        eqTo(reference)
+      )(
         any[HeaderCarrier]
       )
     }
 
-    "must declare the monthly return for the current reporting window" in {
+    "must declare the monthly return for the current reporting period" in {
       val connector = mock[BackendConnector]
-      when(connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(any[HeaderCarrier]))
+      when(
+        connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testReportingPeriodMonthNumber))(
+          any[HeaderCarrier]
+        )
+      )
         .thenReturn(Future.successful(()))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.declareForThisWindow(testZReference)(HeaderCarrier()).futureValue
+      val result = service.declareForThisPeriod(testZReference)(HeaderCarrier()).futureValue
 
       result mustEqual Declared
 
-      verify(connector).declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(
-        any[HeaderCarrier]
-      )
+      verify(connector)
+        .declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testReportingPeriodMonthNumber))(
+          any[HeaderCarrier]
+        )
     }
 
     "must return Failed when declaring the monthly return returns an upstream error" in {
       val connector = mock[BackendConnector]
-      when(connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(any[HeaderCarrier]))
+      when(
+        connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testReportingPeriodMonthNumber))(
+          any[HeaderCarrier]
+        )
+      )
         .thenReturn(Future.failed(UpstreamErrorResponse("already declared", CONFLICT, CONFLICT)))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.declareForThisWindow(testZReference)(HeaderCarrier()).futureValue
+      val result = service.declareForThisPeriod(testZReference)(HeaderCarrier()).futureValue
 
       result mustEqual Failed
     }
 
     "must return Failed when declaring the monthly return fails" in {
       val connector = mock[BackendConnector]
-      when(connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testMonth))(any[HeaderCarrier]))
+      when(
+        connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testReportingPeriodMonthNumber))(
+          any[HeaderCarrier]
+        )
+      )
         .thenReturn(Future.failed(new RuntimeException("boom")))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.declareForThisWindow(testZReference)(HeaderCarrier()).futureValue
+      val result = service.declareForThisPeriod(testZReference)(HeaderCarrier()).futureValue
 
       result mustEqual Failed
     }
@@ -205,7 +232,7 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
           eqTo(false),
           eqTo(testZReference),
           eqTo(testTaxYear),
-          eqTo(testMonth)
+          eqTo(testReportingPeriodMonthNumber)
         )(any[HeaderCarrier])
       )
         .thenReturn(Future.failed(UpstreamErrorResponse("not found", NOT_FOUND, NOT_FOUND)))
@@ -214,7 +241,7 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
           eqTo(false),
           eqTo(testZReference),
           eqTo(testTaxYear),
-          eqTo(testMonth)
+          eqTo(testReportingPeriodMonthNumber)
         )(any[HeaderCarrier])
       )
         .thenReturn(Future.successful(emptyMonthlyReturn))
@@ -222,7 +249,7 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
 
       val result =
         service
-          .saveForThisWindow(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
+          .saveForThisPeriod(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
           .futureValue
 
       result.monthlyReturn mustEqual emptyMonthlyReturn
@@ -231,13 +258,13 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         eqTo(false),
         eqTo(testZReference),
         eqTo(testTaxYear),
-        eqTo(testMonth)
+        eqTo(testReportingPeriodMonthNumber)
       )(any[HeaderCarrier])
       verify(connector).createMonthlyReturn(
         eqTo(false),
         eqTo(testZReference),
         eqTo(testTaxYear),
-        eqTo(testMonth)
+        eqTo(testReportingPeriodMonthNumber)
       )(any[HeaderCarrier])
     }
   }
