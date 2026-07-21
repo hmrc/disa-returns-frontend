@@ -26,12 +26,15 @@
     hmrcTimeoutDialog: HmrcTimeoutDialog,
     hmrcReportTechnicalIssueHelper: HmrcReportTechnicalIssueHelper,
     betaBanner: StandardBetaBanner,
-    hmrcStandardPage: HmrcStandardPage
+    hmrcStandardPage: HmrcStandardPage,
+    fullWidthMainContent: templates.FullWidthMainContent
 )
 
-@(pageTitle: String, showBackLink: Boolean = true, timeout: Boolean = true, showSignOut: Boolean = true, showHmrcBanner: Boolean = false)(contentBlock: Html)(implicit rh: RequestHeader, messages: Messages)
+@(pageTitle: String, showBackLink: Boolean = true, timeout: Boolean = true, showSignOut: Boolean = true, showHmrcBanner: Boolean = false, scripts: Option[Html] = None, fullWidth: Boolean = false)(contentBlock: Html)(implicit rh: RequestHeader, messages: Messages)
 
 @head = {
+
+    <link rel="stylesheet" href="@controllers.routes.Assets.versioned("stylesheets/application.css")" media="all">
 
     @if(timeout) {
         @hmrcTimeoutDialog(TimeoutDialog(
@@ -56,7 +59,9 @@
 @hmrcStandardPage(HmrcStandardPageParams(
     pageTitle = Some(pageTitle),
     templateOverrides = TemplateOverrides(
-        additionalHeadBlock = Some(head)
+        additionalHeadBlock = Some(head),
+        additionalScriptsBlock = scripts,
+        mainContentLayout = if (fullWidth) Some(fullWidthMainContent(_)) else None
     ),
     serviceURLs = ServiceURLs(
         signOutUrl = if(showSignOut) Some(controllers.auth.routes.AuthController.signOut().url) else None

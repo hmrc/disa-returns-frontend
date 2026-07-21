@@ -14,7 +14,7 @@
  * limitations under the License.
  *@
 
-@import controllers.routes.IndexController
+@import controllers.routes.UploadFileController
 
 @this(
         layout: templates.Layout,
@@ -31,11 +31,11 @@
       <p>@messages("problemWithUploadedFile.p1")</p>
       <p>@messages("problemWithUploadedFile.p2")</p>
       <p>@messages("problemWithUploadedFile.p3")</p>
-      <p><a href="#">@messages("problemWithUploadedFile.link")</a></p>
+      <p><a class="govuk-link" href="#">@messages("problemWithUploadedFile.link")</a></p>
 
       @govukButton(Button(
       content = Text(messages("problemWithUploadedFile.callToAction")),
-      href = Some(IndexController.onPageLoad().url)
+      href = Some(UploadFileController.onPageLoad().url)
       ))
     </div>
 }

@@ -36,7 +36,13 @@ class UpscanService @Inject() (
       UpscanInitiateRequest(
         callbackUrl =
           s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly/upscan/callback/$zReference/${dateHelper.reportingPeriodTaxYear}/${dateHelper.reportingPeriodMonthNumber}",
-        successRedirect = Some(s"${appConfig.host}/upscan/success"),
+        // Not built via the reverse router: UpscanService is unit-tested by constructing it directly,
+        // without a running Application, and Play's reverse router resolves the context-path prefix
+        // from process-global state that only a running Application sets up correctly - calling it
+        // here would make the result depend on whichever other test suites happen to run concurrently
+        // in the same JVM. These paths match controllers.routes.FileProcessingController.onPageLoad and
+        // controllers.routes.UploadFileController.onError in conf/app.routes.
+        successRedirect = Some(s"${appConfig.host}/file-processing"),
         errorRedirect = Some(s"${appConfig.host}/file-upload/error"),
         minimumFileSize = Some(appConfig.upscanMinFileSize),
         maximumFileSize = Some(appConfig.upscanMaxFileSize),

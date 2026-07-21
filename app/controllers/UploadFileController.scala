@@ -47,6 +47,7 @@ class UploadFileController @Inject() (
 
   def onError(): Action[AnyContent] = Action { implicit request =>
     val errorCode = request.getQueryString("errorCode").getOrElse("failed")
+    println(Console.GREEN + errorCode + Console.RESET)
     Redirect(routes.UploadFileController.onPageLoad().url, Map("errorCode" -> Seq(errorCode)))
   }
 

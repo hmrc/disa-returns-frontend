@@ -17,7 +17,8 @@
 package connectors
 
 import config.FrontendAppConfig
-import models.{CreateMonthlyReturnResponse, MonthlyReturn}
+import models.MonthlyReturn.fileUploadFormat
+import models.{CreateMonthlyReturnResponse, FileUpload, MonthlyReturn}
 import play.api.http.Status.{CREATED, NO_CONTENT}
 import play.api.libs.json.Json
 import play.api.libs.ws.writeableOf_JsValue
@@ -89,6 +90,13 @@ class BackendConnector @Inject() (
             Future.failed(UpstreamErrorResponse("createFileUpload failed", status, status, response.headers))
         }
       }
+
+  def getFileUpload(zRef: String, taxYear: String, month: Int, reference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[Option[FileUpload]] =
+    httpClient
+      .get(url"$backendUrl/$zRef/$taxYear/$month/files/$reference")
+      .execute[Option[FileUpload]]
 
   def deleteFileUpload(zRef: String, taxYear: String, month: Int, reference: String)(implicit
     hc: HeaderCarrier
