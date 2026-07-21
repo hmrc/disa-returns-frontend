@@ -37,11 +37,7 @@ class FileProcessingController @Inject() (
     extends FrontendBaseController
     with I18nSupport {
 
-  // The parameter is named "key" because that's the literal query param Upscan/S3's
-  // success_action_redirect appends on upload success, and it is the same value as the Upscan
-  // reference (see upscan-initiate's PrepareUploadService, which signs the S3 object key as the
-  // generated reference). It's Optional so this same route can be reverse-routed with no reference
-  // to build the successRedirect URL configured with Upscan before a reference exists.
+ 
   def onPageLoad(key: Option[String]): Action[AnyContent] = identify { implicit request =>
     key match {
       case Some(reference) => Ok(view(reference = reference))
