@@ -65,6 +65,8 @@ class UploadFileViewSpec extends SpecBase {
         html must include(s"""data-message-invalidargument="${msgs("uploadFile.invalidArgument")}"""")
         html must include(s"""data-message-rejected="${msgs("uploadFile.rejected")}"""")
         html must include(s"""data-message-entitytoolarge="${msgs("uploadFile.entityTooLarge")}"""")
+        html must include("""id="upload-live-region"""")
+        html must include("""aria-live="polite"""")
         html must include("""id="js-error-summary"""")
         html must include("""id="js-error-summary-link"""")
         html must include("""id="js-file-error"""")

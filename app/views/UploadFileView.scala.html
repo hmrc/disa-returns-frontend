@@ -36,6 +36,8 @@
 
 @layout(pageTitle = titleNoForm(messages("uploadFile.title")), scripts = Some(pageScripts), fullWidth = true) {
 
+    <div id="upload-live-region" class="govuk-visually-hidden" aria-live="polite" role="status"></div>
+
     <div id="upload-file-content" class="govuk-grid-row">
         <div class="govuk-grid-column-two-thirds">
 

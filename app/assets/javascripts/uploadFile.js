@@ -10,6 +10,7 @@
   var contentSection = document.getElementById('upload-file-content');
   var progressSection = document.getElementById('upload-in-progress');
   var progressHeading = document.getElementById('upload-in-progress-heading');
+  var liveRegion = document.getElementById('upload-live-region');
   var errorRedirectUrl = form.getAttribute('data-error-redirect');
   var processingUrl = form.getAttribute('data-processing-url');
   var minFileSize = Number(form.getAttribute('data-min-file-size'));
@@ -115,6 +116,10 @@
     progressSection.removeAttribute('hidden');
     progressHeading.setAttribute('tabindex', '-1');
     progressHeading.focus();
+
+    window.setTimeout(function () {
+      liveRegion.textContent = progressSection.textContent;
+    }, 100);
 
     window
       .fetch(form.action, {
