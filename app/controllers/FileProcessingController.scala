@@ -37,11 +37,10 @@ class FileProcessingController @Inject() (
     extends FrontendBaseController
     with I18nSupport {
 
- 
   def onPageLoad(key: Option[String]): Action[AnyContent] = identify { implicit request =>
     key match {
       case Some(reference) => Ok(view(reference = reference))
-      case None             => Redirect(routes.FileUploadErrorController.fileUploadFailed())
+      case None            => Redirect(routes.FileUploadErrorController.fileUploadFailed())
     }
   }
 

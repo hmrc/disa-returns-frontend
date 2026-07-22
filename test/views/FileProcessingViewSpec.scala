@@ -38,13 +38,13 @@ class FileProcessingViewSpec extends SpecBase {
         implicit val request: FakeRequest[_] = FakeRequest()
         implicit val msgs                    = messages(application)
 
-        val statusUrl            = routes.FileProcessingController.status(testReference).url
-        val virusUrl              = routes.FileUploadErrorController.fileContainsVirus().url
-        val rejectedUrl           = routes.FileUploadErrorController.invalidFileType().url
-        val failedUrl             = routes.FileUploadErrorController.fileUploadFailed().url
-        val duplicateUrl          = routes.FileUploadErrorController.duplicateFileUpload().url
-        val successUrl            = routes.UploadedReportFilesController.onPageLoad().url
-        val validationErrorsUrl   = routes.FileValidationErrorsController.onPageLoad(testReference).url
+        val statusUrl           = routes.FileProcessingController.status(testReference).url
+        val virusUrl            = routes.FileUploadErrorController.fileContainsVirus().url
+        val rejectedUrl         = routes.FileUploadErrorController.invalidFileType().url
+        val failedUrl           = routes.FileUploadErrorController.fileUploadFailed().url
+        val duplicateUrl        = routes.FileUploadErrorController.duplicateFileUpload().url
+        val successUrl          = routes.UploadedReportFilesController.onPageLoad().url
+        val validationErrorsUrl = routes.FileValidationErrorsController.onPageLoad(testReference).url
 
         val html = view(testReference)(request, msgs).body
 

@@ -25,36 +25,28 @@
   };
 
   function poll() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', statusUrl, true);
+    window
+      .fetch(statusUrl)
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error('Unexpected status: ' + response.status);
+        }
 
-    xhr.onload = function () {
-      if (xhr.status !== 200) {
-        handleError();
-        return;
-      }
+        return response.json();
+      })
+      .then(function (body) {
+        consecutiveErrors = 0;
 
-      var status;
-      try {
-        status = JSON.parse(xhr.responseText).status;
-      } catch (e) {
-        handleError();
-        return;
-      }
+        var status = body.status;
 
-      consecutiveErrors = 0;
+        if (pendingStatuses.includes(status)) {
+          scheduleNextPoll();
+          return;
+        }
 
-      if (pendingStatuses.indexOf(status) !== -1) {
-        scheduleNextPoll();
-        return;
-      }
-
-      window.location.href = destinationByStatus[status] || container.getAttribute('data-failed-url');
-    };
-
-    xhr.onerror = handleError;
-
-    xhr.send();
+        window.location.href = destinationByStatus[status] || container.getAttribute('data-failed-url');
+      })
+      .catch(handleError);
   }
 
   function handleError() {

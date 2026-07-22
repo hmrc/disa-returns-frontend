@@ -28,7 +28,7 @@
 
 @layout(pageTitle = titleNoForm(messages("fileProcessing.title")), showBackLink = false, scripts = Some(pageScripts), fullWidth = true) {
 
-    <div id="file-processing" class="govuk-!-text-align-centre"
+    <div id="file-processing" class="govuk-!-text-align-centre govuk-body"
          data-status-url="@controllers.routes.FileProcessingController.status(reference).url"
          data-virus-url="@controllers.routes.FileUploadErrorController.fileContainsVirus().url"
          data-rejected-url="@controllers.routes.FileUploadErrorController.invalidFileType().url"
