@@ -1,27 +1,27 @@
 (function () {
   'use strict';
 
-  var form = document.getElementById('file-upload-form');
+  const form = document.getElementById('file-upload-form');
 
   if (!form) {
     return;
   }
 
-  var contentSection = document.getElementById('upload-file-content');
-  var progressSection = document.getElementById('upload-in-progress');
-  var progressHeading = document.getElementById('upload-in-progress-heading');
-  var liveRegion = document.getElementById('upload-live-region');
-  var errorRedirectUrl = form.getAttribute('data-error-redirect');
-  var processingUrl = form.getAttribute('data-processing-url');
-  var minFileSize = Number(form.getAttribute('data-min-file-size'));
-  var maxFileSize = Number(form.getAttribute('data-max-file-size'));
+  const contentSection = document.getElementById('upload-file-content');
+  const progressSection = document.getElementById('upload-in-progress');
+  const progressHeading = document.getElementById('upload-in-progress-heading');
+  const liveRegion = document.getElementById('upload-live-region');
+  const errorRedirectUrl = form.getAttribute('data-error-redirect');
+  const processingUrl = form.getAttribute('data-processing-url');
+  const minFileSize = Number(form.getAttribute('data-min-file-size'));
+  const maxFileSize = Number(form.getAttribute('data-max-file-size'));
 
-  var errorSummary = document.getElementById('js-error-summary');
-  var errorSummaryLink = document.getElementById('js-error-summary-link');
-  var fileError = document.getElementById('js-file-error');
-  var fileErrorMessage = document.getElementById('js-file-error-message');
-  var formGroup = form.querySelector('.govuk-form-group');
-  var fileInput = form.querySelector('input[type="file"]');
+  const errorSummary = document.getElementById('js-error-summary');
+  const errorSummaryLink = document.getElementById('js-error-summary-link');
+  const fileError = document.getElementById('js-file-error');
+  const fileErrorMessage = document.getElementById('js-file-error-message');
+  const formGroup = form.querySelector('.govuk-form-group');
+  const fileInput = form.querySelector('input[type="file"]');
 
   // Without this, the browser's own native "select a file" validation intercepts the click and
   // blocks the submit event entirely when no file is chosen - it never reaches the handler below, so
@@ -30,7 +30,7 @@
   fileInput.removeAttribute('required');
   form.setAttribute('novalidate', 'novalidate');
 
-  var acceptedMimeTypes = (fileInput.getAttribute('accept') || '')
+  const acceptedMimeTypes = (fileInput.getAttribute('accept') || '')
     .split(',')
     .map(function (type) {
       return type.trim();
@@ -39,7 +39,7 @@
       return type.length > 0;
     });
 
-  var messageByCode = {
+  const messageByCode = {
     InvalidArgument: form.getAttribute('data-message-invalidargument'),
     EntityTooSmall: form.getAttribute('data-message-invalidargument'),
     UnexpectedContent: form.getAttribute('data-message-rejected'),
@@ -47,13 +47,13 @@
   };
 
   function validationErrorCode() {
-    var files = fileInput.files;
+    const files = fileInput.files;
 
     if (!files || files.length === 0) {
       return 'InvalidArgument';
     }
 
-    var file = files[0];
+    const file = files[0];
 
     if (acceptedMimeTypes.length > 0 && !acceptedMimeTypes.includes(file.type)) {
       return 'UnexpectedContent';
@@ -71,7 +71,7 @@
   }
 
   function showInlineError(code) {
-    var message = messageByCode[code];
+    const message = messageByCode[code];
 
     errorSummaryLink.textContent = message;
     errorSummary.removeAttribute('hidden');
@@ -103,7 +103,7 @@
   form.addEventListener('submit', function (event) {
     event.preventDefault();
 
-    var errorCode = validationErrorCode();
+    const errorCode = validationErrorCode();
 
     if (errorCode) {
       showInlineError(errorCode);

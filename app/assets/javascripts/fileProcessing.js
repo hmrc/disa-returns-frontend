@@ -1,20 +1,20 @@
 (function () {
   'use strict';
 
-  var container = document.getElementById('file-processing');
+  const container = document.getElementById('file-processing');
 
   if (!container) {
     return;
   }
 
-  var statusUrl = container.getAttribute('data-status-url');
-  var pollIntervalMs = 2000;
-  var maxConsecutiveErrors = 5;
-  var consecutiveErrors = 0;
+  const statusUrl = container.getAttribute('data-status-url');
+  const pollIntervalMs = 2000;
+  const maxConsecutiveErrors = 5;
+  let consecutiveErrors = 0;
 
-  var pendingStatuses = ['CREATED', 'UPSCAN_SUCCESS'];
+  const pendingStatuses = ['CREATED', 'UPSCAN_SUCCESS'];
 
-  var destinationByStatus = {
+  const destinationByStatus = {
     UPSCAN_QUARANTINE: container.getAttribute('data-virus-url'),
     UPSCAN_REJECTED: container.getAttribute('data-rejected-url'),
     UPSCAN_UNKNOWN: container.getAttribute('data-failed-url'),
@@ -37,7 +37,7 @@
       .then(function (body) {
         consecutiveErrors = 0;
 
-        var status = body.status;
+        const status = body.status;
 
         if (pendingStatuses.includes(status)) {
           scheduleNextPoll();
