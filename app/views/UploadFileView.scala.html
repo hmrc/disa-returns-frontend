@@ -40,28 +40,17 @@
 
     <div id="upload-file-content" class="govuk-grid-row">
         <div class="govuk-grid-column-two-thirds">
-            <div id="js-error-summary" class="govuk-error-summary" hidden tabindex="-1">
-            <div role="alert">
-                <h2 class="govuk-error-summary__title">@messages("error.summary.title")</h2>
-                <div class="govuk-error-summary__body">
-                    <ul class="govuk-list govuk-error-summary__list">
-                        <li><a href="#file" id="js-error-summary-link"></a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        @model.error.map { messageKey =>
-            @govukErrorSummary(ErrorSummary(
-                title = Text(messages("error.summary.title")),
-                errorList = Seq(
-                    ErrorLink(
-                        href = Some("#file"),
-                        content = Text(messages(messageKey))
+            @model.error.map { messageKey =>
+                @govukErrorSummary(ErrorSummary(
+                    title = Text(messages("error.summary.title")),
+                    errorList = Seq(
+                        ErrorLink(
+                            href = Some("#file"),
+                            content = Text(messages(messageKey))
+                        )
                     )
-                )
-            ))
-        }
+                ))
+            }
 
         <h1 class="govuk-heading-l">@messages("uploadFile.heading")</h1>
 
@@ -80,12 +69,10 @@
 
             <form method="POST" action="@model.upscan.uploadRequest.href" id="file-upload-form" enctype="multipart/form-data"
                   data-error-redirect="@controllers.routes.UploadFileController.onError().url"
+                  data-empty-file-url="@controllers.routes.FileUploadErrorController.emptyFileUploaded().url"
                   data-min-file-size="@appConfig.upscanMinFileSize"
                   data-max-file-size="@appConfig.upscanMaxFileSize"
-                  data-accepted-extensions="@appConfig.upscanAcceptedExtensions"
-                  data-message-invalid-argument="@messages("uploadFile.invalidArgument")"
-                  data-message-rejected="@messages("uploadFile.rejected")"
-                  data-message-entity-too-large="@messages("uploadFile.entityTooLarge")">
+                  data-accepted-extensions="@appConfig.upscanAcceptedExtensions">
                 @for((key, value) <- model.upscan.uploadRequest.fields) {
                     <input type="hidden" name="@key" value="@value"/>
                 }
@@ -104,10 +91,6 @@
                     attributes = Map(
                         "accept" -> appConfig.upscanAcceptedMimeTypes)
                 ))
-
-                <p id="js-file-error" class="govuk-error-message" hidden>
-                    <span class="govuk-visually-hidden">@messages("error.prefix"):</span> <span id="js-file-error-message"></span>
-                </p>
 
                 @govukButton(Button(
                     content = Text(messages("uploadFile.callToAction"))

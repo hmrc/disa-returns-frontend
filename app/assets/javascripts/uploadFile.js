@@ -12,14 +12,9 @@
   const progressHeading = document.getElementById('upload-in-progress-heading');
   const liveRegion = document.getElementById('upload-live-region');
   const errorRedirectUrl = form.getAttribute('data-error-redirect');
+  const emptyFileUrl = form.getAttribute('data-empty-file-url');
   const minFileSize = Number(form.getAttribute('data-min-file-size'));
   const maxFileSize = Number(form.getAttribute('data-max-file-size'));
-
-  const errorSummary = document.getElementById('js-error-summary');
-  const errorSummaryLink = document.getElementById('js-error-summary-link');
-  const fileError = document.getElementById('js-file-error');
-  const fileErrorMessage = document.getElementById('js-file-error-message');
-  const formGroup = form.querySelector('.govuk-form-group');
   const fileInput = form.querySelector('input[type="file"]');
 
   fileInput.removeAttribute('required');
@@ -48,13 +43,6 @@
 
     return lastDot === -1 ? '' : filename.slice(lastDot).toLowerCase();
   }
-
-  const messageByCode = {
-    InvalidArgument: form.getAttribute('data-message-invalid-argument'),
-    EntityTooSmall: form.getAttribute('data-message-invalid-argument'),
-    UnexpectedContent: form.getAttribute('data-message-rejected'),
-    EntityTooLarge: form.getAttribute('data-message-entity-too-large')
-  };
 
   function validationErrorCode() {
     const files = fileInput.files;
@@ -85,47 +73,20 @@
     return null;
   }
 
-  function showInlineError(code) {
-    const message = messageByCode[code];
-
-    errorSummaryLink.textContent = message;
-    errorSummary.removeAttribute('hidden');
-    errorSummary.focus();
-
-    fileErrorMessage.textContent = message;
-    fileError.removeAttribute('hidden');
-
-    if (formGroup) {
-      formGroup.classList.add('govuk-form-group--error');
-    }
-
-    fileInput.classList.add('govuk-file-upload--error');
-    fileInput.setAttribute('aria-describedby', fileError.id);
-  }
-
-  function hideInlineError() {
-    errorSummary.setAttribute('hidden', 'hidden');
-    fileError.setAttribute('hidden', 'hidden');
-
-    if (formGroup) {
-      formGroup.classList.remove('govuk-form-group--error');
-    }
-
-    fileInput.classList.remove('govuk-file-upload--error');
-    fileInput.removeAttribute('aria-describedby');
-  }
-
   form.addEventListener('submit', function (event) {
     event.preventDefault();
 
     const errorCode = validationErrorCode();
 
-    if (errorCode) {
-      showInlineError(errorCode);
+    if (errorCode === 'EntityTooSmall') {
+      window.location.href = emptyFileUrl;
       return;
     }
 
-    hideInlineError();
+    if (errorCode) {
+      window.location.href = errorRedirectUrl + '?errorCode=' + encodeURIComponent(errorCode);
+      return;
+    }
 
     contentSection.setAttribute('hidden', 'hidden');
     progressSection.removeAttribute('hidden');

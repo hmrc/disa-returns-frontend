@@ -47,6 +47,7 @@ class UploadFileViewSpec extends SpecBase {
         implicit val msgs                    = messages(application)
 
         val errorRedirectUrl = routes.UploadFileController.onError().url
+        val emptyFileUrl     = routes.FileUploadErrorController.emptyFileUploaded().url
 
         val html = view(UploadViewModel(upscan = upscanResponse, error = None))(request, msgs).body
 
@@ -58,22 +59,33 @@ class UploadFileViewSpec extends SpecBase {
         html must include(msgs("uploadFile.uploading.heading"))
         html must include(msgs("uploadFile.uploading.body"))
         html must include(s"""data-error-redirect="$errorRedirectUrl"""")
+        html must include(s"""data-empty-file-url="$emptyFileUrl"""")
         html must include(s"""data-min-file-size="$testUpscanMinFileSize"""")
         html must include(s"""data-max-file-size="$testUpscanMaxFileSize"""")
         html must include("""data-accepted-extensions=".csv,.xlsx"""")
+        html must include("""id="upload-live-region"""")
+        html must include("""aria-live="polite"""")
+        html must include("javascripts/uploadFile.js")
+      }
+    }
 
-        val formOpenTag = html.substring(html.indexOf("<form"), html.indexOf(">", html.indexOf("<form")) + 1)
+    "must render the real error summary and file error message when model.error is set" in {
 
-        formOpenTag must include(s"""data-message-invalid-argument="${msgs("uploadFile.invalidArgument")}"""")
-        formOpenTag must include(s"""data-message-rejected="${msgs("uploadFile.rejected")}"""")
-        formOpenTag must include(s"""data-message-entity-too-large="${msgs("uploadFile.entityTooLarge")}"""")
-        html        must include("""id="upload-live-region"""")
-        html        must include("""aria-live="polite"""")
-        html        must include("""id="js-error-summary"""")
-        html        must include("""id="js-error-summary-link"""")
-        html        must include("""id="js-file-error"""")
-        html        must include("""id="js-file-error-message"""")
-        html        must include("javascripts/uploadFile.js")
+      val application = applicationBuilder().build()
+
+      running(application) {
+        val view = application.injector.instanceOf[UploadFileView]
+
+        implicit val request: FakeRequest[_] = FakeRequest()
+        implicit val msgs                    = messages(application)
+
+        val html =
+          view(UploadViewModel(upscan = upscanResponse, error = Some("uploadFile.rejected")))(request, msgs).body
+
+        html must include("""class="govuk-error-summary"""")
+        html must include(msgs("uploadFile.rejected"))
+        html must include("""id="file-error"""")
+        html must include("""govuk-file-upload--error""")
       }
     }
   }
