@@ -18,7 +18,7 @@ package controllers
 
 import controllers.actions.IdentifierAction
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsBoolean, JsObject, JsString, JsValue}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.StorageService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
@@ -47,7 +47,16 @@ class FileProcessingController @Inject() (
   def status(reference: String): Action[AnyContent] = identify.async { implicit request =>
     storageService.getFileUploadForThisPeriod(request.zReference, reference).map {
       case Some(fileUpload) =>
-        Ok(Json.obj("status" -> fileUpload.status))
+        val validation = fileUpload.fileUploadDetails.flatMap(_.validation)
+
+        val fields: Seq[(String, JsValue)] = Seq(
+          Some("status"                                                   -> JsString(fileUpload.status)),
+          validation.map(v => "validationStatus" -> JsString(v.status)),
+          validation.flatMap(_.invalidFileReason).map(reason => "invalidFileReason" -> JsString(reason)),
+          Option.when(fileUpload.isPasswordProtected)("passwordProtected" -> JsBoolean(true))
+        ).flatten
+
+        Ok(JsObject(fields))
       case None             => NotFound
     }
   }

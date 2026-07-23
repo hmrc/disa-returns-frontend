@@ -38,6 +38,8 @@ trait TestData {
   protected val testReportingPeriodMonthNumber: Int          = TestData.testReportingPeriodMonthNumber
   protected val testUpscanMinFileSize: Int                   = TestData.testUpscanMinFileSize
   protected val testUpscanMaxFileSize: Int                   = TestData.testUpscanMaxFileSize
+  protected val testFileProcessingPollIntervalMillis: Int    = TestData.testFileProcessingPollIntervalMillis
+  protected val testFileProcessingMaxWaitMinutes: Int        = TestData.testFileProcessingMaxWaitMinutes
   protected val testReportingWindowMonthName: String         = TestData.testReportingWindowMonthName
   protected val testReportingPeriodMonthName: String         = TestData.testReportingPeriodMonthName
   protected val testReportingPeriod: String                  = TestData.testReportingPeriod
@@ -77,7 +79,9 @@ object TestData {
   val testMonth: Int                               = 3
   val testReportingPeriodMonthNumber: Int          = 2
   val testUpscanMinFileSize: Int                   = 1
-  val testUpscanMaxFileSize: Int                   = 10485760
+  val testUpscanMaxFileSize: Int                   = 104857600
+  val testFileProcessingPollIntervalMillis: Int    = 2000
+  val testFileProcessingMaxWaitMinutes: Int        = 5
   val testReportingWindowMonthName: String         = "March"
   val testReportingPeriodMonthName: String         = "February"
   val testReportingPeriod: String                  = "February 2026"

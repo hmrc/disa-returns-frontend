@@ -12,7 +12,6 @@
   const progressHeading = document.getElementById('upload-in-progress-heading');
   const liveRegion = document.getElementById('upload-live-region');
   const errorRedirectUrl = form.getAttribute('data-error-redirect');
-  const processingUrl = form.getAttribute('data-processing-url');
   const minFileSize = Number(form.getAttribute('data-min-file-size'));
   const maxFileSize = Number(form.getAttribute('data-max-file-size'));
 
@@ -23,10 +22,6 @@
   const formGroup = form.querySelector('.govuk-form-group');
   const fileInput = form.querySelector('input[type="file"]');
 
-  // Without this, the browser's own native "select a file" validation intercepts the click and
-  // blocks the submit event entirely when no file is chosen - it never reaches the handler below, so
-  // our own inline error can never be shown. novalidate disables validation for
-  // the whole form so our own submit checks are always the ones in control.
   fileInput.removeAttribute('required');
   form.setAttribute('novalidate', 'novalidate');
 
@@ -39,11 +34,26 @@
       return type.length > 0;
     });
 
+  const acceptedExtensions = (form.getAttribute('data-accepted-extensions') || '')
+    .split(',')
+    .map(function (extension) {
+      return extension.trim().toLowerCase();
+    })
+    .filter(function (extension) {
+      return extension.length > 0;
+    });
+
+  function fileExtension(filename) {
+    const lastDot = filename.lastIndexOf('.');
+
+    return lastDot === -1 ? '' : filename.slice(lastDot).toLowerCase();
+  }
+
   const messageByCode = {
-    InvalidArgument: form.getAttribute('data-message-invalidargument'),
-    EntityTooSmall: form.getAttribute('data-message-invalidargument'),
+    InvalidArgument: form.getAttribute('data-message-invalid-argument'),
+    EntityTooSmall: form.getAttribute('data-message-invalid-argument'),
     UnexpectedContent: form.getAttribute('data-message-rejected'),
-    EntityTooLarge: form.getAttribute('data-message-entitytoolarge')
+    EntityTooLarge: form.getAttribute('data-message-entity-too-large')
   };
 
   function validationErrorCode() {
@@ -55,8 +65,13 @@
 
     const file = files[0];
 
-    if (acceptedMimeTypes.length > 0 && !acceptedMimeTypes.includes(file.type)) {
-      return 'UnexpectedContent';
+    if (acceptedMimeTypes.length > 0 || acceptedExtensions.length > 0) {
+      const matchesMimeType = acceptedMimeTypes.includes(file.type);
+      const matchesExtension = acceptedExtensions.includes(fileExtension(file.name));
+
+      if (!matchesMimeType && !matchesExtension) {
+        return 'UnexpectedContent';
+      }
     }
 
     if (file.size > maxFileSize) {
@@ -125,10 +140,13 @@
       .fetch(form.action, {
         method: 'POST',
         body: new FormData(form),
-        mode: 'no-cors'
+        credentials: 'include'
       })
-      .then(function () {
-        window.location.href = processingUrl;
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error('Unexpected status: ' + response.status);
+        }
+        window.location.href = response.url;
       })
       .catch(function () {
         window.location.href = errorRedirectUrl;

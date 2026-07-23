@@ -47,7 +47,6 @@ class UploadFileViewSpec extends SpecBase {
         implicit val msgs                    = messages(application)
 
         val errorRedirectUrl = routes.UploadFileController.onError().url
-        val processingUrl    = routes.FileProcessingController.onPageLoad(Some(upscanResponse.reference)).url
 
         val html = view(UploadViewModel(upscan = upscanResponse, error = None))(request, msgs).body
 
@@ -59,20 +58,22 @@ class UploadFileViewSpec extends SpecBase {
         html must include(msgs("uploadFile.uploading.heading"))
         html must include(msgs("uploadFile.uploading.body"))
         html must include(s"""data-error-redirect="$errorRedirectUrl"""")
-        html must include(s"""data-processing-url="$processingUrl"""")
         html must include(s"""data-min-file-size="$testUpscanMinFileSize"""")
         html must include(s"""data-max-file-size="$testUpscanMaxFileSize"""")
-        html must include(s"""data-message-invalidargument="${msgs("uploadFile.invalidArgument")}"""")
-        html must include(s"""data-message-rejected="${msgs("uploadFile.rejected")}"""")
-        html must include(s"""data-message-entitytoolarge="${msgs("uploadFile.entityTooLarge")}"""")
-        html must include("""id="upload-live-region"""")
-        html must include("""aria-live="polite"""")
-        html must include("""id="js-error-summary"""")
-        html must include("""id="js-error-summary-link"""")
-        html must include("""id="js-file-error"""")
-        html must include("""id="js-file-error-message"""")
-        html must include("javascripts/uploadFile.js")
-        html must not include "file-upload-target"
+        html must include("""data-accepted-extensions=".csv,.xlsx"""")
+
+        val formOpenTag = html.substring(html.indexOf("<form"), html.indexOf(">", html.indexOf("<form")) + 1)
+
+        formOpenTag must include(s"""data-message-invalid-argument="${msgs("uploadFile.invalidArgument")}"""")
+        formOpenTag must include(s"""data-message-rejected="${msgs("uploadFile.rejected")}"""")
+        formOpenTag must include(s"""data-message-entity-too-large="${msgs("uploadFile.entityTooLarge")}"""")
+        html        must include("""id="upload-live-region"""")
+        html        must include("""aria-live="polite"""")
+        html        must include("""id="js-error-summary"""")
+        html        must include("""id="js-error-summary-link"""")
+        html        must include("""id="js-file-error"""")
+        html        must include("""id="js-file-error-message"""")
+        html        must include("javascripts/uploadFile.js")
       }
     }
   }

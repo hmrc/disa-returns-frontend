@@ -17,7 +17,7 @@
 package controllers
 
 import base.SpecBase
-import models.FileUpload
+import models.{FileUpload, FileUploadDetails, ValidationResult}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
@@ -100,6 +100,183 @@ class FileProcessingControllerSpec extends SpecBase {
 
           status(result) mustEqual OK
           contentAsJson(result) mustEqual Json.obj("status" -> "VALIDATION_SUCCESS")
+        }
+      }
+
+      "must include validationStatus and invalidFileReason for a structurally invalid file" in {
+
+        val mockStorageService = mock[StorageService]
+
+        when(
+          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+            any[HeaderCarrier]
+          )
+        )
+          .thenReturn(
+            Future.successful(
+              Some(
+                FileUpload(
+                  reference = testReference,
+                  status = "VALIDATION_FAILURE",
+                  fileUploadDetails = Some(
+                    FileUploadDetails(
+                      fileName = "return.csv",
+                      validation = Some(
+                        ValidationResult(
+                          rowsValidated = 0,
+                          validationErrors = 0,
+                          status = "InvalidFile",
+                          invalidFileReason = Some("InvalidHeader")
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+
+        val application = applicationBuilder()
+          .overrides(bind[StorageService].toInstance(mockStorageService))
+          .build()
+
+        running(application) {
+
+          val request =
+            FakeRequest(GET, routes.FileProcessingController.status(testReference).url)
+
+          val result = route(application, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.obj(
+            "status"            -> "VALIDATION_FAILURE",
+            "validationStatus"  -> "InvalidFile",
+            "invalidFileReason" -> "InvalidHeader"
+          )
+        }
+      }
+
+      "must include validationStatus without invalidFileReason for row-level validation failures" in {
+
+        val mockStorageService = mock[StorageService]
+
+        when(
+          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+            any[HeaderCarrier]
+          )
+        )
+          .thenReturn(
+            Future.successful(
+              Some(
+                FileUpload(
+                  reference = testReference,
+                  status = "VALIDATION_FAILURE",
+                  fileUploadDetails = Some(
+                    FileUploadDetails(
+                      fileName = "return.csv",
+                      validation = Some(
+                        ValidationResult(rowsValidated = 10, validationErrors = 3, status = "ValidationFailed")
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+
+        val application = applicationBuilder()
+          .overrides(bind[StorageService].toInstance(mockStorageService))
+          .build()
+
+        running(application) {
+
+          val request =
+            FakeRequest(GET, routes.FileProcessingController.status(testReference).url)
+
+          val result = route(application, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.obj(
+            "status"           -> "VALIDATION_FAILURE",
+            "validationStatus" -> "ValidationFailed"
+          )
+        }
+      }
+
+      "must include passwordProtected when the quarantine failure message is a ClamAV encrypted-document signature" in {
+
+        val mockStorageService = mock[StorageService]
+
+        when(
+          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+            any[HeaderCarrier]
+          )
+        )
+          .thenReturn(
+            Future.successful(
+              Some(
+                FileUpload(
+                  reference = testReference,
+                  status = "UPSCAN_QUARANTINE",
+                  failureMessage = Some("PUA.Doc.Packed.EncryptedDoc-6563700-0")
+                )
+              )
+            )
+          )
+
+        val application = applicationBuilder()
+          .overrides(bind[StorageService].toInstance(mockStorageService))
+          .build()
+
+        running(application) {
+
+          val request =
+            FakeRequest(GET, routes.FileProcessingController.status(testReference).url)
+
+          val result = route(application, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.obj(
+            "status"            -> "UPSCAN_QUARANTINE",
+            "passwordProtected" -> true
+          )
+        }
+      }
+
+      "must not include passwordProtected for a genuine virus quarantine" in {
+
+        val mockStorageService = mock[StorageService]
+
+        when(
+          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+            any[HeaderCarrier]
+          )
+        )
+          .thenReturn(
+            Future.successful(
+              Some(
+                FileUpload(
+                  reference = testReference,
+                  status = "UPSCAN_QUARANTINE",
+                  failureMessage = Some("Win.Test.EICAR_HDB-1")
+                )
+              )
+            )
+          )
+
+        val application = applicationBuilder()
+          .overrides(bind[StorageService].toInstance(mockStorageService))
+          .build()
+
+        running(application) {
+
+          val request =
+            FakeRequest(GET, routes.FileProcessingController.status(testReference).url)
+
+          val result = route(application, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.obj("status" -> "UPSCAN_QUARANTINE")
         }
       }
 

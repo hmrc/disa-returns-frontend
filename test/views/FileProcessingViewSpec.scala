@@ -38,13 +38,16 @@ class FileProcessingViewSpec extends SpecBase {
         implicit val request: FakeRequest[_] = FakeRequest()
         implicit val msgs                    = messages(application)
 
-        val statusUrl           = routes.FileProcessingController.status(testReference).url
-        val virusUrl            = routes.FileUploadErrorController.fileContainsVirus().url
-        val rejectedUrl         = routes.FileUploadErrorController.invalidFileType().url
-        val failedUrl           = routes.FileUploadErrorController.fileUploadFailed().url
-        val duplicateUrl        = routes.FileUploadErrorController.duplicateFileUpload().url
-        val successUrl          = routes.UploadedReportFilesController.onPageLoad().url
-        val validationErrorsUrl = routes.FileValidationErrorsController.onPageLoad(testReference).url
+        val statusUrl            = routes.FileProcessingController.status(testReference).url
+        val virusUrl             = routes.FileUploadErrorController.fileContainsVirus().url
+        val passwordProtectedUrl = routes.FileUploadErrorController.filePasswordProtected().url
+        val rejectedUrl          = routes.FileUploadErrorController.invalidFileType().url
+        val failedUrl            = routes.FileUploadErrorController.fileUploadFailed().url
+        val duplicateUrl         = routes.FileUploadErrorController.duplicateFileUpload().url
+        val successUrl           = routes.UploadedReportFilesController.onPageLoad().url
+        val validationErrorsUrl  = routes.FileValidationErrorsController.onPageLoad(testReference).url
+        val problemWithFileUrl   = routes.ProblemWithUploadedFileController.onPageLoad().url
+        val emptyFileUrl         = routes.FileUploadErrorController.emptyFileUploaded().url
 
         val html = view(testReference)(request, msgs).body
 
@@ -54,11 +57,16 @@ class FileProcessingViewSpec extends SpecBase {
         html must include(msgs("fileProcessing.body"))
         html must include(s"""data-status-url="$statusUrl"""")
         html must include(s"""data-virus-url="$virusUrl"""")
+        html must include(s"""data-password-protected-url="$passwordProtectedUrl"""")
         html must include(s"""data-rejected-url="$rejectedUrl"""")
         html must include(s"""data-failed-url="$failedUrl"""")
         html must include(s"""data-duplicate-url="$duplicateUrl"""")
         html must include(s"""data-success-url="$successUrl"""")
         html must include(s"""data-validation-errors-url="$validationErrorsUrl"""")
+        html must include(s"""data-problem-with-file-url="$problemWithFileUrl"""")
+        html must include(s"""data-empty-file-url="$emptyFileUrl"""")
+        html must include(s"""data-poll-interval-millis="$testFileProcessingPollIntervalMillis"""")
+        html must include(s"""data-max-wait-minutes="$testFileProcessingMaxWaitMinutes"""")
         html must include("javascripts/fileProcessing.js")
       }
     }

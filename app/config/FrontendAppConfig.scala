@@ -53,10 +53,14 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   val timeout: Int   = getInt("timeout-dialog.timeout")
   val countdown: Int = getInt("timeout-dialog.countdown")
 
-  lazy val upscanInitiateBase: String      = baseUrl("upscan-initiate")
-  lazy val upscanMinFileSize: Int          = getInt("upscan.minFileSize")
-  lazy val upscanMaxFileSize: Int          = getInt("upscan.maxFileSize")
-  lazy val upscanAcceptedMimeTypes: String = getString("upscan.acceptedMimeTypes")
+  lazy val upscanInitiateBase: String       = baseUrl("upscan-initiate")
+  lazy val upscanMinFileSize: Int           = getInt("upscan.minFileSize")
+  lazy val upscanMaxFileSize: Int           = getInt("upscan.maxFileSize")
+  lazy val upscanAcceptedMimeTypes: String  = getString("upscan.acceptedMimeTypes")
+  lazy val upscanAcceptedExtensions: String = getString("upscan.acceptedExtensions")
 
   val fileUploadMaxInlineErrors: Int = getInt("fileUploadValidation.maxInlineErrors")
+
+  lazy val fileProcessingPollIntervalMillis: Int = getInt("fileProcessing.pollIntervalMillis")
+  lazy val fileProcessingMaxWaitMinutes: Int     = getInt("fileProcessing.maxWaitMinutes")
 }

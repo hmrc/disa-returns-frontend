@@ -110,6 +110,45 @@ class MonthlyReturnSpec extends SpecBase {
     }
   }
 
+  "FileUpload.isPasswordProtected" - {
+
+    "must be true when the failure message is a ClamAV encrypted-document PUA signature" in {
+      FileUpload(
+        reference = "ref",
+        status = FileUploadStatus.UpscanQuarantine,
+        failureMessage = Some("PUA.Doc.Packed.EncryptedDoc-6563700-0")
+      ).isPasswordProtected mustEqual true
+    }
+
+    "must be true when the failure message is just the bare signature name" in {
+      FileUpload(
+        reference = "ref",
+        status = FileUploadStatus.UpscanQuarantine,
+        failureMessage = Some("EncryptedDoc")
+      ).isPasswordProtected mustEqual true
+    }
+
+    "must be false when there is no failure message" in {
+      FileUpload("ref", FileUploadStatus.UpscanQuarantine).isPasswordProtected mustEqual false
+    }
+
+    "must be false for a genuine virus signature" in {
+      FileUpload(
+        reference = "ref",
+        status = FileUploadStatus.UpscanQuarantine,
+        failureMessage = Some("Win.Test.EICAR_HDB-1")
+      ).isPasswordProtected mustEqual false
+    }
+
+    "must be false when the message matches but the status is not UPSCAN_QUARANTINE" in {
+      FileUpload(
+        reference = "ref",
+        status = "UPSCAN_REJECTED",
+        failureMessage = Some("EncryptedDoc")
+      ).isPasswordProtected mustEqual false
+    }
+  }
+
   "CreateMonthlyReturnResponse" - {
 
     "must read the create response returned by the backend" in {
