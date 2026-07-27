@@ -29,7 +29,7 @@ class FileValidationErrorsControllerSpec extends SpecBase {
   private def fileUploadWithErrors(inlineErrors: Seq[InlineError]): FileUpload =
     FileUpload(
       reference = testReference,
-      status = FileUploadStatus.ValidationSuccess,
+      status = FileUploadStatus.ValidationFailure,
       fileUploadDetails = Some(
         FileUploadDetails(
           fileName = "return.csv",
@@ -37,7 +37,7 @@ class FileValidationErrorsControllerSpec extends SpecBase {
             ValidationResult(
               rowsValidated = inlineErrors.size,
               validationErrors = inlineErrors.flatMap(_.errorCodes).size,
-              status = "FAILURE",
+              status = FileUploadValidationStatus.ValidationFailed,
               inlineErrors = inlineErrors
             )
           )
@@ -48,7 +48,7 @@ class FileValidationErrorsControllerSpec extends SpecBase {
   private def fileUploadWithCappedErrors(inlineErrors: Seq[InlineError], totalValidationErrors: Int): FileUpload =
     FileUpload(
       reference = testReference,
-      status = FileUploadStatus.ValidationSuccess,
+      status = FileUploadStatus.ValidationFailure,
       fileUploadDetails = Some(
         FileUploadDetails(
           fileName = "return.csv",
@@ -56,8 +56,27 @@ class FileValidationErrorsControllerSpec extends SpecBase {
             ValidationResult(
               rowsValidated = inlineErrors.size,
               validationErrors = totalValidationErrors,
-              status = "FAILURE",
+              status = FileUploadValidationStatus.ValidationFailed,
               inlineErrors = inlineErrors
+            )
+          )
+        )
+      )
+    )
+
+  private def invalidFile(reason: Option[String]): FileUpload =
+    FileUpload(
+      reference = testReference,
+      status = FileUploadStatus.ValidationFailure,
+      fileUploadDetails = Some(
+        FileUploadDetails(
+          fileName = "return.csv",
+          validation = Some(
+            ValidationResult(
+              rowsValidated = 0,
+              validationErrors = 0,
+              status = FileUploadValidationStatus.InvalidFile,
+              invalidFileReason = reason
             )
           )
         )
@@ -100,12 +119,9 @@ class FileValidationErrorsControllerSpec extends SpecBase {
       }
     }
 
-    "must redirect to ProblemWithUploadedFileController when any inline error contains E001" in {
-      val inlineErrors  = Seq(
-        InlineError(rowNumber = 1, errorCodes = Seq("E001", "E010")),
-        InlineError(rowNumber = 2, errorCodes = Seq("E020"))
-      )
-      val monthlyReturn = emptyMonthlyReturn.copy(fileUploads = Seq(fileUploadWithErrors(inlineErrors)))
+    "must redirect to ProblemWithUploadedFileController when the invalid file reason is InvalidHeader" in {
+      val monthlyReturn =
+        emptyMonthlyReturn.copy(fileUploads = Seq(invalidFile(Some(InvalidFileReason.InvalidHeader))))
       val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
 
       running(application) {
@@ -114,6 +130,64 @@ class FileValidationErrorsControllerSpec extends SpecBase {
 
         status(result) mustEqual SEE_OTHER
         redirectLocation(result).value mustEqual routes.ProblemWithUploadedFileController.onPageLoad().url
+      }
+    }
+
+    Seq(InvalidFileReason.InvalidWorkbook, InvalidFileReason.InvalidFile).foreach { reason =>
+      s"must redirect to ProblemWithUploadedFileController when the invalid file reason is $reason" in {
+        val monthlyReturn = emptyMonthlyReturn.copy(fileUploads = Seq(invalidFile(Some(reason))))
+        val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
+
+        running(application) {
+          val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
+          val result  = route(application, request).value
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual routes.ProblemWithUploadedFileController.onPageLoad().url
+        }
+      }
+    }
+
+    "must redirect to the empty file page when the invalid file reason is NoDataRows" in {
+      val monthlyReturn =
+        emptyMonthlyReturn.copy(fileUploads = Seq(invalidFile(Some(InvalidFileReason.NoDataRows))))
+      val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
+
+      running(application) {
+        val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
+        val result  = route(application, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.FileUploadErrorController.emptyFileUploaded().url
+      }
+    }
+
+    "must redirect to the invalid file type page when the invalid file reason is UnsupportedFileType" in {
+      val monthlyReturn =
+        emptyMonthlyReturn.copy(fileUploads = Seq(invalidFile(Some(InvalidFileReason.UnsupportedFileType))))
+      val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
+
+      running(application) {
+        val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
+        val result  = route(application, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.FileUploadErrorController.invalidFileType().url
+      }
+    }
+
+    "must redirect to the generic upload failure page when the invalid file reason is absent or unknown" in {
+      Seq(None, Some("UnknownReason")).foreach { reason =>
+        val monthlyReturn = emptyMonthlyReturn.copy(fileUploads = Seq(invalidFile(reason)))
+        val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
+
+        running(application) {
+          val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
+          val result  = route(application, request).value
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileUploadFailed().url
+        }
       }
     }
 
@@ -145,20 +219,19 @@ class FileValidationErrorsControllerSpec extends SpecBase {
       }
     }
 
-    "must return OK with an empty error table when the file reference is not found" in {
+    "must redirect to the generic upload failure page when the file reference is not found" in {
       val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn)).build()
 
       running(application) {
         val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad("unknown-reference").url)
         val result  = route(application, request).value
-        val view    = application.injector.instanceOf[FileValidationErrorsView]
 
-        status(result) mustEqual OK
-        contentAsString(result) mustEqual view(Seq.empty)(request, messages(application)).toString
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileUploadFailed().url
       }
     }
 
-    "must return OK with an empty error table when the file has no validation results" in {
+    "must redirect to the generic upload failure page when the file has no validation results" in {
       val uploadWithoutValidation = FileUpload(
         reference = testReference,
         status = FileUploadStatus.UpscanSuccess,
@@ -170,10 +243,9 @@ class FileValidationErrorsControllerSpec extends SpecBase {
       running(application) {
         val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
         val result  = route(application, request).value
-        val view    = application.injector.instanceOf[FileValidationErrorsView]
 
-        status(result) mustEqual OK
-        contentAsString(result) mustEqual view(Seq.empty)(request, messages(application)).toString
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileUploadFailed().url
       }
     }
 

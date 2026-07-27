@@ -36,7 +36,7 @@ class UploadedReportFilesControllerSpec extends SpecBase {
 
   private val successfulUpload = FileUpload(
     reference = "successful-reference",
-    status = FileUploadStatus.UpscanSuccess,
+    status = FileUploadStatus.ValidationSuccess,
     fileUploadDetails = Some(FileUploadDetails("return.csv"))
   )
 

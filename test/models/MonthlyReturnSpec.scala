@@ -95,18 +95,15 @@ class MonthlyReturnSpec extends SpecBase {
 
   "FileUpload.isSuccessful" - {
 
-    "must be true when status is UPSCAN_SUCCESS" in {
-      FileUpload("ref", FileUploadStatus.UpscanSuccess).isSuccessful mustEqual true
-    }
-
     "must be true when status is VALIDATION_SUCCESS" in {
       FileUpload("ref", FileUploadStatus.ValidationSuccess).isSuccessful mustEqual true
     }
 
     "must be false for any other status" in {
-      FileUpload("ref", "CREATED").isSuccessful mustEqual false
-      FileUpload("ref", "VALIDATION_FAILURE").isSuccessful mustEqual false
-      FileUpload("ref", "UPSCAN_QUARANTINE").isSuccessful mustEqual false
+      FileUpload("ref", FileUploadStatus.Created).isSuccessful mustEqual false
+      FileUpload("ref", FileUploadStatus.UpscanSuccess).isSuccessful mustEqual false
+      FileUpload("ref", FileUploadStatus.ValidationFailure).isSuccessful mustEqual false
+      FileUpload("ref", FileUploadStatus.UpscanQuarantine).isSuccessful mustEqual false
     }
   }
 

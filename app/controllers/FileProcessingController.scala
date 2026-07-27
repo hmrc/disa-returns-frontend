@@ -17,31 +17,85 @@
 package controllers
 
 import controllers.actions.IdentifierAction
+import models.FileUploadStatus
+import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json.{JsBoolean, JsObject, JsString, JsValue}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.StorageService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
-import views.html.FileProcessingView
+import views.html.{FileProcessingProgressView, FileProcessingView}
 
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
 
 class FileProcessingController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   storageService: StorageService,
   val controllerComponents: MessagesControllerComponents,
-  view: FileProcessingView
+  view: FileProcessingView,
+  progressView: FileProcessingProgressView
 )(implicit ec: ExecutionContext)
     extends FrontendBaseController
-    with I18nSupport {
+    with I18nSupport
+    with Logging {
 
   def onPageLoad(key: Option[String]): Action[AnyContent] = identify { implicit request =>
     key match {
       case Some(reference) => Ok(view(reference = reference))
       case None            => Redirect(routes.FileUploadErrorController.fileUploadFailed())
     }
+  }
+
+  def checkProgress(reference: String): Action[AnyContent] = identify.async { implicit request =>
+    storageService
+      .getFileUploadForThisPeriod(request.zReference, reference)
+      .map {
+        case Some(fileUpload) if FileUploadStatus.pending.contains(fileUpload.status)  =>
+          Ok(progressView(reference, complete = false))
+        case Some(fileUpload) if FileUploadStatus.terminal.contains(fileUpload.status) =>
+          Ok(progressView(reference, complete = true))
+        case _                                                                         =>
+          Redirect(routes.FileUploadErrorController.fileUploadFailed())
+      }
+      .recover { case NonFatal(ex) =>
+        logger.error(s"[FileProcessingController][checkProgress] Failed to retrieve upload $reference", ex)
+        Redirect(routes.FileUploadErrorController.fileUploadFailed())
+      }
+  }
+
+  def onContinue(reference: String): Action[AnyContent] = identify.async { implicit request =>
+    storageService
+      .getFileUploadForThisPeriod(request.zReference, reference)
+      .map {
+        case Some(fileUpload) if FileUploadStatus.pending.contains(fileUpload.status) =>
+          Ok(progressView(reference, complete = false))
+        case Some(fileUpload)                                                         =>
+          fileUpload.status match {
+            case FileUploadStatus.UpscanQuarantine if fileUpload.isPasswordProtected =>
+              Redirect(routes.FileUploadErrorController.filePasswordProtected())
+            case FileUploadStatus.UpscanQuarantine                                   =>
+              Redirect(routes.FileUploadErrorController.fileContainsVirus())
+            case FileUploadStatus.UpscanRejected                                     =>
+              Redirect(routes.FileUploadErrorController.invalidFileType())
+            case FileUploadStatus.Duplicate                                          =>
+              Redirect(routes.FileUploadErrorController.duplicateFileUpload())
+            case FileUploadStatus.ValidationSuccess                                  =>
+              Redirect(routes.UploadedReportFilesController.onPageLoad())
+            case FileUploadStatus.ValidationFailure                                  =>
+              Redirect(routes.FileValidationErrorsController.onPageLoad(reference))
+            case _                                                                   =>
+              Redirect(routes.FileUploadErrorController.fileUploadFailed())
+          }
+        case None                                                                     =>
+          Redirect(routes.FileUploadErrorController.fileUploadFailed())
+      }
+      .recover { case NonFatal(ex) =>
+        logger.error(s"[FileProcessingController][onContinue] Failed to retrieve upload $reference", ex)
+        Redirect(routes.FileUploadErrorController.fileUploadFailed())
+      }
   }
 
   def status(reference: String): Action[AnyContent] = identify.async { implicit request =>

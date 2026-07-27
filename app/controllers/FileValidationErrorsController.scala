@@ -19,7 +19,7 @@ package controllers
 import com.google.inject.Inject
 import config.FrontendAppConfig
 import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
-import models.{FileValidationError, FileValidationErrorCodes, InlineError}
+import models.{FileUploadValidationStatus, FileValidationError, FileValidationErrorCodes, InlineError, InvalidFileReason}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
@@ -43,14 +43,30 @@ class FileValidationErrorsController @Inject() (
         .flatMap(_.fileUploadDetails)
         .flatMap(_.validation)
 
-      val inlineErrors = validation.toSeq.flatMap(_.inlineErrors)
-
-      if (inlineErrors.exists(_.errorCodes.contains("E001")))
-        Redirect(routes.ProblemWithUploadedFileController.onPageLoad())
-      else if (validation.exists(_.validationErrors > appConfig.fileUploadMaxInlineErrors))
-        Redirect(routes.FileFormattingErrorsController.onPageLoad())
-      else
-        Ok(view(toFileValidationErrors(inlineErrors)))
+      validation match {
+        case Some(result) if result.status == FileUploadValidationStatus.InvalidFile =>
+          result.invalidFileReason match {
+            case Some(
+                  InvalidFileReason.InvalidHeader | InvalidFileReason.InvalidWorkbook | InvalidFileReason.InvalidFile
+                ) =>
+              Redirect(routes.ProblemWithUploadedFileController.onPageLoad())
+            case Some(InvalidFileReason.NoDataRows)          =>
+              Redirect(routes.FileUploadErrorController.emptyFileUploaded())
+            case Some(InvalidFileReason.UnsupportedFileType) =>
+              Redirect(routes.FileUploadErrorController.invalidFileType())
+            case _                                           =>
+              Redirect(routes.FileUploadErrorController.fileUploadFailed())
+          }
+        case Some(result)
+            if result.status == FileUploadValidationStatus.ValidationFailed &&
+              result.validationErrors > appConfig.fileUploadMaxInlineErrors =>
+          Redirect(routes.FileFormattingErrorsController.onPageLoad())
+        case Some(result)
+            if result.status == FileUploadValidationStatus.ValidationFailed && result.inlineErrors.nonEmpty =>
+          Ok(view(toFileValidationErrors(result.inlineErrors)))
+        case _                                                                       =>
+          Redirect(routes.FileUploadErrorController.fileUploadFailed())
+      }
   }
 
   private def toFileValidationErrors(inlineErrors: Seq[InlineError]): Seq[FileValidationError] =

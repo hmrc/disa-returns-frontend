@@ -28,9 +28,21 @@
     <script src="@controllers.routes.Assets.versioned("javascripts/fileProcessing.js")" @CSPNonce.attr defer></script>
 }
 
-@layout(pageTitle = titleNoForm(messages("fileProcessing.title")), showBackLink = false, scripts = Some(pageScripts), fullWidth = true) {
+@layout(pageTitle = titleNoForm(messages("fileProcessing.noJs.initial.title")), showBackLink = false, scripts = Some(pageScripts), fullWidth = true) {
 
-    <div id="file-processing" class="govuk-!-text-align-centre govuk-body"
+    <div class="js-hidden govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+            <h1 class="govuk-heading-l">@messages("fileProcessing.noJs.initial.heading")</h1>
+            <p class="govuk-body">
+                @messages("fileProcessing.noJs.initial.beforeLink")
+                <a class="govuk-link" href="@controllers.routes.FileProcessingController.checkProgress(reference).url">@messages("fileProcessing.noJs.checkProgress")</a>
+                @messages("fileProcessing.noJs.initial.afterLink")
+            </p>
+        </div>
+    </div>
+
+    <div id="file-processing" class="js-visible govuk-!-text-align-centre govuk-body"
+         data-page-title="@titleNoForm(messages("fileProcessing.title"))"
          data-status-url="@controllers.routes.FileProcessingController.status(reference).url"
          data-virus-url="@controllers.routes.FileUploadErrorController.fileContainsVirus().url"
          data-password-protected-url="@controllers.routes.FileUploadErrorController.filePasswordProtected().url"

@@ -38,6 +38,7 @@ class ProblemWithUploadedFileControllerSpec extends SpecBase {
 
         status(result) mustEqual OK
         contentAsString(result) mustEqual view()(request, messages(application)).toString
+        contentAsString(result) must include(messages(application)("problemWithUploadedFile.p1"))
       }
     }
   }
