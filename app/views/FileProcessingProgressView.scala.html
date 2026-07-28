@@ -36,10 +36,12 @@
     <h1 class="govuk-heading-l">@messages(headingKey)</h1>
 
     @if(complete) {
-        @govukButton(Button(
-            content = Text(messages("site.continue")),
-            href = Some(controllers.routes.FileProcessingController.onContinue(reference).url)
-        ))
+        <div class="govuk-body">
+            @govukButton(Button(
+                content = Text(messages("site.continue")),
+                href = Some(controllers.routes.FileProcessingController.onContinue(reference).url)
+            ))
+        </div>
     } else {
         <p class="govuk-body">
             <a class="govuk-link" href="@controllers.routes.FileProcessingController.checkProgress(reference).url">@messages("fileProcessing.noJs.checkProgress")</a>

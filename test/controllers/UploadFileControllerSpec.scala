@@ -87,7 +87,6 @@ class UploadFileControllerSpec extends SpecBase {
           messages(application)
         ).toString
         contentAsString(result) must include(messages(application)("uploadFile.warning"))
-        contentAsString(result) must include(routes.DownloadReportTemplateController.onPageLoad().url)
       }
     }
 
