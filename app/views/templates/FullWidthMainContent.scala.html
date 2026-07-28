@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,22 +12,14 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package controllers
+@this()
 
-import play.api.Logging
-import play.api.mvc.*
+@(contentBlock: Html)
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class UpscanResultController @Inject() (
-  cc: ControllerComponents
-) extends AbstractController(cc)
-    with Logging {
-
-  def success: Action[AnyContent] = Action { implicit request =>
-    Ok("✅ Upscan SUCCESS redirect received")
-  }
-}
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+        @contentBlock
+    </div>
+</div>

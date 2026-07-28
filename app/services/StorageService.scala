@@ -18,7 +18,7 @@ package services
 
 import connectors.BackendConnector
 import models.MonthlyReturnDeclarationResult.{Declared, Failed}
-import models.{MonthlyReturn, MonthlyReturnDeclarationResult, MonthlyReturnSaveResult}
+import models.{FileUpload, MonthlyReturn, MonthlyReturnDeclarationResult, MonthlyReturnSaveResult}
 import play.api.Logging
 import play.api.http.Status.{CONFLICT, NOT_FOUND}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
@@ -41,6 +41,16 @@ class StorageService @Inject() (
     hc: HeaderCarrier
   ): Future[Unit] =
     backendConnector.createFileUpload(
+      zReference,
+      dateHelper.reportingPeriodTaxYear,
+      dateHelper.reportingPeriodMonthNumber,
+      reference
+    )
+
+  def getFileUploadForThisPeriod(zReference: String, reference: String)(implicit
+    hc: HeaderCarrier
+  ): Future[Option[FileUpload]] =
+    backendConnector.getFileUpload(
       zReference,
       dateHelper.reportingPeriodTaxYear,
       dateHelper.reportingPeriodMonthNumber,

@@ -46,11 +46,19 @@ object MonthlyReturnDeclarationResult {
 case class FileUpload(
   reference: String,
   status: String,
-  fileUploadDetails: Option[FileUploadDetails] = None
+  fileUploadDetails: Option[FileUploadDetails] = None,
+  failureMessage: Option[String] = None
 ) {
 
   def isSuccessful: Boolean =
     status == FileUploadStatus.UpscanSuccess || status == FileUploadStatus.ValidationSuccess
+
+  def isPasswordProtected: Boolean =
+    status == FileUploadStatus.UpscanQuarantine && failureMessage.exists(_.contains(FileUpload.EncryptedDocMessage))
+}
+
+object FileUpload {
+  private val EncryptedDocMessage = "EncryptedDoc"
 }
 
 case class FileUploadDetails(
@@ -62,7 +70,8 @@ case class ValidationResult(
   rowsValidated: Int,
   validationErrors: Int,
   status: String,
-  inlineErrors: Seq[InlineError] = Seq.empty
+  inlineErrors: Seq[InlineError] = Seq.empty,
+  invalidFileReason: Option[String] = None
 )
 
 case class InlineError(
@@ -73,6 +82,19 @@ case class InlineError(
 object FileUploadStatus {
   val UpscanSuccess: String     = "UPSCAN_SUCCESS"
   val ValidationSuccess: String = "VALIDATION_SUCCESS"
+  val UpscanQuarantine: String  = "UPSCAN_QUARANTINE"
+}
+
+object FileUploadValidationStatus {
+  val InvalidFile: String = "InvalidFile"
+}
+
+object InvalidFileReason {
+  val InvalidHeader: String       = "InvalidHeader"
+  val InvalidWorkbook: String     = "InvalidWorkbook"
+  val NoDataRows: String          = "NoDataRows"
+  val UnsupportedFileType: String = "UnsupportedFileType"
+  val InvalidFile: String         = "InvalidFile"
 }
 
 object MonthlyReturn {

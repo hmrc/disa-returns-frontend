@@ -71,7 +71,7 @@ class UpscanServiceSpec extends SpecBase with MockitoSugar {
       val expectedRequest = UpscanInitiateRequest(
         callbackUrl =
           s"http://backend/disa-returns-backend/monthly/upscan/callback/$testZReference/${dateHelper.reportingPeriodTaxYear}/${dateHelper.reportingPeriodMonthNumber}",
-        successRedirect = Some("http://localhost:12804/upscan/success"),
+        successRedirect = Some("http://localhost:12804/file-processing"),
         errorRedirect = Some("http://localhost:12804/file-upload/error"),
         minimumFileSize = Some(testUpscanMinFileSize),
         maximumFileSize = Some(testUpscanMaxFileSize),

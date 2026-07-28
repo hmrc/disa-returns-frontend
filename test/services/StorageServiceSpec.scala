@@ -18,6 +18,7 @@ package services
 
 import base.SpecBase
 import connectors.BackendConnector
+import models.FileUpload
 import models.MonthlyReturnDeclarationResult.{Declared, Failed}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
@@ -166,6 +167,36 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
       service.deleteFileUploadForThisPeriod(testZReference, reference)(HeaderCarrier()).futureValue
 
       verify(connector).deleteFileUpload(
+        eqTo(testZReference),
+        eqTo(testTaxYear),
+        eqTo(testReportingPeriodMonthNumber),
+        eqTo(reference)
+      )(
+        any[HeaderCarrier]
+      )
+    }
+
+    "must get a file upload for the current reporting period" in {
+      val connector  = mock[BackendConnector]
+      val reference  = "test-reference"
+      val fileUpload = FileUpload(reference = reference, status = "UPSCAN_SUCCESS")
+      when(
+        connector.getFileUpload(
+          eqTo(testZReference),
+          eqTo(testTaxYear),
+          eqTo(testReportingPeriodMonthNumber),
+          eqTo(reference)
+        )(
+          any[HeaderCarrier]
+        )
+      )
+        .thenReturn(Future.successful(Some(fileUpload)))
+      val service    = new StorageService(connector, dateHelper)
+
+      val result = service.getFileUploadForThisPeriod(testZReference, reference)(HeaderCarrier()).futureValue
+
+      result.value mustEqual fileUpload
+      verify(connector).getFileUpload(
         eqTo(testZReference),
         eqTo(testTaxYear),
         eqTo(testReportingPeriodMonthNumber),

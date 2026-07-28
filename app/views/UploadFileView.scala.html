@@ -18,6 +18,7 @@
 @import config.FrontendAppConfig
 @import models.upscan.UpscanInitiateResponse
 @import viewmodels.UploadViewModel
+@import views.html.helper.CSPNonce
 
 @this(
         layout: templates.Layout,
@@ -29,59 +30,80 @@
 
 @(model: UploadViewModel)(implicit request: Request[_], messages: Messages)
 
-@layout(pageTitle = titleNoForm(messages("uploadFile.title"))) {
+@pageScripts = {
+    <script src="@controllers.routes.Assets.versioned("javascripts/uploadFile.js")" @CSPNonce.attr defer></script>
+}
 
-    <h1 class="govuk-heading-l">@messages("uploadFile.heading")</h1>
+@layout(pageTitle = titleNoForm(messages("uploadFile.title")), scripts = Some(pageScripts), fullWidth = true) {
 
-    <div class="govuk-body">
+    <div id="upload-live-region" class="govuk-visually-hidden" aria-live="polite" role="status"></div>
 
-        @model.error.map { messageKey =>
-            @govukErrorSummary(ErrorSummary(
-                title = Text(messages("error.summary.title")),
-                errorList = Seq(
-                    ErrorLink(
-                        href = Some("#file"),
-                        content = Text(messages(messageKey))
+    <div id="upload-file-content" class="govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+            @model.error.map { messageKey =>
+                @govukErrorSummary(ErrorSummary(
+                    title = Text(messages("error.summary.title")),
+                    errorList = Seq(
+                        ErrorLink(
+                            href = Some("#file"),
+                            content = Text(messages(messageKey))
+                        )
                     )
-                )
-            ))
-        }
-
-        <p>@messages("uploadFile.p1")</p>
-
-        <p>
-            @messages("uploadFile.p2.preLink")
-            <a href="#" class="govuk-link">@messages("uploadFile.p2.link")</a>
-            @messages("uploadFile.p2.afterLink")
-        </p>
-
-        <p>@messages("uploadFile.p3")</p>
-        <p>@messages("uploadFile.p4")</p>
-
-        <form method="POST" action="@model.upscan.uploadRequest.href" id="file-upload-form" enctype="multipart/form-data">
-            @for((key, value) <- model.upscan.uploadRequest.fields) {
-                <input type="hidden" name="@key" value="@value"/>
+                ))
             }
 
-            @govukFileUpload(FileUpload(
-                id = "file",
-                name = "file",
-                errorMessage = model.error.map { messageKey =>
-                    ErrorMessage(content = Text(messages(messageKey)))},
-                noFileChosenText = Some(messages("uploadFile.noFileChosen")),
-                chooseFilesButtonText = Some(messages("uploadFile.chooseFile")),
-                dropInstructionText = Some(messages("uploadFile.dropFile")),
-                label = Label(
-                    content = Text(messages("uploadFile.label"))),
-                javascript = Some(true),
-                attributes = Map(
-                    "accept" -> appConfig.upscanAcceptedMimeTypes)
-            ))
+        <h1 class="govuk-heading-l">@messages("uploadFile.heading")</h1>
 
-            @govukButton(Button(
-                content = Text(messages("uploadFile.callToAction"))
-            ))
+        <div class="govuk-body">
 
-        </form>
+            <p>@messages("uploadFile.p1")</p>
+
+            <p>
+                @messages("uploadFile.p2.preLink")
+                <a href="#" class="govuk-link">@messages("uploadFile.p2.link")</a>
+                @messages("uploadFile.p2.afterLink")
+            </p>
+
+            <p>@messages("uploadFile.p3")</p>
+            <p>@messages("uploadFile.p4")</p>
+
+            <form method="POST" action="@model.upscan.uploadRequest.href" id="file-upload-form" enctype="multipart/form-data"
+                  data-error-redirect="@controllers.routes.UploadFileController.onError().url"
+                  data-empty-file-url="@controllers.routes.FileUploadErrorController.emptyFileUploaded().url"
+                  data-min-file-size="@appConfig.upscanMinFileSize"
+                  data-max-file-size="@appConfig.upscanMaxFileSize"
+                  data-accepted-extensions="@appConfig.upscanAcceptedExtensions">
+                @for((key, value) <- model.upscan.uploadRequest.fields) {
+                    <input type="hidden" name="@key" value="@value"/>
+                }
+
+                @govukFileUpload(FileUpload(
+                    id = "file",
+                    name = "file",
+                    errorMessage = model.error.map { messageKey =>
+                        ErrorMessage(content = Text(messages(messageKey)))},
+                    noFileChosenText = Some(messages("uploadFile.noFileChosen")),
+                    chooseFilesButtonText = Some(messages("uploadFile.chooseFile")),
+                    dropInstructionText = Some(messages("uploadFile.dropFile")),
+                    label = Label(
+                        content = Text(messages("uploadFile.label"))),
+                    javascript = Some(true),
+                    attributes = Map(
+                        "accept" -> appConfig.upscanAcceptedMimeTypes)
+                ))
+
+                @govukButton(Button(
+                    content = Text(messages("uploadFile.callToAction"))
+                ))
+
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <div id="upload-in-progress" hidden="hidden" class="govuk-!-text-align-centre">
+        <div class="ccms-loader govuk-!-margin-bottom-4" aria-hidden="true"></div>
+        <h1 class="govuk-heading-l" id="upload-in-progress-heading">@messages("uploadFile.uploading.heading")</h1>
+        <p class="govuk-body">@messages("uploadFile.uploading.body")</p>
     </div>
 }

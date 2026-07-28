@@ -15,7 +15,7 @@
  *@
 
 @import uk.gov.hmrc.govukfrontend.views.html.components.GovukButton
-@import controllers.routes.IndexController
+@import controllers.routes.UploadFileController
 
 @this(
     layout: templates.Layout,
@@ -33,7 +33,7 @@
 
         @govukButton(Button(
             content = Text(messages("fileContainsVirus.button")),
-            href = Some(IndexController.onPageLoad().url)
+            href = Some(UploadFileController.onPageLoad().url)
         ))
     </div>
 }

@@ -60,4 +60,6 @@ POST        /declaration                                 controllers.Declaration
 
 GET         /submission-complete                         controllers.SubmissionCompleteController.onPageLoad()
 
-GET         /upscan/success                              controllers.UpscanResultController.success
+GET         /file-processing                             controllers.FileProcessingController.onPageLoad(key: Option[String])
+
+GET         /file-upload/status                           controllers.FileProcessingController.status(reference: String)

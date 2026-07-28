@@ -150,6 +150,12 @@ uploadFile.entityTooLarge = The selected file must be either in CSV or Excel for
 uploadFile.rejected = The file you uploaded is not recognised. The selected file must be in CSV or Excel format
 uploadFile.invalidArgument = Select a file that you want to submit as your monthly report
 uploadFile.failed = There was a problem uploading your file
+uploadFile.uploading.heading = Your report file is uploading
+uploadFile.uploading.body = This may take a few minutes. Do not refresh or leave this page whilst the file is uploading.
+
+fileProcessing.title = Your file is being processed
+fileProcessing.heading = Your file is being processed
+fileProcessing.body = This may take a few minutes.
 
 fileUploadFailed.title = The selected file could not be uploaded
 fileUploadFailed.heading = The selected file could not be uploaded
