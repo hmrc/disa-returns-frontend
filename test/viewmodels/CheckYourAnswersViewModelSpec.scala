@@ -31,13 +31,13 @@ class CheckYourAnswersViewModelSpec extends SpecBase {
 
   private val successfulUploadOne = FileUpload(
     reference = "successful-reference-1",
-    status = FileUploadStatus.UpscanSuccess,
+    status = FileUploadStatus.ValidationSuccess,
     fileUploadDetails = Some(FileUploadDetails("file1.csv"))
   )
 
   private val successfulUploadTwo = FileUpload(
     reference = "successful-reference-2",
-    status = FileUploadStatus.UpscanSuccess,
+    status = FileUploadStatus.ValidationSuccess,
     fileUploadDetails = Some(FileUploadDetails("file2.csv"))
   )
 

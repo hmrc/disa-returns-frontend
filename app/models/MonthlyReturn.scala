@@ -51,7 +51,7 @@ case class FileUpload(
 ) {
 
   def isSuccessful: Boolean =
-    status == FileUploadStatus.UpscanSuccess || status == FileUploadStatus.ValidationSuccess
+    status == FileUploadStatus.ValidationSuccess
 
   def isPasswordProtected: Boolean =
     status == FileUploadStatus.UpscanQuarantine && failureMessage.exists(_.contains(FileUpload.EncryptedDocMessage))
@@ -80,13 +80,34 @@ case class InlineError(
 )
 
 object FileUploadStatus {
+  val Created: String           = "CREATED"
   val UpscanSuccess: String     = "UPSCAN_SUCCESS"
-  val ValidationSuccess: String = "VALIDATION_SUCCESS"
   val UpscanQuarantine: String  = "UPSCAN_QUARANTINE"
+  val UpscanRejected: String    = "UPSCAN_REJECTED"
+  val UpscanUnknown: String     = "UPSCAN_UNKNOWN"
+  val UpscanExpired: String     = "UPSCAN_EXPIRED"
+  val Duplicate: String         = "DUPLICATE"
+  val ValidationSuccess: String = "VALIDATION_SUCCESS"
+  val ValidationFailure: String = "VALIDATION_FAILURE"
+
+  val pending: Set[String] =
+    Set(Created, UpscanSuccess)
+
+  val terminal: Set[String] =
+    Set(
+      UpscanQuarantine,
+      UpscanRejected,
+      UpscanUnknown,
+      UpscanExpired,
+      Duplicate,
+      ValidationSuccess,
+      ValidationFailure
+    )
 }
 
 object FileUploadValidationStatus {
-  val InvalidFile: String = "InvalidFile"
+  val ValidationFailed: String = "ValidationFailed"
+  val InvalidFile: String      = "InvalidFile"
 }
 
 object InvalidFileReason {

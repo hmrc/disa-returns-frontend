@@ -86,6 +86,7 @@ class UploadFileControllerSpec extends SpecBase {
           request,
           messages(application)
         ).toString
+        contentAsString(result) must include(messages(application)("uploadFile.warning"))
       }
     }
 

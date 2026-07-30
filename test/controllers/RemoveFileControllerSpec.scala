@@ -41,13 +41,13 @@ class RemoveFileControllerSpec extends SpecBase {
 
   private val successfulUpload = FileUpload(
     reference = testReference,
-    status = FileUploadStatus.UpscanSuccess,
+    status = FileUploadStatus.ValidationSuccess,
     fileUploadDetails = Some(FileUploadDetails(testFileName))
   )
 
   private val secondSuccessfulUpload = FileUpload(
     reference = secondTestReference,
-    status = FileUploadStatus.UpscanSuccess,
+    status = FileUploadStatus.ValidationSuccess,
     fileUploadDetails = Some(FileUploadDetails("return2.csv"))
   )
 

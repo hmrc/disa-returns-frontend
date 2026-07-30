@@ -7,6 +7,11 @@
     return;
   }
 
+  const pageTitle = container.getAttribute('data-page-title');
+  if (pageTitle) {
+    document.title = pageTitle;
+  }
+
   const statusUrl = container.getAttribute('data-status-url');
   const pollIntervalMs = Number(container.getAttribute('data-poll-interval-millis'));
   const maxConsecutiveErrors = 5;

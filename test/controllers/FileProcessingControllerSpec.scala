@@ -17,7 +17,7 @@
 package controllers
 
 import base.SpecBase
-import models.{FileUpload, FileUploadDetails, ValidationResult}
+import models.{FileUpload, FileUploadDetails, FileUploadStatus, ValidationResult}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
@@ -34,6 +34,20 @@ import scala.concurrent.Future
 class FileProcessingControllerSpec extends SpecBase {
 
   private val testReference = "test-reference"
+
+  private def applicationWithFileUpload(result: Future[Option[FileUpload]]) = {
+    val mockStorageService = mock[StorageService]
+
+    when(
+      mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+        any[HeaderCarrier]
+      )
+    ).thenReturn(result)
+
+    applicationBuilder()
+      .overrides(bind[StorageService].toInstance(mockStorageService))
+      .build()
+  }
 
   "FileProcessingController" - {
 
@@ -54,6 +68,8 @@ class FileProcessingControllerSpec extends SpecBase {
 
           status(result) mustEqual OK
           contentAsString(result) mustEqual view(reference = testReference)(request, messages(application)).toString
+          contentAsString(result) must include(messages(application)("fileProcessing.noJs.initial.heading"))
+          contentAsString(result) must include(routes.FileProcessingController.checkProgress(testReference).url)
         }
       }
 
@@ -67,6 +83,172 @@ class FileProcessingControllerSpec extends SpecBase {
             FakeRequest(GET, routes.FileProcessingController.onPageLoad(None).url)
 
           val result = route(application, request).value
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileUploadFailed().url
+        }
+      }
+    }
+
+    "checkProgress" - {
+
+      FileUploadStatus.pending.foreach { pendingStatus =>
+        s"must show the still-being-checked variant without a spinner for $pendingStatus" in {
+          val application =
+            applicationWithFileUpload(Future.successful(Some(FileUpload(testReference, pendingStatus))))
+
+          running(application) {
+            val request = FakeRequest(GET, routes.FileProcessingController.checkProgress(testReference).url)
+            val result  = route(application, request).value
+            val content = contentAsString(result)
+
+            status(result) mustEqual OK
+            content must include(messages(application)("fileProcessing.noJs.still.heading"))
+            content must not include "ccms-loader"
+          }
+        }
+      }
+
+      FileUploadStatus.terminal.foreach { terminalStatus =>
+        s"must show the finished-being-checked variant without a spinner for $terminalStatus" in {
+          val application =
+            applicationWithFileUpload(Future.successful(Some(FileUpload(testReference, terminalStatus))))
+
+          running(application) {
+            val request = FakeRequest(GET, routes.FileProcessingController.checkProgress(testReference).url)
+            val result  = route(application, request).value
+            val content = contentAsString(result)
+
+            status(result) mustEqual OK
+            content must include(messages(application)("fileProcessing.noJs.finished.heading"))
+            content must include(routes.FileProcessingController.onContinue(testReference).url)
+            content must not include "ccms-loader"
+          }
+        }
+      }
+
+      "must redirect to the generic upload failure page for a missing or unknown upload" in {
+        Seq(None, Some(FileUpload(testReference, "UNKNOWN"))).foreach { fileUpload =>
+          val application = applicationWithFileUpload(Future.successful(fileUpload))
+
+          running(application) {
+            val request = FakeRequest(GET, routes.FileProcessingController.checkProgress(testReference).url)
+            val result  = route(application, request).value
+
+            status(result) mustEqual SEE_OTHER
+            redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileUploadFailed().url
+          }
+        }
+      }
+
+      "must redirect to the generic upload failure page when retrieving the upload fails" in {
+        val application = applicationWithFileUpload(Future.failed(new RuntimeException("failed")))
+
+        running(application) {
+          val request = FakeRequest(GET, routes.FileProcessingController.checkProgress(testReference).url)
+          val result  = route(application, request).value
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileUploadFailed().url
+        }
+      }
+    }
+
+    "onContinue" - {
+
+      FileUploadStatus.pending.foreach { pendingStatus =>
+        s"must show the still-being-checked variant when the upload remains $pendingStatus" in {
+          val application =
+            applicationWithFileUpload(Future.successful(Some(FileUpload(testReference, pendingStatus))))
+
+          running(application) {
+            val request = FakeRequest(GET, routes.FileProcessingController.onContinue(testReference).url)
+            val result  = route(application, request).value
+
+            status(result) mustEqual OK
+            contentAsString(result) must include(messages(application)("fileProcessing.noJs.still.heading"))
+          }
+        }
+      }
+
+      Seq(
+        FileUploadStatus.UpscanRejected    -> (() => routes.FileUploadErrorController.invalidFileType().url),
+        FileUploadStatus.Duplicate         -> (() => routes.FileUploadErrorController.duplicateFileUpload().url),
+        FileUploadStatus.ValidationSuccess -> (() => routes.UploadedReportFilesController.onPageLoad().url),
+        FileUploadStatus.ValidationFailure -> (() =>
+          routes.FileValidationErrorsController.onPageLoad(testReference).url
+        ),
+        FileUploadStatus.UpscanUnknown     -> (() => routes.FileUploadErrorController.fileUploadFailed().url),
+        FileUploadStatus.UpscanExpired     -> (() => routes.FileUploadErrorController.fileUploadFailed().url)
+      ).foreach { case (uploadStatus, expectedUrl) =>
+        s"must redirect $uploadStatus to the correct page" in {
+          val application =
+            applicationWithFileUpload(Future.successful(Some(FileUpload(testReference, uploadStatus))))
+
+          running(application) {
+            val request = FakeRequest(GET, routes.FileProcessingController.onContinue(testReference).url)
+            val result  = route(application, request).value
+
+            status(result) mustEqual SEE_OTHER
+            redirectLocation(result).value mustEqual expectedUrl()
+          }
+        }
+      }
+
+      "must redirect a password-protected quarantine to the password-protected page" in {
+        val fileUpload  = FileUpload(
+          testReference,
+          FileUploadStatus.UpscanQuarantine,
+          failureMessage = Some("PUA.Doc.Packed.EncryptedDoc-6563700-0")
+        )
+        val application = applicationWithFileUpload(Future.successful(Some(fileUpload)))
+
+        running(application) {
+          val request = FakeRequest(GET, routes.FileProcessingController.onContinue(testReference).url)
+          val result  = route(application, request).value
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual routes.FileUploadErrorController.filePasswordProtected().url
+        }
+      }
+
+      "must redirect a virus quarantine to the virus page" in {
+        val fileUpload  = FileUpload(
+          testReference,
+          FileUploadStatus.UpscanQuarantine,
+          failureMessage = Some("Win.Test.EICAR_HDB-1")
+        )
+        val application = applicationWithFileUpload(Future.successful(Some(fileUpload)))
+
+        running(application) {
+          val request = FakeRequest(GET, routes.FileProcessingController.onContinue(testReference).url)
+          val result  = route(application, request).value
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileContainsVirus().url
+        }
+      }
+
+      "must redirect to the generic upload failure page for a missing or unknown upload" in {
+        Seq(None, Some(FileUpload(testReference, "UNKNOWN"))).foreach { fileUpload =>
+          val application = applicationWithFileUpload(Future.successful(fileUpload))
+
+          running(application) {
+            val request = FakeRequest(GET, routes.FileProcessingController.onContinue(testReference).url)
+            val result  = route(application, request).value
+
+            status(result) mustEqual SEE_OTHER
+            redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileUploadFailed().url
+          }
+        }
+      }
+
+      "must redirect to the generic upload failure page when retrieving the upload fails" in {
+        val application = applicationWithFileUpload(Future.failed(new RuntimeException("failed")))
+
+        running(application) {
+          val request = FakeRequest(GET, routes.FileProcessingController.onContinue(testReference).url)
+          val result  = route(application, request).value
 
           status(result) mustEqual SEE_OTHER
           redirectLocation(result).value mustEqual routes.FileUploadErrorController.fileUploadFailed().url

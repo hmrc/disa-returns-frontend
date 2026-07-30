@@ -67,6 +67,10 @@
             <p>@messages("uploadFile.p3")</p>
             <p>@messages("uploadFile.p4")</p>
 
+            <div class="govuk-inset-text">
+                @messages("uploadFile.warning")
+            </div>
+
             <form method="POST" action="@model.upscan.uploadRequest.href" id="file-upload-form" enctype="multipart/form-data"
                   data-error-redirect="@controllers.routes.UploadFileController.onError().url"
                   data-empty-file-url="@controllers.routes.FileUploadErrorController.emptyFileUploaded().url"

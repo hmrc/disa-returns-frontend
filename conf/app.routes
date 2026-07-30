@@ -61,5 +61,7 @@ POST        /declaration                                 controllers.Declaration
 GET         /submission-complete                         controllers.SubmissionCompleteController.onPageLoad()
 
 GET         /file-processing                             controllers.FileProcessingController.onPageLoad(key: Option[String])
+GET         /file-processing/:reference/check-progress  controllers.FileProcessingController.checkProgress(reference: String)
+GET         /file-processing/:reference/continue        controllers.FileProcessingController.onContinue(reference: String)
 
 GET         /file-upload/status                           controllers.FileProcessingController.status(reference: String)
