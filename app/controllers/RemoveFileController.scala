@@ -16,8 +16,10 @@
 
 package controllers
 
-import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
+import controllers.actions.JourneyGuard.Page
+import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import forms.RemoveFileFormProvider
+import handlers.ErrorHandler
 import models.YesNoAnswer
 import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -34,9 +36,10 @@ class RemoveFileController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   getData: DataRetrievalAction,
-  requireData: DataRequiredAction,
+  journeyGuard: JourneyGuard,
   formProvider: RemoveFileFormProvider,
   storageService: StorageService,
+  errorHandler: ErrorHandler,
   val controllerComponents: MessagesControllerComponents,
   view: RemoveFileView
 )(implicit ec: ExecutionContext)
@@ -50,16 +53,16 @@ class RemoveFileController @Inject() (
       .flatMap(_.fileUploadDetails)
       .map(_.fileName)
 
-  def onPageLoad(reference: String): Action[AnyContent] = (identify andThen getData andThen requireData) {
-    implicit request =>
+  def onPageLoad(reference: String): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.RemoveFile)) { implicit request =>
       fileNameFor(reference) match {
         case Some(fileName) => Ok(view(formProvider(fileName), reference, fileName))
         case None           => Redirect(routes.UploadedReportFilesController.onPageLoad())
       }
-  }
+    }
 
-  def onSubmit(reference: String): Action[AnyContent] = (identify andThen getData andThen requireData).async {
-    implicit request =>
+  def onSubmit(reference: String): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.RemoveFile)).async { implicit request =>
       fileNameFor(reference) match {
         case None           => Future.successful(Redirect(routes.UploadedReportFilesController.onPageLoad()))
         case Some(fileName) =>
@@ -69,8 +72,8 @@ class RemoveFileController @Inject() (
               formWithErrors => Future.successful(BadRequest(view(formWithErrors, reference, fileName))),
               {
                 case YesNoAnswer.Yes =>
-                  val remainingSuccessfulFiles = request.monthlyReturn.fileUploads
-                    .filter(f => f.isSuccessful && f.reference != reference)
+                  val remainingSuccessfulFiles = request.monthlyReturn.successfulFileUploads
+                    .filterNot(_.reference == reference)
                   storageService
                     .deleteFileUploadForThisPeriod(request.zReference, reference)
                     .map { _ =>
@@ -79,17 +82,17 @@ class RemoveFileController @Inject() (
                       else
                         Redirect(routes.UploadedReportFilesController.onPageLoad())
                     }
-                    .recover { case NonFatal(e) =>
+                    .recoverWith { case NonFatal(e) =>
                       logger.error(
                         s"Failed to delete file upload for reference: [$reference] and zRef: [${request.zReference}]",
                         e
                       )
-                      InternalServerError
+                      errorHandler.internalServerError
                     }
                 case YesNoAnswer.No  =>
                   Future.successful(Redirect(routes.UploadedReportFilesController.onPageLoad()))
               }
             )
       }
-  }
+    }
 }

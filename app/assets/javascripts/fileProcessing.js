@@ -20,26 +20,6 @@
   const startedAt = Date.now();
   let consecutiveErrors = 0;
 
-  const pendingStatuses = ['CREATED', 'UPSCAN_SUCCESS'];
-
-  const destinationByStatus = {
-    UPSCAN_QUARANTINE: container.getAttribute('data-virus-url'),
-    UPSCAN_REJECTED: container.getAttribute('data-rejected-url'),
-    UPSCAN_UNKNOWN: container.getAttribute('data-failed-url'),
-    UPSCAN_EXPIRED: container.getAttribute('data-failed-url'),
-    DUPLICATE: container.getAttribute('data-duplicate-url'),
-    VALIDATION_SUCCESS: container.getAttribute('data-success-url'),
-    VALIDATION_FAILURE: container.getAttribute('data-validation-errors-url')
-  };
-
-  const destinationByInvalidFileReason = {
-    InvalidHeader: container.getAttribute('data-problem-with-file-url'),
-    InvalidWorkbook: container.getAttribute('data-problem-with-file-url'),
-    InvalidFile: container.getAttribute('data-problem-with-file-url'),
-    NoDataRows: container.getAttribute('data-empty-file-url'),
-    UnsupportedFileType: container.getAttribute('data-rejected-url')
-  };
-
   function poll() {
     window
       .fetch(statusUrl)
@@ -53,25 +33,17 @@
       .then(function (body) {
         consecutiveErrors = 0;
 
-        const status = body.status;
+        if (body.redirectUrl) {
+          window.location.href = body.redirectUrl;
+          return;
+        }
 
-        if (pendingStatuses.includes(status)) {
+        if (body.processing === true) {
           scheduleNextPoll();
           return;
         }
 
-        if (body.validationStatus === 'InvalidFile') {
-          window.location.href =
-            destinationByInvalidFileReason[body.invalidFileReason] || container.getAttribute('data-failed-url');
-          return;
-        }
-
-        if (body.passwordProtected) {
-          window.location.href = container.getAttribute('data-password-protected-url');
-          return;
-        }
-
-        window.location.href = destinationByStatus[status] || container.getAttribute('data-failed-url');
+        window.location.href = container.getAttribute('data-failed-url');
       })
       .catch(handleError);
   }

@@ -17,7 +17,8 @@
 package controllers
 
 import com.google.inject.Inject
-import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
+import controllers.actions.JourneyGuard.Page
+import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import navigation.Navigator
 import pages.CheckYourAnswersPage
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -29,18 +30,20 @@ class CheckYourAnswersController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   getData: DataRetrievalAction,
-  requireData: DataRequiredAction,
+  journeyGuard: JourneyGuard,
   navigator: Navigator,
   val controllerComponents: MessagesControllerComponents,
   view: CheckYourAnswersView
 ) extends FrontendBaseController
     with I18nSupport {
 
-  def onPageLoad(): Action[AnyContent] = (identify andThen getData andThen requireData) { implicit request =>
-    Ok(view(request.monthlyReturn))
-  }
+  def onPageLoad(): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.CheckYourAnswers)) { implicit request =>
+      Ok(view(request.monthlyReturn))
+    }
 
-  def onSubmit(): Action[AnyContent] = (identify andThen getData andThen requireData) { implicit request =>
-    Redirect(navigator.nextPage(CheckYourAnswersPage, request.monthlyReturn))
-  }
+  def onSubmit(): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.CheckYourAnswers)) { implicit request =>
+      Redirect(navigator.nextPage(CheckYourAnswersPage, request.monthlyReturn))
+    }
 }

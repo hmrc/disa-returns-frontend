@@ -44,15 +44,7 @@
     <div id="file-processing" class="js-visible govuk-!-text-align-centre govuk-body"
          data-page-title="@titleNoForm(messages("fileProcessing.title"))"
          data-status-url="@controllers.routes.FileProcessingController.status(reference).url"
-         data-virus-url="@controllers.routes.FileUploadErrorController.fileContainsVirus().url"
-         data-password-protected-url="@controllers.routes.FileUploadErrorController.filePasswordProtected().url"
-         data-rejected-url="@controllers.routes.FileUploadErrorController.invalidFileType().url"
          data-failed-url="@controllers.routes.FileUploadErrorController.fileUploadFailed().url"
-         data-duplicate-url="@controllers.routes.FileUploadErrorController.duplicateFileUpload().url"
-         data-success-url="@controllers.routes.UploadedReportFilesController.onPageLoad().url"
-         data-validation-errors-url="@controllers.routes.FileValidationErrorsController.onPageLoad(reference).url"
-         data-problem-with-file-url="@controllers.routes.ProblemWithUploadedFileController.onPageLoad().url"
-         data-empty-file-url="@controllers.routes.FileUploadErrorController.emptyFileUploaded().url"
          data-poll-interval-millis="@appConfig.fileProcessingPollIntervalMillis"
          data-max-wait-minutes="@appConfig.fileProcessingMaxWaitMinutes">
         <div class="ccms-loader govuk-!-margin-bottom-4" aria-hidden="true"></div>

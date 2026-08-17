@@ -60,7 +60,7 @@
 
             <p>
                 @messages("uploadFile.p2.preLink")
-                <a href="#" class="govuk-link">@messages("uploadFile.p2.link")</a>
+                <a href="@controllers.routes.DownloadReportTemplateController.download().url" class="govuk-link">@messages("uploadFile.p2.link")</a>
                 @messages("uploadFile.p2.afterLink")
             </p>
 

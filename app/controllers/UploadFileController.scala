@@ -16,19 +16,23 @@
 
 package controllers
 
-import controllers.actions.{DataRetrievalAction, IdentifierAction}
+import config.FrontendAppConfig
+import controllers.actions.JourneyGuard.Page
+import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import handlers.ErrorHandler
 import models.upscan.UploadError
+import play.api.http.Status.UNPROCESSABLE_ENTITY
 import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.{StorageService, UpscanService}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
+import uk.gov.hmrc.http.UpstreamErrorResponse
 import viewmodels.UploadViewModel
 import views.html.UploadFileView
 
 import javax.inject.Inject
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 class UploadFileController @Inject() (
@@ -39,7 +43,9 @@ class UploadFileController @Inject() (
   val controllerComponents: MessagesControllerComponents,
   view: UploadFileView,
   errorHandler: ErrorHandler,
-  getData: DataRetrievalAction
+  getData: DataRetrievalAction,
+  journeyGuard: JourneyGuard,
+  appConfig: FrontendAppConfig
 )(implicit ec: ExecutionContext)
     extends FrontendBaseController
     with I18nSupport
@@ -50,26 +56,30 @@ class UploadFileController @Inject() (
     Redirect(routes.UploadFileController.onPageLoad().url, Map("errorCode" -> Seq(errorCode)))
   }
 
-  def onPageLoad(): Action[AnyContent] = (identify andThen getData).async { implicit request =>
-    val error: Option[String] =
-      request.getQueryString("errorCode").map(UploadError.toMessageKey)
+  def onPageLoad(): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.UploadFile)).async { implicit request =>
+      val error: Option[String] =
+        request.getQueryString("errorCode").map(UploadError.toMessageKey)
 
-    upscanService
-      .initiate(request.zReference)
-      .flatMap { upscanResponse =>
-        storageService
-          .createFileUploadForThisPeriod(request.zReference, upscanResponse.reference)
-          .map { _ =>
-            val model = UploadViewModel(
-              upscan = upscanResponse,
-              error = error
-            )
-            Ok(view(model))
-          }
-      }
-      .recoverWith { case NonFatal(ex) =>
-        logger.error(s"[UploadFileController] initiate failed: $ex")
-        errorHandler.internalServerError(request)
-      }
-  }
+      upscanService
+        .initiate(request.zReference)
+        .flatMap { upscanResponse =>
+          storageService
+            .createFileUploadForThisPeriod(request.zReference, upscanResponse.reference)
+            .map { _ =>
+              val model = UploadViewModel(
+                upscan = upscanResponse,
+                error = error
+              )
+              Ok(view(model))
+            }
+        }
+        .recoverWith {
+          case ex: UpstreamErrorResponse if ex.statusCode == UNPROCESSABLE_ENTITY =>
+            Future.successful(Redirect(appConfig.manageIsasUrl))
+          case NonFatal(ex)                                                       =>
+            logger.error(s"[UploadFileController] initiate failed: $ex")
+            errorHandler.internalServerError(request)
+        }
+    }
 }

@@ -17,57 +17,58 @@
 package controllers
 
 import com.google.inject.Inject
-import config.FrontendAppConfig
-import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
-import models.{FileUploadValidationStatus, FileValidationError, FileValidationErrorCodes, InlineError, InvalidFileReason}
+import controllers.actions.JourneyGuard.Page
+import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
+import handlers.ErrorHandler
+import models.{FileValidationError, FileValidationErrorCodes, InlineError}
+import navigation.FileProcessingDecision.{Completed, Failed, Processing}
+import navigation.FileUploadResultNavigator
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, RequestHeader, Result}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import views.html.FileValidationErrorsView
+
+import scala.concurrent.Future
 
 class FileValidationErrorsController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   getData: DataRetrievalAction,
-  requireData: DataRequiredAction,
+  journeyGuard: JourneyGuard,
   val controllerComponents: MessagesControllerComponents,
   view: FileValidationErrorsView,
-  appConfig: FrontendAppConfig
+  resultNavigator: FileUploadResultNavigator,
+  errorHandler: ErrorHandler
 ) extends FrontendBaseController
     with I18nSupport {
 
-  def onPageLoad(reference: String): Action[AnyContent] = (identify andThen getData andThen requireData) {
-    implicit request =>
-      val validation = request.monthlyReturn.fileUploads
+  def onPageLoad(reference: String): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.FileValidationErrors)).async { implicit request =>
+      val fileUpload = request.monthlyReturn.fileUploads
         .find(_.reference == reference)
-        .flatMap(_.fileUploadDetails)
-        .flatMap(_.validation)
 
-      validation match {
-        case Some(result) if result.status == FileUploadValidationStatus.InvalidFile =>
-          result.invalidFileReason match {
-            case Some(
-                  InvalidFileReason.InvalidHeader | InvalidFileReason.InvalidWorkbook | InvalidFileReason.InvalidFile
-                ) =>
-              Redirect(routes.ProblemWithUploadedFileController.onPageLoad())
-            case Some(InvalidFileReason.NoDataRows)          =>
-              Redirect(routes.FileUploadErrorController.emptyFileUploaded())
-            case Some(InvalidFileReason.UnsupportedFileType) =>
-              Redirect(routes.FileUploadErrorController.invalidFileType())
-            case _                                           =>
-              Redirect(routes.FileUploadErrorController.fileUploadFailed())
-          }
-        case Some(result)
-            if result.status == FileUploadValidationStatus.ValidationFailed &&
-              result.validationErrors > appConfig.fileUploadMaxInlineErrors =>
-          Redirect(routes.FileFormattingErrorsController.onPageLoad())
-        case Some(result)
-            if result.status == FileUploadValidationStatus.ValidationFailed && result.inlineErrors.nonEmpty =>
-          Ok(view(toFileValidationErrors(result.inlineErrors)))
-        case _                                                                       =>
-          Redirect(routes.FileUploadErrorController.fileUploadFailed())
+      resultNavigator.getFileProcessingOutcome(fileUpload, reference) match {
+        case Completed(destination) if destination == routes.FileValidationErrorsController.onPageLoad(reference) =>
+          val inlineErrors = fileUpload.toSeq
+            .flatMap(_.fileUploadDetails)
+            .flatMap(_.validation)
+            .flatMap(_.inlineErrors)
+
+          Future.successful(Ok(view(toFileValidationErrors(inlineErrors))))
+        case Completed(destination)                                                                               =>
+          Future.successful(Redirect(destination))
+        case Failed(destination)                                                                                  =>
+          Future.successful(Redirect(destination))
+        case Processing                                                                                           =>
+          genericFailureResult(reference)
       }
-  }
+    }
+
+  private def genericFailureResult(reference: String)(implicit request: RequestHeader): Future[Result] =
+    resultNavigator.getFileProcessingOutcome(None, reference) match {
+      case Failed(destination) => Future.successful(Redirect(destination))
+      case _                   => errorHandler.internalServerError
+    }
 
   private def toFileValidationErrors(inlineErrors: Seq[InlineError]): Seq[FileValidationError] =
     inlineErrors.flatMap { inlineError =>

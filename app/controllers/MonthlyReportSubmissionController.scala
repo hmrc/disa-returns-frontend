@@ -16,19 +16,22 @@
 
 package controllers
 
-import controllers.actions.{DataRetrievalAction, IdentifierAction}
+import config.FrontendAppConfig
+import controllers.actions.JourneyGuard.Page
+import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import forms.MonthlyReportSubmissionFormProvider
 import handlers.ErrorHandler
+import models.MonthlyReturn
 import models.YesNoAnswer.{No, Yes}
+import models.requests.OptionalDataRequest
 import navigation.Navigator
 import pages.MonthlyReportSubmissionPage
 import play.api.Logging
+import play.api.http.Status.UNPROCESSABLE_ENTITY
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import models.MonthlyReturn
-import models.requests.OptionalDataRequest
 import services.{AuditService, StorageService}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import views.html.MonthlyReportSubmissionView
@@ -43,6 +46,8 @@ class MonthlyReportSubmissionController @Inject() (
   getData: DataRetrievalAction,
   formProvider: MonthlyReportSubmissionFormProvider,
   navigator: Navigator,
+  journeyGuard: JourneyGuard,
+  appConfig: FrontendAppConfig,
   storageService: StorageService,
   auditService: AuditService,
   errorHandler: ErrorHandler,
@@ -55,44 +60,50 @@ class MonthlyReportSubmissionController @Inject() (
 
   private val form = formProvider()
 
-  def onPageLoad(): Action[AnyContent] = (identify andThen getData).async { implicit request =>
-    val preparedForm = request.monthlyReturn
-      .map(monthlyReturn => if (monthlyReturn.nilReturn) form.fill(No) else form.fill(Yes))
-      .getOrElse(form)
+  def onPageLoad(): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard.optionalData(Page.MonthlyReportSubmission)) { implicit request =>
+      val preparedForm = request.monthlyReturn
+        .map(monthlyReturn => if (monthlyReturn.nilReturn) form.fill(No) else form.fill(Yes))
+        .getOrElse(form)
 
-    Future.successful(Ok(view(preparedForm)))
-  }
+      Ok(view(preparedForm))
+    }
 
-  def onSubmit(): Action[AnyContent] = (identify andThen getData).async { implicit request =>
-    form
-      .bindFromRequest()
-      .fold(
-        formWithErrors =>
-          Future.successful(
-            BadRequest(view(formWithErrors))
-          ),
-        answer => {
-          val nilReturn = answer == No
+  def onSubmit(): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard.optionalData(Page.MonthlyReportSubmission)).async {
+      implicit request =>
+        form
+          .bindFromRequest()
+          .fold(
+            formWithErrors =>
+              Future.successful(
+                BadRequest(view(formWithErrors))
+              ),
+            answer => {
+              val nilReturn = answer == No
 
-          storageService
-            .saveForThisPeriod(request.zReference, request.monthlyReturn, nilReturn)
-            .map { saveResult =>
-              if (saveResult.created) {
-                auditFileUploadStarted(request, saveResult.monthlyReturn)
-              }
+              storageService
+                .saveForThisPeriod(request.zReference, request.monthlyReturn, nilReturn)
+                .map { saveResult =>
+                  if (saveResult.created) {
+                    auditFileUploadStarted(request, saveResult.monthlyReturn)
+                  }
 
-              Redirect(navigator.nextPage(MonthlyReportSubmissionPage, saveResult.monthlyReturn))
+                  Redirect(navigator.nextPage(MonthlyReportSubmissionPage, saveResult.monthlyReturn))
+                }
+                .recoverWith {
+                  case e: UpstreamErrorResponse if e.statusCode == UNPROCESSABLE_ENTITY =>
+                    Future.successful(Redirect(appConfig.manageIsasUrl))
+                  case NonFatal(e)                                                      =>
+                    logger.error(
+                      s"Failed to save monthly return for zRef: [${request.zReference}]",
+                      e
+                    )
+                    errorHandler.internalServerError
+                }
             }
-            .recoverWith { case NonFatal(e) =>
-              logger.error(
-                s"Failed to save monthly return for zRef: [${request.zReference}]",
-                e
-              )
-              errorHandler.internalServerError
-            }
-        }
-      )
-  }
+          )
+    }
 
   private def auditFileUploadStarted[A](
     request: OptionalDataRequest[A],

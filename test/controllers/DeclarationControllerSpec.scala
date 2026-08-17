@@ -17,7 +17,9 @@
 package controllers
 
 import base.SpecBase
-import models.MonthlyReturnDeclarationResult.{Declared, Failed}
+import models.MonthlyReturnDeclarationResult
+import models.MonthlyReturnDeclarationResult.{AlreadyDeclared, Declared, Failed, MonthlyReturnNotFound, OutsideDeclarationPeriod}
+import models.{FileUpload, FileUploadDetails, FileUploadStatus}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
@@ -33,12 +35,21 @@ import scala.concurrent.Future
 
 class DeclarationControllerSpec extends SpecBase with MockitoSugar {
 
+  private val successfulUpload = FileUpload(
+    reference = "successful-reference",
+    status = FileUploadStatus.ValidationSuccess,
+    fileUploadDetails = Some(FileUploadDetails("return.csv"))
+  )
+
+  private val nonNilReturnWithFile = emptyMonthlyReturn.copy(fileUploads = Seq(successfulUpload))
+  private val nilReturn            = emptyMonthlyReturn.copy(nilReturn = true)
+
   "DeclarationController" - {
 
     "must return OK and the correct view when nilReturn is false" in {
 
       val application =
-        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn.copy(nilReturn = false))).build()
+        applicationBuilder(monthlyReturn = Some(nonNilReturnWithFile)).build()
 
       running(application) {
 
@@ -62,7 +73,7 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
     "must return OK and the correct view when nilReturn is true" in {
 
       val application =
-        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn.copy(nilReturn = true))).build()
+        applicationBuilder(monthlyReturn = Some(nilReturn)).build()
 
       running(application) {
 
@@ -89,7 +100,7 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
         .thenReturn(Future.successful(Declared))
 
       val application =
-        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
+        applicationBuilder(monthlyReturn = Some(nilReturn))
           .overrides(bind[StorageService].toInstance(storageService))
           .build()
 
@@ -104,26 +115,31 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
       }
     }
 
-    "must return InternalServerError when the monthly return has already been declared" in {
-      val storageService = mock[StorageService]
-      when(storageService.declareForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
-        .thenReturn(Future.successful(Failed))
+    Seq[(MonthlyReturnDeclarationResult, String)](
+      AlreadyDeclared          -> "the return is already declared",
+      OutsideDeclarationPeriod -> "the declaration period is closed",
+      MonthlyReturnNotFound    -> "the monthly return is missing",
+      Failed                   -> "the declaration fails"
+    ).foreach { case (outcome, description) =>
+      s"must render the shared internal server error page when $description" in {
+        val storageService = mock[StorageService]
+        when(storageService.declareForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
+          .thenReturn(Future.successful(outcome))
 
-      val application =
-        applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
+        val application = applicationBuilder(monthlyReturn = Some(nilReturn))
           .overrides(bind[StorageService].toInstance(storageService))
           .build()
 
-      running(application) {
-        val request = FakeRequest(POST, routes.DeclarationController.onSubmit().url)
+        running(application) {
+          val result = route(application, FakeRequest(POST, routes.DeclarationController.onSubmit().url)).value
 
-        val result = route(application, request).value
-
-        status(result) mustEqual INTERNAL_SERVER_ERROR
+          status(result) mustEqual INTERNAL_SERVER_ERROR
+          contentAsString(result) must not be empty
+        }
       }
     }
 
-    "must redirect to Journey Recovery for a GET if no existing data is found" in {
+    "must redirect to Manage ISAs for a GET if no existing data is found" in {
       val application = applicationBuilder(monthlyReturn = None).build()
 
       running(application) {
@@ -132,11 +148,11 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
         val result = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
 
-    "must redirect to Journey Recovery for a POST if no existing data is found" in {
+    "must redirect to Manage ISAs for a POST if no existing data is found" in {
       val application = applicationBuilder(monthlyReturn = None).build()
 
       running(application) {
@@ -145,7 +161,20 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
         val result = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
+      }
+    }
+
+    "must prevent a non-nil return without a valid file from reaching declaration" in {
+      val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn)).build()
+
+      running(application) {
+        Seq(GET, POST).foreach { method =>
+          val result = route(application, FakeRequest(method, routes.DeclarationController.onPageLoad().url)).value
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual manageIsasUrl(application)
+        }
       }
     }
   }

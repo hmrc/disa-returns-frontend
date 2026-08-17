@@ -48,7 +48,6 @@ class CheckYourAnswersControllerSpec extends SpecBase {
   private def applicationWith(monthlyReturn: Option[MonthlyReturn]) =
     applicationBuilder(monthlyReturn = monthlyReturn)
       .overrides(
-        bind[java.time.Clock].toInstance(testReportingWindowClock),
         bind[Navigator].toInstance(new FakeNavigator(onwardRoute))
       )
       .build()
@@ -117,7 +116,7 @@ class CheckYourAnswersControllerSpec extends SpecBase {
       }
     }
 
-    "must redirect to Journey Recovery for a GET if no existing data is found" in {
+    "must redirect to Manage ISAs for a GET if no existing data is found" in {
 
       val application = applicationWith(None)
 
@@ -127,11 +126,11 @@ class CheckYourAnswersControllerSpec extends SpecBase {
         val result = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
 
-    "must redirect to Journey Recovery for a POST if no existing data is found" in {
+    "must redirect to Manage ISAs for a POST if no existing data is found" in {
 
       val application = applicationWith(None)
 
@@ -141,7 +140,7 @@ class CheckYourAnswersControllerSpec extends SpecBase {
         val result = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
   }

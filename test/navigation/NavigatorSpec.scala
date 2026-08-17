@@ -53,9 +53,10 @@ class NavigatorSpec extends SpecBase {
       ) mustBe routes.DeclarationController.onPageLoad()
     }
 
-    "must go from a page that doesn't exist in the route map to Index" in {
+    "must recover from a page that doesn't exist in the route map at the monthly report question" in {
       case object UnknownPage extends Page
-      navigator.nextPage(UnknownPage, monthlyReturn(nilReturn = false)) mustBe routes.IndexController.onPageLoad()
+      navigator.nextPage(UnknownPage, monthlyReturn(nilReturn = false)) mustBe
+        routes.MonthlyReportSubmissionController.onPageLoad()
     }
 
     "must go from UploadedReportFilesPage to the file upload placeholder when the user wants to add another file" in {

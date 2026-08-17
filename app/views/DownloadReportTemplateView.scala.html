@@ -15,12 +15,13 @@
  *@
 
 @import uk.gov.hmrc.govukfrontend.views.html.components.GovukButton
-@import controllers.routes.IndexController
+@import config.FrontendAppConfig
 @import play.twirl.api.Html
 
 @this(
       layout: templates.Layout,
-      govukButton: GovukButton
+      govukButton: GovukButton,
+      appConfig: FrontendAppConfig
 )
 
 @()(implicit request: Request[_], messages: Messages)
@@ -35,11 +36,11 @@
     <h2 class="govuk-heading-m">@messages("downloadReportTemplate.h2")</h2>
     <p>@messages("downloadReportTemplate.p2")</p>
     <h2 class="govuk-heading-m">@messages("downloadReportTemplate.h3")</h2>
-    <p><a href="#" class="govuk-link">@messages("downloadReportTemplate.p3.link")</a> @messages("downloadReportTemplate.p3")</p>
+    <p><a href="@controllers.routes.DownloadReportTemplateController.download().url" class="govuk-link">@messages("downloadReportTemplate.p3.link")</a> @messages("downloadReportTemplate.p3")</p>
 
     @govukButton(Button(
       content = Text(messages("downloadReportTemplate.callToAction")),
-      href = Some(IndexController.onPageLoad().url)
+      href = Some(appConfig.manageIsasUrl)
     ))
   </div>
 }

@@ -30,7 +30,7 @@ class Navigator @Inject() () {
     case MonthlyReportSubmissionPage =>
       monthlyReturn => monthlyReturnRoute(monthlyReturn)
     case CheckYourAnswersPage        => _ => declarationRoute
-    case _                           => _ => routes.IndexController.onPageLoad()
+    case _                           => _ => routes.MonthlyReportSubmissionController.onPageLoad()
   }
 
   private def monthlyReturnRoute(monthlyReturn: MonthlyReturn): Call =
@@ -61,6 +61,6 @@ class Navigator @Inject() () {
   def nextPage(page: Page, answer: YesNoAnswer): Call =
     page match {
       case UploadedReportFilesPage => uploadedReportFilesRoute(answer)
-      case _                       => routes.IndexController.onPageLoad()
+      case _                       => routes.MonthlyReportSubmissionController.onPageLoad()
     }
 }

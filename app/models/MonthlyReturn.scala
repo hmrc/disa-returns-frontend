@@ -18,14 +18,21 @@ package models
 
 import play.api.libs.json.{Format, JsError, JsString, JsSuccess, Json, OFormat, Reads, Writes}
 
+import java.time.Instant
 import java.util.UUID
 import scala.util.Try
 
 case class MonthlyReturn(
   submissionId: UUID,
   nilReturn: Boolean,
-  fileUploads: Seq[FileUpload] = Seq.empty
-)
+  fileUploads: Seq[FileUpload] = Seq.empty,
+  declaredOn: Option[Instant] = None
+) {
+
+  def isDeclared: Boolean = declaredOn.isDefined
+
+  def successfulFileUploads: Seq[FileUpload] = fileUploads.filter(_.isSuccessful)
+}
 
 case class CreateMonthlyReturnResponse(
   submissionId: UUID
@@ -40,6 +47,9 @@ sealed trait MonthlyReturnDeclarationResult
 
 object MonthlyReturnDeclarationResult {
   case object Declared extends MonthlyReturnDeclarationResult
+  case object AlreadyDeclared extends MonthlyReturnDeclarationResult
+  case object MonthlyReturnNotFound extends MonthlyReturnDeclarationResult
+  case object OutsideDeclarationPeriod extends MonthlyReturnDeclarationResult
   case object Failed extends MonthlyReturnDeclarationResult
 }
 

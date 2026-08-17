@@ -16,6 +16,7 @@
 
 package base
 
+import config.FrontendAppConfig
 import controllers.actions.*
 import models.MonthlyReturn
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -51,6 +52,8 @@ trait SpecBase
 
   def messages(app: Application): Messages = app.injector.instanceOf[MessagesApi].preferred(FakeRequest())
 
+  protected def manageIsasUrl(app: Application): String = app.injector.instanceOf[FrontendAppConfig].manageIsasUrl
+
   protected def applicationBuilder(
     monthlyReturn: Option[MonthlyReturn] = None
   ): GuiceApplicationBuilder = {
@@ -58,9 +61,9 @@ trait SpecBase
 
     new GuiceApplicationBuilder()
       .overrides(
-        bind[DataRequiredAction].to[DataRequiredActionImpl],
         bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference, testUserDetails)),
         bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturn)),
+        bind[java.time.Clock].toInstance(testReportingWindowClock),
         bind[HttpClientV2].toInstance(mockHttpClient),
         bind[RequestBuilder].toInstance(mockRequestBuilder)
       )

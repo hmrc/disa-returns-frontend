@@ -21,12 +21,16 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import views.html.SubmissionCompleteView
 
+import java.time.Instant
+
 class SubmissionCompleteControllerSpec extends SpecBase {
+
+  private val declaredReturn = emptyMonthlyReturn.copy(declaredOn = Some(Instant.parse("2026-03-15T12:03:00Z")))
 
   "SubmissionCompleteController" - {
 
     "must return OK and the correct view for a GET" in {
-      val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn)).build()
+      val application = applicationBuilder(monthlyReturn = Some(declaredReturn)).build()
 
       running(application) {
         val request = FakeRequest(GET, routes.SubmissionCompleteController.onPageLoad().url)
@@ -41,7 +45,7 @@ class SubmissionCompleteControllerSpec extends SpecBase {
     }
 
     "must display the submission complete content" in {
-      val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn)).build()
+      val application = applicationBuilder(monthlyReturn = Some(declaredReturn)).build()
 
       running(application) {
         val request = FakeRequest(GET, routes.SubmissionCompleteController.onPageLoad().url)
@@ -62,11 +66,11 @@ class SubmissionCompleteControllerSpec extends SpecBase {
         )
 
         content must include("Return to manage reports")
-        content must include(routes.IndexController.onPageLoad().url)
+        content must include(manageIsasUrl(application))
       }
     }
 
-    "must redirect to Journey Recovery for a GET if no existing data is found" in {
+    "must redirect to Manage ISAs for a GET if no existing data is found" in {
       val application = applicationBuilder(monthlyReturn = None).build()
 
       running(application) {
@@ -75,7 +79,18 @@ class SubmissionCompleteControllerSpec extends SpecBase {
         val result = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
+      }
+    }
+
+    "must prevent completion before declaration" in {
+      val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn)).build()
+
+      running(application) {
+        val result = route(application, FakeRequest(GET, routes.SubmissionCompleteController.onPageLoad().url)).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
   }

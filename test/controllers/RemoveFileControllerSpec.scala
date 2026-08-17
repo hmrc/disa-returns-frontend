@@ -83,7 +83,7 @@ class RemoveFileControllerSpec extends SpecBase {
       }
     }
 
-    "must redirect to UploadedReportFilesController when the file upload has no file details" in {
+    "must redirect to Manage ISAs when there are no successfully validated files" in {
       val uploadWithoutDetails = FileUpload(reference = testReference, status = FileUploadStatus.UpscanSuccess)
       val application          =
         applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn.copy(fileUploads = Seq(uploadWithoutDetails))))
@@ -94,11 +94,11 @@ class RemoveFileControllerSpec extends SpecBase {
         val result  = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.UploadedReportFilesController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
 
-    "must redirect to UploadedReportFilesController when the file exists but has not reached a successful status" in {
+    "must redirect to Manage ISAs when the file has not reached a successful status" in {
       val createdUpload = FileUpload(
         reference = testReference,
         status = "CREATED",
@@ -112,7 +112,7 @@ class RemoveFileControllerSpec extends SpecBase {
         val result  = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.UploadedReportFilesController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
 
@@ -136,7 +136,7 @@ class RemoveFileControllerSpec extends SpecBase {
       }
     }
 
-    "must redirect to Journey Recovery when no monthly return is found" in {
+    "must redirect to Manage ISAs when no monthly return is found" in {
       val application = applicationBuilder().build()
 
       running(application) {
@@ -144,7 +144,7 @@ class RemoveFileControllerSpec extends SpecBase {
         val result  = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
   }
@@ -257,7 +257,7 @@ class RemoveFileControllerSpec extends SpecBase {
       }
     }
 
-    "must redirect to Journey Recovery when no monthly return is found" in {
+    "must redirect to Manage ISAs when no monthly return is found" in {
       val application = applicationBuilder().build()
 
       running(application) {
@@ -268,7 +268,7 @@ class RemoveFileControllerSpec extends SpecBase {
         val result = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
 

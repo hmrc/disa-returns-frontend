@@ -16,7 +16,8 @@
 
 package controllers
 
-import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
+import controllers.actions.JourneyGuard.Page
+import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import forms.UploadedReportFilesFormProvider
 import navigation.Navigator
 import pages.UploadedReportFilesPage
@@ -32,7 +33,7 @@ class UploadedReportFilesController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   getData: DataRetrievalAction,
-  requireData: DataRequiredAction,
+  journeyGuard: JourneyGuard,
   formProvider: UploadedReportFilesFormProvider,
   navigator: Navigator,
   val controllerComponents: MessagesControllerComponents,
@@ -42,26 +43,28 @@ class UploadedReportFilesController @Inject() (
 
   private val form = formProvider()
 
-  def onPageLoad(): Action[AnyContent] = (identify andThen getData andThen requireData) { implicit request =>
-    val uploadedReportFiles = request.monthlyReturn.fileUploads.filter(_.isSuccessful)
+  def onPageLoad(): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.UploadedReportFiles)) { implicit request =>
+      val uploadedReportFiles = request.monthlyReturn.successfulFileUploads
 
-    Ok(view(form, uploadedReportFiles))
-  }
+      Ok(view(form, uploadedReportFiles))
+    }
 
-  def onSubmit(): Action[AnyContent] = (identify andThen getData andThen requireData).async { implicit request =>
-    val uploadedReportFiles = request.monthlyReturn.fileUploads.filter(_.isSuccessful)
+  def onSubmit(): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.UploadedReportFiles)).async { implicit request =>
+      val uploadedReportFiles = request.monthlyReturn.successfulFileUploads
 
-    form
-      .bindFromRequest()
-      .fold(
-        formWithErrors =>
-          Future.successful(
-            BadRequest(view(formWithErrors, uploadedReportFiles))
-          ),
-        answer =>
-          Future.successful(
-            Redirect(navigator.nextPage(UploadedReportFilesPage, answer))
-          )
-      )
-  }
+      form
+        .bindFromRequest()
+        .fold(
+          formWithErrors =>
+            Future.successful(
+              BadRequest(view(formWithErrors, uploadedReportFiles))
+            ),
+          answer =>
+            Future.successful(
+              Redirect(navigator.nextPage(UploadedReportFilesPage, answer))
+            )
+        )
+    }
 }
