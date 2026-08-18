@@ -180,23 +180,32 @@ class FileUploadResultNavigatorSpec extends SpecBase {
       val application = applicationBuilder().build()
 
       running(application) {
-        val navigator = application.injector.instanceOf[FileUploadResultNavigator]
-        val generic   = routes.FileUploadErrorController.fileUploadFailed()
+        val appConfig      = application.injector.instanceOf[config.FrontendAppConfig]
+        val originalPrefix = app.RoutesPrefix.prefix
 
-        navigator.getFileProcessingOutcome(None, reference) mustEqual Failed(generic)
-        navigator.getFileProcessingOutcome(Some(upload("UNKNOWN")), reference) mustEqual Failed(generic)
-        navigator.getFileProcessingOutcome(
-          Some(upload(FileUploadStatus.ValidationFailure)),
-          reference
-        ) mustEqual Completed(generic)
-        navigator.getFileProcessingOutcome(
-          Some(validationFailure(FileUploadValidationStatus.ValidationFailed, validationErrors = 3)),
-          reference
-        ) mustEqual Completed(generic)
-        navigator.getFileProcessingOutcome(
-          Some(validationFailure(FileUploadValidationStatus.InvalidFile, invalidFileReason = Some("UnknownReason"))),
-          reference
-        ) mustEqual Completed(generic)
+        try {
+          app.RoutesPrefix.setPrefix("/before-mount")
+          val navigator = new FileUploadResultNavigator(appConfig)
+
+          app.RoutesPrefix.setPrefix("/after-mount")
+          val generic = routes.FileUploadErrorController.fileUploadFailed()
+
+          navigator.getFileProcessingOutcome(None, reference) mustEqual Failed(generic)
+          navigator.getFileProcessingOutcome(Some(upload("UNKNOWN")), reference) mustEqual Failed(generic)
+          navigator.getFileProcessingOutcome(
+            Some(upload(FileUploadStatus.ValidationFailure)),
+            reference
+          ) mustEqual Completed(generic)
+          navigator.getFileProcessingOutcome(
+            Some(validationFailure(FileUploadValidationStatus.ValidationFailed, validationErrors = 3)),
+            reference
+          ) mustEqual Completed(generic)
+          navigator.getFileProcessingOutcome(
+            Some(validationFailure(FileUploadValidationStatus.InvalidFile, invalidFileReason = Some("UnknownReason"))),
+            reference
+          ) mustEqual Completed(generic)
+        } finally
+          app.RoutesPrefix.setPrefix(originalPrefix)
       }
     }
   }

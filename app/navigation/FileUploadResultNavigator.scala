@@ -36,7 +36,7 @@ class FileUploadResultNavigator @Inject() (appConfig: FrontendAppConfig) {
 
   import FileProcessingDecision.*
 
-  private val genericFailureDestination: Call = routes.FileUploadErrorController.fileUploadFailed()
+  private def genericFailureDestination: Call = routes.FileUploadErrorController.fileUploadFailed()
 
   def getFileProcessingOutcome(fileUpload: Option[FileUpload], reference: String): FileProcessingDecision =
     fileUpload match {
