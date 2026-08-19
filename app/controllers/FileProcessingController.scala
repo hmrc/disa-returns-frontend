@@ -17,11 +17,12 @@
 package controllers
 
 import controllers.actions.IdentifierAction
-import models.FileUploadStatus
+import navigation.FileProcessingDecision.{Completed, Failed, Processing}
+import navigation.FileUploadResultNavigator
 import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.{JsBoolean, JsObject, JsString, JsValue}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
 import services.StorageService
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import views.html.{FileProcessingProgressView, FileProcessingView}
@@ -34,6 +35,7 @@ class FileProcessingController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   storageService: StorageService,
+  resultNavigator: FileUploadResultNavigator,
   val controllerComponents: MessagesControllerComponents,
   view: FileProcessingView,
   progressView: FileProcessingProgressView
@@ -52,66 +54,48 @@ class FileProcessingController @Inject() (
   def checkProgress(reference: String): Action[AnyContent] = identify.async { implicit request =>
     storageService
       .getFileUploadForThisPeriod(request.zReference, reference)
-      .map {
-        case Some(fileUpload) if FileUploadStatus.pending.contains(fileUpload.status)  =>
-          Ok(progressView(reference, complete = false))
-        case Some(fileUpload) if FileUploadStatus.terminal.contains(fileUpload.status) =>
-          Ok(progressView(reference, complete = true))
-        case _                                                                         =>
-          Redirect(routes.FileUploadErrorController.fileUploadFailed())
-      }
+      .map(resultNavigator.getFileProcessingOutcome(_, reference))
       .recover { case NonFatal(ex) =>
         logger.error(s"[FileProcessingController][checkProgress] Failed to retrieve upload $reference", ex)
-        Redirect(routes.FileUploadErrorController.fileUploadFailed())
+        resultNavigator.getFileProcessingOutcome(None, reference)
+      }
+      .map {
+        case Processing          => Ok(progressView(reference, complete = false))
+        case Completed(_)        => Ok(progressView(reference, complete = true))
+        case Failed(destination) => Redirect(destination)
       }
   }
 
   def onContinue(reference: String): Action[AnyContent] = identify.async { implicit request =>
     storageService
       .getFileUploadForThisPeriod(request.zReference, reference)
-      .map {
-        case Some(fileUpload) if FileUploadStatus.pending.contains(fileUpload.status) =>
-          Ok(progressView(reference, complete = false))
-        case Some(fileUpload)                                                         =>
-          fileUpload.status match {
-            case FileUploadStatus.UpscanQuarantine if fileUpload.isPasswordProtected =>
-              Redirect(routes.FileUploadErrorController.filePasswordProtected())
-            case FileUploadStatus.UpscanQuarantine                                   =>
-              Redirect(routes.FileUploadErrorController.fileContainsVirus())
-            case FileUploadStatus.UpscanRejected                                     =>
-              Redirect(routes.FileUploadErrorController.invalidFileType())
-            case FileUploadStatus.Duplicate                                          =>
-              Redirect(routes.FileUploadErrorController.duplicateFileUpload())
-            case FileUploadStatus.ValidationSuccess                                  =>
-              Redirect(routes.UploadedReportFilesController.onPageLoad())
-            case FileUploadStatus.ValidationFailure                                  =>
-              Redirect(routes.FileValidationErrorsController.onPageLoad(reference))
-            case _                                                                   =>
-              Redirect(routes.FileUploadErrorController.fileUploadFailed())
-          }
-        case None                                                                     =>
-          Redirect(routes.FileUploadErrorController.fileUploadFailed())
-      }
+      .map(resultNavigator.getFileProcessingOutcome(_, reference))
       .recover { case NonFatal(ex) =>
         logger.error(s"[FileProcessingController][onContinue] Failed to retrieve upload $reference", ex)
-        Redirect(routes.FileUploadErrorController.fileUploadFailed())
+        resultNavigator.getFileProcessingOutcome(None, reference)
+      }
+      .map {
+        case Processing             => Ok(progressView(reference, complete = false))
+        case Completed(destination) => Redirect(destination)
+        case Failed(destination)    => Redirect(destination)
       }
   }
 
   def status(reference: String): Action[AnyContent] = identify.async { implicit request =>
-    storageService.getFileUploadForThisPeriod(request.zReference, reference).map {
-      case Some(fileUpload) =>
-        val validation = fileUpload.fileUploadDetails.flatMap(_.validation)
-
-        val fields: Seq[(String, JsValue)] = Seq(
-          Some("status"                                                   -> JsString(fileUpload.status)),
-          validation.map(v => "validationStatus" -> JsString(v.status)),
-          validation.flatMap(_.invalidFileReason).map(reason => "invalidFileReason" -> JsString(reason)),
-          Option.when(fileUpload.isPasswordProtected)("passwordProtected" -> JsBoolean(true))
-        ).flatten
-
-        Ok(JsObject(fields))
-      case None             => NotFound
-    }
+    storageService
+      .getFileUploadForThisPeriod(request.zReference, reference)
+      .map(resultNavigator.getFileProcessingOutcome(_, reference))
+      .recover { case NonFatal(ex) =>
+        logger.error(s"[FileProcessingController][status] Failed to retrieve upload $reference", ex)
+        resultNavigator.getFileProcessingOutcome(None, reference)
+      }
+      .map(statusResult)
   }
+
+  private def statusResult(decision: navigation.FileProcessingDecision): Result =
+    decision match {
+      case Processing             => Ok(Json.obj("processing" -> true))
+      case Completed(destination) => Ok(Json.obj("redirectUrl" -> destination.url))
+      case Failed(destination)    => Ok(Json.obj("redirectUrl" -> destination.url))
+    }
 }

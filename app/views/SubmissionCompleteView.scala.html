@@ -15,7 +15,6 @@
  *@
 
 @import config.FrontendAppConfig
-@import controllers.routes.IndexController
 
 @this(
         layout: templates.Layout,
@@ -62,8 +61,7 @@
         @messages("submissionComplete.feedback.afterLink")
     </p>
 
-    @* TODO: Wire this link to the account maintenance Manage Reports page once that page is built. *@
     <p class="govuk-body">
-        <a class="govuk-link" href="@IndexController.onPageLoad().url">@messages("submissionComplete.returnToManageReports")</a>
+        <a class="govuk-link" href="@appConfig.manageIsasUrl">@messages("submissionComplete.returnToManageReports")</a>
     </p>
 }

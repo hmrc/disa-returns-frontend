@@ -94,6 +94,7 @@ class FileUploadErrorControllerSpec extends SpecBase {
 
         contentAsString(result) mustEqual
           view()(request, messages(application)).toString
+        contentAsString(result) must include(routes.DownloadReportTemplateController.download().url)
       }
     }
 

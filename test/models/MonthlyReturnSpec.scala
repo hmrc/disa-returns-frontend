@@ -19,6 +19,8 @@ package models
 import base.SpecBase
 import play.api.libs.json.{JsSuccess, Json}
 
+import java.time.Instant
+
 class MonthlyReturnSpec extends SpecBase {
 
   "MonthlyReturn" - {
@@ -87,7 +89,8 @@ class MonthlyReturnSpec extends SpecBase {
               status = FileUploadStatus.UpscanSuccess,
               fileUploadDetails = Some(FileUploadDetails("return.csv"))
             )
-          )
+          ),
+          declaredOn = Some(Instant.parse("2026-03-15T12:03:00Z"))
         )
       )
     }

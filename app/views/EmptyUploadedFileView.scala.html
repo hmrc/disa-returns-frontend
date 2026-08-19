@@ -29,7 +29,7 @@
     <h1 class="govuk-heading-l">@messages("emptyUploadedFile.heading")</h1>
     <div class="govuk-body">
       <p>@messages("emptyUploadedFile.p1")</p>
-      <p><a href="#" class="govuk-link">@messages("emptyUploadedFile.link")</a></p>
+      <p><a href="@controllers.routes.DownloadReportTemplateController.download().url" class="govuk-link">@messages("emptyUploadedFile.link")</a></p>
 
       @govukButton(Button(
         content = Text(messages("emptyUploadedFile.callToAction")),

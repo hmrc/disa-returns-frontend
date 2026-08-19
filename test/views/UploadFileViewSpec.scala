@@ -66,6 +66,7 @@ class UploadFileViewSpec extends SpecBase {
         html must include("""id="upload-live-region"""")
         html must include("""aria-live="polite"""")
         html must include("javascripts/uploadFile.js")
+        html must include(routes.DownloadReportTemplateController.download().url)
       }
     }
 

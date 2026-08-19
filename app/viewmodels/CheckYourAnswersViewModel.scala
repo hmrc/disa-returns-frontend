@@ -61,6 +61,8 @@ object CheckYourAnswersViewModel {
     if (monthlyReturn.nilReturn) {
       Seq.empty
     } else {
+      val successfulUploads = monthlyReturn.successfulFileUploads
+
       Seq(
         SummaryListRowViewModel(
           key = KeyViewModel(Text(messages("checkYourAnswers.files"))),
@@ -68,8 +70,8 @@ object CheckYourAnswersViewModel {
           actions = Seq(
             changeAction(
               routes.UploadedReportFilesController.onPageLoad().url,
-              if (monthlyReturn.fileUploads.sizeIs == 1)
-                monthlyReturn.fileUploads.head.fileUploadDetails.fold("missing filename")(_.fileName)
+              if (successfulUploads.sizeIs == 1)
+                successfulUploads.head.fileUploadDetails.fold("missing filename")(_.fileName)
               else messages("checkYourAnswers.files.change.hidden")
             )
           )
@@ -85,8 +87,7 @@ object CheckYourAnswersViewModel {
     }
 
   private def fileNamesContent(monthlyReturn: MonthlyReturn): HtmlContent = {
-    val fileNames = monthlyReturn.fileUploads
-      .filter(_.isSuccessful)
+    val fileNames = monthlyReturn.successfulFileUploads
       .flatMap(_.fileUploadDetails)
       .map(details => HtmlFormat.escape(details.fileName).toString)
 

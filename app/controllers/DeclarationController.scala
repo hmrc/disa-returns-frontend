@@ -16,9 +16,10 @@
 
 package controllers
 
-import controllers.actions.{DataRequiredAction, DataRetrievalAction, IdentifierAction}
+import controllers.actions.JourneyGuard.Page
+import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import handlers.ErrorHandler
-import models.MonthlyReturnDeclarationResult.{Declared, Failed}
+import models.MonthlyReturnDeclarationResult.Declared
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.StorageService
@@ -35,7 +36,7 @@ class DeclarationController @Inject() (
   override val messagesApi: MessagesApi,
   identify: IdentifierAction,
   getData: DataRetrievalAction,
-  requireData: DataRequiredAction,
+  journeyGuard: JourneyGuard,
   storageService: StorageService,
   errorHandler: ErrorHandler,
   val controllerComponents: MessagesControllerComponents,
@@ -45,18 +46,21 @@ class DeclarationController @Inject() (
     with I18nSupport {
 
   def onPageLoad(): Action[AnyContent] =
-    (identify andThen getData andThen requireData) { implicit request =>
+    (identify andThen getData andThen journeyGuard(Page.Declaration)) { implicit request =>
       Ok(view(DeclarationViewModel(request.monthlyReturn.nilReturn)))
     }
 
-  def onSubmit(): Action[AnyContent] = (identify andThen getData andThen requireData).async { implicit request =>
-    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+  def onSubmit(): Action[AnyContent] =
+    (identify andThen getData andThen journeyGuard(Page.Declaration)).async { implicit request =>
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
-    storageService
-      .declareForThisPeriod(request.zReference)
-      .flatMap {
-        case Declared => Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
-        case Failed   => errorHandler.internalServerError
-      }
-  }
+      storageService
+        .declareForThisPeriod(request.zReference)
+        .flatMap {
+          case Declared =>
+            Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
+          case _        =>
+            errorHandler.internalServerError
+        }
+    }
 }

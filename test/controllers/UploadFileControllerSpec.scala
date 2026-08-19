@@ -65,7 +65,7 @@ class UploadFileControllerSpec extends SpecBase {
       )
         .thenReturn(Future.successful(()))
 
-      val application = applicationBuilder()
+      val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
         .overrides(
           bind[UpscanService].toInstance(mockUpscanService),
           bind[StorageService].toInstance(mockStorageService)
@@ -114,7 +114,7 @@ class UploadFileControllerSpec extends SpecBase {
       )
         .thenReturn(Future.successful(()))
 
-      val application = applicationBuilder()
+      val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
         .overrides(
           bind[UpscanService].toInstance(mockUpscanService),
           bind[StorageService].toInstance(mockStorageService)
@@ -144,7 +144,7 @@ class UploadFileControllerSpec extends SpecBase {
       when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
         .thenReturn(Future.failed(new RuntimeException("Upscan failed")))
 
-      val application = applicationBuilder()
+      val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
         .overrides(bind[UpscanService].toInstance(mockUpscanService))
         .build()
 
@@ -183,7 +183,7 @@ class UploadFileControllerSpec extends SpecBase {
       )
         .thenReturn(Future.failed(new RuntimeException("createFileUpload failed")))
 
-      val application = applicationBuilder()
+      val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
         .overrides(
           bind[UpscanService].toInstance(mockUpscanService),
           bind[StorageService].toInstance(mockStorageService)

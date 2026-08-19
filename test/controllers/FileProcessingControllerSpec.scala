@@ -175,9 +175,7 @@ class FileProcessingControllerSpec extends SpecBase {
         FileUploadStatus.UpscanRejected    -> (() => routes.FileUploadErrorController.invalidFileType().url),
         FileUploadStatus.Duplicate         -> (() => routes.FileUploadErrorController.duplicateFileUpload().url),
         FileUploadStatus.ValidationSuccess -> (() => routes.UploadedReportFilesController.onPageLoad().url),
-        FileUploadStatus.ValidationFailure -> (() =>
-          routes.FileValidationErrorsController.onPageLoad(testReference).url
-        ),
+        FileUploadStatus.ValidationFailure -> (() => routes.FileUploadErrorController.fileUploadFailed().url),
         FileUploadStatus.UpscanUnknown     -> (() => routes.FileUploadErrorController.fileUploadFailed().url),
         FileUploadStatus.UpscanExpired     -> (() => routes.FileUploadErrorController.fileUploadFailed().url)
       ).foreach { case (uploadStatus, expectedUrl) =>
@@ -258,7 +256,7 @@ class FileProcessingControllerSpec extends SpecBase {
 
     "status" - {
 
-      "must return OK with the file upload status when found" in {
+      "must return the server-selected redirect URL for a successful upload" in {
 
         val mockStorageService = mock[StorageService]
 
@@ -281,11 +279,13 @@ class FileProcessingControllerSpec extends SpecBase {
           val result = route(application, request).value
 
           status(result) mustEqual OK
-          contentAsJson(result) mustEqual Json.obj("status" -> "VALIDATION_SUCCESS")
+          contentAsJson(result) mustEqual Json.obj(
+            "redirectUrl" -> routes.UploadedReportFilesController.onPageLoad().url
+          )
         }
       }
 
-      "must include validationStatus and invalidFileReason for a structurally invalid file" in {
+      "must return the server-selected redirect URL for a structurally invalid file" in {
 
         val mockStorageService = mock[StorageService]
 
@@ -331,14 +331,12 @@ class FileProcessingControllerSpec extends SpecBase {
 
           status(result) mustEqual OK
           contentAsJson(result) mustEqual Json.obj(
-            "status"            -> "VALIDATION_FAILURE",
-            "validationStatus"  -> "InvalidFile",
-            "invalidFileReason" -> "InvalidHeader"
+            "redirectUrl" -> routes.ProblemWithUploadedFileController.onPageLoad().url
           )
         }
       }
 
-      "must include validationStatus without invalidFileReason for row-level validation failures" in {
+      "must use the generic route when row-level validation details are missing" in {
 
         val mockStorageService = mock[StorageService]
 
@@ -379,13 +377,12 @@ class FileProcessingControllerSpec extends SpecBase {
 
           status(result) mustEqual OK
           contentAsJson(result) mustEqual Json.obj(
-            "status"           -> "VALIDATION_FAILURE",
-            "validationStatus" -> "ValidationFailed"
+            "redirectUrl" -> routes.FileUploadErrorController.fileUploadFailed().url
           )
         }
       }
 
-      "must include passwordProtected when the quarantine failure message is a ClamAV encrypted-document signature" in {
+      "must return the password-protected redirect URL for an encrypted quarantine" in {
 
         val mockStorageService = mock[StorageService]
 
@@ -419,13 +416,12 @@ class FileProcessingControllerSpec extends SpecBase {
 
           status(result) mustEqual OK
           contentAsJson(result) mustEqual Json.obj(
-            "status"            -> "UPSCAN_QUARANTINE",
-            "passwordProtected" -> true
+            "redirectUrl" -> routes.FileUploadErrorController.filePasswordProtected().url
           )
         }
       }
 
-      "must not include passwordProtected for a genuine virus quarantine" in {
+      "must return the virus redirect URL for a genuine virus quarantine" in {
 
         val mockStorageService = mock[StorageService]
 
@@ -458,11 +454,13 @@ class FileProcessingControllerSpec extends SpecBase {
           val result = route(application, request).value
 
           status(result) mustEqual OK
-          contentAsJson(result) mustEqual Json.obj("status" -> "UPSCAN_QUARANTINE")
+          contentAsJson(result) mustEqual Json.obj(
+            "redirectUrl" -> routes.FileUploadErrorController.fileContainsVirus().url
+          )
         }
       }
 
-      "must return NotFound when the file upload cannot be found" in {
+      "must return the generic redirect URL when the file upload cannot be found" in {
 
         val mockStorageService = mock[StorageService]
 
@@ -484,7 +482,10 @@ class FileProcessingControllerSpec extends SpecBase {
 
           val result = route(application, request).value
 
-          status(result) mustEqual NOT_FOUND
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.obj(
+            "redirectUrl" -> routes.FileUploadErrorController.fileUploadFailed().url
+          )
         }
       }
     }

@@ -31,7 +31,7 @@
       <p>@messages("problemWithUploadedFile.p1")</p>
       <p>@messages("problemWithUploadedFile.p2")</p>
       <p>@messages("problemWithUploadedFile.p3")</p>
-      <p><a class="govuk-link" href="#">@messages("problemWithUploadedFile.link")</a></p>
+      <p><a class="govuk-link" href="@controllers.routes.DownloadReportTemplateController.download().url">@messages("problemWithUploadedFile.link")</a></p>
 
       @govukButton(Button(
       content = Text(messages("problemWithUploadedFile.callToAction")),

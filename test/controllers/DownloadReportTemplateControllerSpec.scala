@@ -39,6 +39,23 @@ class DownloadReportTemplateControllerSpec extends SpecBase {
         status(result) mustEqual OK
 
         contentAsString(result) mustEqual view()(request, messages(application)).toString
+        contentAsString(result) must include(routes.DownloadReportTemplateController.download().url)
+        contentAsString(result) must include(manageIsasUrl(application))
+      }
+    }
+
+    "must download the configured Excel resource with attachment headers" in {
+      val application = applicationBuilder().build()
+
+      running(application) {
+        val request = FakeRequest(GET, routes.DownloadReportTemplateController.download().url)
+        val result  = route(application, request).value
+
+        status(result) mustEqual OK
+        contentType(result).value mustEqual "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        header(CONTENT_DISPOSITION, result).value mustEqual
+          "attachment; filename=\"test-monthly-report-template.xlsx\""
+        contentAsBytes(result).take(2).utf8String mustEqual "PK"
       }
     }
   }

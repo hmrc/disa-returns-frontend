@@ -32,9 +32,10 @@ import play.api.mvc.{AnyContent, BodyParser, Call, Request, Result}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.{AuditService, StorageService}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import views.html.MonthlyReportSubmissionView
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -322,6 +323,41 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         val result = route(app, request).value
 
         status(result) mustEqual INTERNAL_SERVER_ERROR
+      }
+    }
+
+    "must redirect to Manage ISAs when the backend says the reporting window is closed" in {
+      val storageService = mock[StorageService]
+      when(
+        storageService.saveForThisPeriod(any[String], any[Option[MonthlyReturn]], any[Boolean])(any[HeaderCarrier])
+      ).thenReturn(Future.failed(UpstreamErrorResponse("closed", UNPROCESSABLE_ENTITY, UNPROCESSABLE_ENTITY)))
+      val app            = applicationWith(storageService = storageService)
+
+      running(app) {
+        val request = FakeRequest(POST, routes.MonthlyReportSubmissionController.onSubmit().url)
+          .withFormUrlEncodedBody("value" -> No.toString)
+        val result  = route(app, request).value
+
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual manageIsasUrl(app)
+      }
+    }
+
+    "must redirect an already-declared journey to Manage ISAs on GET and POST" in {
+      val declaredReturn = nilReturnMonthlyReturn().copy(declaredOn = Some(Instant.parse("2026-03-15T12:03:00Z")))
+      val app            = applicationWith(monthlyReturn = Some(declaredReturn))
+
+      running(app) {
+        Seq(GET, POST).foreach { method =>
+          val result = route(
+            app,
+            FakeRequest(method, routes.MonthlyReportSubmissionController.onPageLoad().url)
+              .withFormUrlEncodedBody("value" -> No.toString)
+          ).value
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual manageIsasUrl(app)
+        }
       }
     }
   }

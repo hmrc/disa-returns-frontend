@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,52 @@
 package controllers
 
 import base.SpecBase
+import models.{FileUpload, FileUploadStatus, MonthlyReturn}
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
-import views.html.IndexView
+import play.api.test.Helpers.*
+
+import java.time.Instant
 
 class IndexControllerSpec extends SpecBase {
 
-  "Index Controller" - {
+  private val nilReturn          = emptyMonthlyReturn.copy(nilReturn = true)
+  private val nonNilWithoutFiles = emptyMonthlyReturn
+  private val nonNilWithFiles    = emptyMonthlyReturn.copy(
+    fileUploads = Seq(FileUpload("successful-reference", FileUploadStatus.ValidationSuccess))
+  )
+  private val declaredReturn     = nilReturn.copy(declaredOn = Some(Instant.parse("2026-03-15T12:03:00Z")))
 
-    "must return OK and the correct view for a GET" in {
+  "IndexController" - {
 
+    "must default a new journey to the monthly report question" in {
       val application = applicationBuilder().build()
 
       running(application) {
-        val request = FakeRequest(GET, routes.IndexController.onPageLoad().url)
+        val result = route(application, FakeRequest(GET, routes.IndexController.onPageLoad().url)).value
 
-        val result = route(application, request).value
+        status(result) mustEqual SEE_OTHER
+        redirectLocation(result).value mustEqual routes.MonthlyReportSubmissionController.onPageLoad().url
+      }
+    }
 
-        val view = application.injector.instanceOf[IndexView]
+    "must use the journey guard for an existing journey" in {
+      val cases = Seq[(MonthlyReturn, Option[String])](
+        nilReturn          -> Some(routes.CheckYourAnswersController.onPageLoad().url),
+        nonNilWithoutFiles -> None,
+        nonNilWithFiles    -> Some(routes.CheckYourAnswersController.onPageLoad().url),
+        declaredReturn     -> None
+      )
 
-        status(result) mustEqual OK
+      cases.foreach { case (monthlyReturn, expectedDestination) =>
+        val application = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
 
-        contentAsString(result) mustEqual view()(request, messages(application)).toString
+        running(application) {
+          val result   = route(application, FakeRequest(GET, routes.IndexController.onPageLoad().url)).value
+          val expected = expectedDestination.getOrElse(manageIsasUrl(application))
+
+          status(result) mustEqual SEE_OTHER
+          redirectLocation(result).value mustEqual expected
+        }
       }
     }
   }

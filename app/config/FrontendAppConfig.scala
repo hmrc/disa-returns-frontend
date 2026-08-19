@@ -30,6 +30,8 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
 
   lazy val disaReturnsBackendBaseUrl: String = baseUrl("disa-returns-backend")
 
+  private lazy val disaAccountsFrontendBaseUrl: String = baseUrl("disa-accounts-frontend")
+
   private val contactHost                  = getString("contact-frontend.host")
   private val contactFormServiceIdentifier = "disa-returns-frontend"
 
@@ -39,6 +41,10 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   val loginUrl: String         = getString("urls.login")
   val loginContinueUrl: String = getString("urls.loginContinue")
   val signOutUrl: String       = getString("urls.signOut")
+
+  // TODO DFI-2372: replace this provisional context when disa-accounts-frontend publishes the Manage ISAs route.
+  private val manageIsasUrlContext: String = "/manage-isas"
+  val manageIsasUrl: String                = s"$disaAccountsFrontendBaseUrl$manageIsasUrlContext"
 
   private val exitSurveyBaseUrl: String = baseUrl("feedback-frontend")
   val exitSurveyUrl: String             = s"$exitSurveyBaseUrl/feedback/disa-returns-frontend"
@@ -60,6 +66,14 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   lazy val upscanAcceptedExtensions: String = getString("upscan.acceptedExtensions")
 
   val fileUploadMaxInlineErrors: Int = getInt("fileUploadValidation.maxInlineErrors")
+
+  val reportingWindowStartDay: Int = getInt("reportingWindow.startDay")
+  val reportingWindowEndDay: Int   = getInt("reportingWindow.endDay")
+
+  val monthlyReportTemplateResourcePath: Option[String] =
+    config.getOptional[String]("monthlyReportTemplate.resourcePath")
+  val monthlyReportTemplateFilename: Option[String]     =
+    config.getOptional[String]("monthlyReportTemplate.filename")
 
   lazy val fileProcessingPollIntervalMillis: Int = getInt("fileProcessing.pollIntervalMillis")
   lazy val fileProcessingMaxWaitMinutes: Int     = getInt("fileProcessing.maxWaitMinutes")

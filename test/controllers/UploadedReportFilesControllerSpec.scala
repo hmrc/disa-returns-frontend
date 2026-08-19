@@ -67,7 +67,32 @@ class UploadedReportFilesControllerSpec extends SpecBase {
       }
     }
 
-    "must redirect to Journey Recovery for a GET if no existing monthly return is found" in {
+    "must display every successful upload without imposing an application-level file limit" in {
+      val uploads     = (1 to 100).map { index =>
+        successfulUpload.copy(
+          reference = s"successful-reference-$index",
+          fileUploadDetails = Some(FileUploadDetails(s"return-$index.csv"))
+        )
+      }
+      val application = applicationBuilder(
+        monthlyReturn = Some(emptyMonthlyReturn.copy(fileUploads = uploads))
+      ).build()
+
+      running(application) {
+        val request = FakeRequest(GET, routes.UploadedReportFilesController.onPageLoad().url)
+
+        val result  = route(application, request).value
+        val content = contentAsString(result)
+
+        status(result) mustEqual OK
+        content must include("You have added 100 report files")
+        uploads.foreach { upload =>
+          content must include(upload.fileUploadDetails.value.fileName)
+        }
+      }
+    }
+
+    "must redirect to Manage ISAs for a GET if no existing monthly return is found" in {
       val application = applicationBuilder().build()
 
       running(application) {
@@ -76,7 +101,7 @@ class UploadedReportFilesControllerSpec extends SpecBase {
         val result = route(application, request).value
 
         status(result) mustEqual SEE_OTHER
-        redirectLocation(result).value mustEqual routes.JourneyRecoveryController.onPageLoad().url
+        redirectLocation(result).value mustEqual manageIsasUrl(application)
       }
     }
 

@@ -15,10 +15,7 @@ lazy val microservice = (project in file("."))
   .settings(ThisBuild / useSuperShell := false)
   .settings(
     name := appName,
-    RoutesKeys.routesImport ++= Seq(
-      "models._",
-      "uk.gov.hmrc.play.bootstrap.binders.RedirectUrl"
-    ),
+    RoutesKeys.routesImport += "models._",
     TwirlKeys.templateImports ++= Seq(
       "play.twirl.api.HtmlFormat",
       "play.twirl.api.HtmlFormat._",
