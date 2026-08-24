@@ -30,7 +30,7 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
 
   lazy val disaReturnsBackendBaseUrl: String = baseUrl("disa-returns-backend")
 
-  private lazy val disaAccountsFrontendBaseUrl: String = baseUrl("disa-accounts-frontend")
+  private lazy val disaAccountFrontendBaseUrl: String = baseUrl("disa-account-frontend")
 
   private val contactHost                  = getString("contact-frontend.host")
   private val contactFormServiceIdentifier = "disa-returns-frontend"
@@ -43,8 +43,8 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   val signOutUrl: String       = getString("urls.signOut")
 
   // TODO DFI-2372: replace this provisional context when disa-accounts-frontend publishes the Manage ISAs route.
-  private val manageIsasUrlContext: String = "/manage-isas"
-  val manageIsasUrl: String                = s"$disaAccountsFrontendBaseUrl$manageIsasUrlContext"
+  private val manageIsasUrlContext: String = "/obligations/account/isa"
+  val manageIsasUrl: String                = s"$disaAccountFrontendBaseUrl$manageIsasUrlContext"
 
   private val exitSurveyBaseUrl: String = baseUrl("feedback-frontend")
   val exitSurveyUrl: String             = s"$exitSurveyBaseUrl/feedback/disa-returns-frontend"
