@@ -28,7 +28,18 @@ class FrontendAppConfigSpec extends SpecBase {
 
       running(application) {
         application.injector.instanceOf[FrontendAppConfig].manageIsasUrl mustEqual
-          "https://manage-isas.example.com:443/manage-isas"
+          "https://manage-isas.example.com:443/obligations/account/isa"
+      }
+    }
+
+    "must read the configured reporting window" in {
+      val application = applicationBuilder().build()
+
+      running(application) {
+        val appConfig = application.injector.instanceOf[FrontendAppConfig]
+
+        appConfig.reportingWindowStartDay mustEqual 1
+        appConfig.reportingWindowEndDay mustEqual 31
       }
     }
   }
