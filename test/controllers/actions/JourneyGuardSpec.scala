@@ -32,6 +32,19 @@ import scala.concurrent.Future
 
 class JourneyGuardSpec extends SpecBase {
 
+  private val reportingWindowStartDay = 6
+  private val reportingWindowEndDay   = 19
+  private val openWindowClock         = Clock.fixed(Instant.parse("2026-03-15T12:00:00Z"), ZoneOffset.UTC)
+  private val closedWindowClock       = Clock.fixed(Instant.parse("2026-03-05T12:00:00Z"), ZoneOffset.UTC)
+
+  private def configuredApplication =
+    applicationBuilder()
+      .configure(
+        "reportingWindow.startDay" -> reportingWindowStartDay,
+        "reportingWindow.endDay"   -> reportingWindowEndDay
+      )
+      .build()
+
   private val successfulUpload = FileUpload(
     reference = "successful-reference",
     status = FileUploadStatus.ValidationSuccess,
@@ -74,11 +87,11 @@ class JourneyGuardSpec extends SpecBase {
   "JourneyGuard" - {
 
     "must allow or redirect every guarded page for every open-window journey state" in {
-      val application = applicationBuilder().build()
+      val application = configuredApplication
 
       running(application) {
         val appConfig = application.injector.instanceOf[FrontendAppConfig]
-        val guard     = application.injector.instanceOf[JourneyGuard]
+        val guard     = new JourneyGuard(appConfig, openWindowClock)
 
         requiredPages.foreach { page =>
           states.foreach { monthlyReturn =>
@@ -97,11 +110,11 @@ class JourneyGuardSpec extends SpecBase {
     }
 
     "must allow the initial question for every undeclared open-window state" in {
-      val application = applicationBuilder().build()
+      val application = configuredApplication
 
       running(application) {
         val appConfig = application.injector.instanceOf[FrontendAppConfig]
-        val guard     = application.injector.instanceOf[JourneyGuard]
+        val guard     = new JourneyGuard(appConfig, openWindowClock)
 
         states.foreach { monthlyReturn =>
           val request = OptionalDataRequest(FakeRequest(), testZReference, testUserDetails, monthlyReturn)
@@ -121,11 +134,11 @@ class JourneyGuardSpec extends SpecBase {
     }
 
     "must allow the index default only when no monthly return exists" in {
-      val application = applicationBuilder().build()
+      val application = configuredApplication
 
       running(application) {
         val appConfig = application.injector.instanceOf[FrontendAppConfig]
-        val guard     = application.injector.instanceOf[JourneyGuard]
+        val guard     = new JourneyGuard(appConfig, openWindowClock)
 
         states.foreach { monthlyReturn =>
           val request = OptionalDataRequest(FakeRequest(), testZReference, testUserDetails, monthlyReturn)
@@ -145,12 +158,11 @@ class JourneyGuardSpec extends SpecBase {
     }
 
     "must redirect every guarded page to Manage ISAs when the reporting window is closed" in {
-      val closedClock = Clock.fixed(Instant.parse("2026-03-05T12:00:00Z"), ZoneOffset.UTC)
-      val application = applicationBuilder().build()
+      val application = configuredApplication
 
       running(application) {
         val appConfig = application.injector.instanceOf[FrontendAppConfig]
-        val guard     = new JourneyGuard(appConfig, closedClock)
+        val guard     = new JourneyGuard(appConfig, closedWindowClock)
         val request   = OptionalDataRequest(FakeRequest(), testZReference, testUserDetails, Some(nonNilWithFiles))
 
         requiredPages.foreach { page =>
