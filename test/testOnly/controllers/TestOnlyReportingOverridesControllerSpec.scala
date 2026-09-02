@@ -33,8 +33,8 @@ import scala.concurrent.Future
 class TestOnlyReportingOverridesControllerSpec extends SpecBase {
   "TestOnlyReportingOverridesController" - {
     "must reload the active backend overrides into the form" in {
-      val connector  = mock[TestOnlyReportingOverridesConnector]
-      val systemDate = LocalDate.parse("2026-06-17")
+      val connector   = mock[TestOnlyReportingOverridesConnector]
+      val systemDate  = LocalDate.parse("2026-06-17")
       when(connector.get(eqTo(testZReference))(any())).thenReturn(
         Future.successful(
           CurrentOverrides(
@@ -69,7 +69,7 @@ class TestOnlyReportingOverridesControllerSpec extends SpecBase {
     }
 
     "must leave the system date empty when there is no active clock override" in {
-      val connector = mock[TestOnlyReportingOverridesConnector]
+      val connector   = mock[TestOnlyReportingOverridesConnector]
       when(connector.get(eqTo(testZReference))(any())).thenReturn(
         Future.successful(
           CurrentOverrides(
@@ -100,8 +100,8 @@ class TestOnlyReportingOverridesControllerSpec extends SpecBase {
     }
 
     "must reset the clock override when submitted with an empty system date" in {
-      val connector = mock[TestOnlyReportingOverridesConnector]
-      val overrides = TestOnlyReportingOverrides(
+      val connector   = mock[TestOnlyReportingOverridesConnector]
+      val overrides   = TestOnlyReportingOverrides(
         LocalDate.parse("2026-06-06"),
         LocalDate.parse("2026-06-19"),
         None
