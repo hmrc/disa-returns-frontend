@@ -20,16 +20,19 @@ import models.UserDetails
 import models.requests.IdentifierRequest
 import play.api.mvc._
 
+import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
 
 class FakeIdentifierAction(
   bodyParsers: PlayBodyParsers,
   zReference: String,
-  userDetails: UserDetails
+  userDetails: UserDetails,
+  currentDate: LocalDate,
+  reportingWindowOpen: Boolean
 ) extends IdentifierAction {
 
   override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
-    block(IdentifierRequest(request, zReference, userDetails))
+    block(IdentifierRequest(request, zReference, userDetails, currentDate, reportingWindowOpen))
 
   override def parser: BodyParser[AnyContent] =
     bodyParsers.default

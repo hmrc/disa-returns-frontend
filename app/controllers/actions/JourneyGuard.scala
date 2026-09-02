@@ -23,7 +23,6 @@ import models.requests.{DataRequest, OptionalDataRequest}
 import play.api.mvc.Results.Redirect
 import play.api.mvc.{ActionFilter, ActionRefiner, Result}
 
-import java.time.{Clock, LocalDate}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -57,8 +56,7 @@ object JourneyGuard {
 
 @Singleton
 class JourneyGuard @Inject() (
-  appConfig: FrontendAppConfig,
-  clock: Clock
+  appConfig: FrontendAppConfig
 )(implicit ec: ExecutionContext) {
 
   import JourneyGuard.Page
@@ -71,7 +69,9 @@ class JourneyGuard @Inject() (
       override protected def executionContext: ExecutionContext = ec
 
       override protected def filter[A](request: OptionalDataRequest[A]): Future[Option[Result]] =
-        Future.successful(redirectFor(page, request.monthlyReturn).map(Redirect(_)))
+        Future.successful(
+          redirectFor(page, request.monthlyReturn, request.reportingWindowOpen).map(Redirect(_))
+        )
     }
 
   def apply(page: Page): ActionRefiner[OptionalDataRequest, DataRequest] =
@@ -79,29 +79,42 @@ class JourneyGuard @Inject() (
       override protected def executionContext: ExecutionContext = ec
 
       override protected def refine[A](request: OptionalDataRequest[A]): Future[Either[Result, DataRequest[A]]] =
-        redirectFor(page, request.monthlyReturn) match {
-          case Some(destination) =>
-            Future.successful(Left(Redirect(destination)))
-          case None              =>
-            request.monthlyReturn match {
-              case Some(monthlyReturn) =>
-                Future.successful(
-                  Right(DataRequest(request.request, request.zReference, request.userDetails, monthlyReturn))
-                )
-              case None                =>
-                Future.successful(Left(Redirect(appConfig.manageIsasUrl)))
-            }
-        }
+        Future.successful(
+          redirectFor(page, request.monthlyReturn, request.reportingWindowOpen) match {
+            case Some(destination) =>
+              Left(Redirect(destination))
+            case None              =>
+              request.monthlyReturn match {
+                case Some(monthlyReturn) =>
+                  Right(
+                    DataRequest(
+                      request.request,
+                      request.zReference,
+                      request.userDetails,
+                      monthlyReturn,
+                      request.currentDate,
+                      request.reportingWindowOpen
+                    )
+                  )
+                case None                =>
+                  Left(Redirect(appConfig.manageIsasUrl))
+              }
+          }
+        )
     }
 
-  private def redirectFor(page: Page, monthlyReturn: Option[MonthlyReturn]): Option[String] = {
-    val currentState = state(monthlyReturn)
+  private def redirectFor(
+    page: Page,
+    monthlyReturn: Option[MonthlyReturn],
+    reportingWindowOpen: Boolean
+  ): Option[String] = {
+    val currentState = state(monthlyReturn, reportingWindowOpen)
 
     Option.unless(isAllowed(page, currentState))(recoveryUrl(currentState))
   }
 
-  private def state(monthlyReturn: Option[MonthlyReturn]): State =
-    if (!isReportingWindowOpen) {
+  private def state(monthlyReturn: Option[MonthlyReturn], reportingWindowOpen: Boolean): State =
+    if (!reportingWindowOpen) {
       ReportingWindowClosed
     } else {
       monthlyReturn match {
@@ -138,9 +151,4 @@ class JourneyGuard @Inject() (
         state == DeclaredReturn
     }
 
-  private def isReportingWindowOpen: Boolean = {
-    val day = LocalDate.now(clock).getDayOfMonth
-
-    day >= appConfig.reportingWindowStartDay && day <= appConfig.reportingWindowEndDay
-  }
 }

@@ -25,6 +25,7 @@ import play.api.test.FakeRequest
 import services.StorageService
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
@@ -40,16 +41,22 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
       "must set monthlyReturn to None in the request" in {
 
         val storageService = mock[StorageService]
-        when(storageService.retrieveForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
+        val currentDate    = LocalDate.now(testReportingWindowClock)
+        when(storageService.retrieveForThisPeriod(eqTo(testZReference), eqTo(currentDate))(any[HeaderCarrier]))
           .thenReturn(Future.successful(None))
         val action         = new Harness(storageService)
 
         val result =
-          action.callTransform(IdentifierRequest(FakeRequest(), testZReference, testUserDetails)).futureValue
+          action
+            .callTransform(
+              IdentifierRequest(FakeRequest(), testZReference, testUserDetails, currentDate, reportingWindowOpen = true)
+            )
+            .futureValue
 
         result.zReference mustEqual testZReference
         result.userDetails mustEqual testUserDetails
         result.monthlyReturn must not be defined
+        result.reportingWindowOpen mustBe true
       }
     }
 
@@ -58,16 +65,28 @@ class DataRetrievalActionSpec extends SpecBase with MockitoSugar {
       "must add it to the request" in {
 
         val storageService = mock[StorageService]
-        when(storageService.retrieveForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
+        val currentDate    = LocalDate.now(testReportingWindowClock)
+        when(storageService.retrieveForThisPeriod(eqTo(testZReference), eqTo(currentDate))(any[HeaderCarrier]))
           .thenReturn(Future.successful(Some(emptyMonthlyReturn)))
         val action         = new Harness(storageService)
 
         val result =
-          action.callTransform(IdentifierRequest(FakeRequest(), testZReference, testUserDetails)).futureValue
+          action
+            .callTransform(
+              IdentifierRequest(
+                FakeRequest(),
+                testZReference,
+                testUserDetails,
+                currentDate,
+                reportingWindowOpen = false
+              )
+            )
+            .futureValue
 
         result.zReference mustEqual testZReference
         result.userDetails mustEqual testUserDetails
         result.monthlyReturn.value mustEqual emptyMonthlyReturn
+        result.reportingWindowOpen mustBe false
       }
     }
   }

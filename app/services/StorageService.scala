@@ -24,6 +24,7 @@ import play.api.http.Status.{CONFLICT, NOT_FOUND}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import utils.DateHelper
 
+import java.time.LocalDate
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -34,42 +35,30 @@ class StorageService @Inject() (
 )(implicit ec: ExecutionContext)
     extends Logging {
 
-  def retrieveForThisPeriod(zReference: String)(implicit hc: HeaderCarrier): Future[Option[MonthlyReturn]] =
-    backendConnector.retrieve(zReference, dateHelper.reportingPeriodTaxYear, dateHelper.reportingPeriodMonthNumber)
+  def retrieveForThisPeriod(zReference: String, currentDate: LocalDate)(implicit
+    hc: HeaderCarrier
+  ): Future[Option[MonthlyReturn]] =
+    withPeriod(currentDate)(backendConnector.retrieve(zReference, _, _))
 
-  def createFileUploadForThisPeriod(zReference: String, reference: String)(implicit
+  def createFileUploadForThisPeriod(zReference: String, reference: String, currentDate: LocalDate)(implicit
     hc: HeaderCarrier
   ): Future[Unit] =
-    backendConnector.createFileUpload(
-      zReference,
-      dateHelper.reportingPeriodTaxYear,
-      dateHelper.reportingPeriodMonthNumber,
-      reference
-    )
+    withPeriod(currentDate)(backendConnector.createFileUpload(zReference, _, _, reference))
 
-  def getFileUploadForThisPeriod(zReference: String, reference: String)(implicit
+  def getFileUploadForThisPeriod(zReference: String, reference: String, currentDate: LocalDate)(implicit
     hc: HeaderCarrier
   ): Future[Option[FileUpload]] =
-    backendConnector.getFileUpload(
-      zReference,
-      dateHelper.reportingPeriodTaxYear,
-      dateHelper.reportingPeriodMonthNumber,
-      reference
-    )
+    withPeriod(currentDate)(backendConnector.getFileUpload(zReference, _, _, reference))
 
-  def deleteFileUploadForThisPeriod(zReference: String, reference: String)(implicit
+  def deleteFileUploadForThisPeriod(zReference: String, reference: String, currentDate: LocalDate)(implicit
     hc: HeaderCarrier
   ): Future[Unit] =
-    backendConnector.deleteFileUpload(
-      zReference,
-      dateHelper.reportingPeriodTaxYear,
-      dateHelper.reportingPeriodMonthNumber,
-      reference
-    )
+    withPeriod(currentDate)(backendConnector.deleteFileUpload(zReference, _, _, reference))
 
-  def declareForThisPeriod(zReference: String)(implicit hc: HeaderCarrier): Future[MonthlyReturnDeclarationResult] =
-    backendConnector
-      .declareMonthlyReturn(zReference, dateHelper.reportingPeriodTaxYear, dateHelper.reportingPeriodMonthNumber)
+  def declareForThisPeriod(zReference: String, currentDate: LocalDate)(implicit
+    hc: HeaderCarrier
+  ): Future[MonthlyReturnDeclarationResult] =
+    withPeriod(currentDate)(backendConnector.declareMonthlyReturn(zReference, _, _))
       .map(_ => Declared)
       .recover {
         case e: UpstreamErrorResponse =>
@@ -89,18 +78,20 @@ class StorageService @Inject() (
   def saveForThisPeriod(
     zReference: String,
     currentMonthlyReturn: Option[MonthlyReturn],
-    nilReturn: Boolean
+    nilReturn: Boolean,
+    currentDate: LocalDate
   )(implicit
     hc: HeaderCarrier
-  ): Future[MonthlyReturnSaveResult] = {
-    val taxYear = dateHelper.reportingPeriodTaxYear
-    val month   = dateHelper.reportingPeriodMonthNumber
-
-    currentMonthlyReturn match {
-      case Some(_) => updateWithCreateFallback(zReference, taxYear, month, nilReturn)
-      case None    => createWithUpdateFallback(zReference, taxYear, month, nilReturn)
+  ): Future[MonthlyReturnSaveResult] =
+    withPeriod(currentDate) { (taxYear, month) =>
+      currentMonthlyReturn match {
+        case Some(_) => updateWithCreateFallback(zReference, taxYear, month, nilReturn)
+        case None    => createWithUpdateFallback(zReference, taxYear, month, nilReturn)
+      }
     }
-  }
+
+  private def withPeriod[A](currentDate: LocalDate)(operation: (String, Int) => A): A =
+    operation(dateHelper.reportingPeriodTaxYear(currentDate), dateHelper.reportingPeriodMonthNumber(currentDate))
 
   private def createWithUpdateFallback(zReference: String, taxYear: String, month: Int, nilReturn: Boolean)(implicit
     hc: HeaderCarrier

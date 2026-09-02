@@ -53,7 +53,7 @@ class FileProcessingController @Inject() (
 
   def checkProgress(reference: String): Action[AnyContent] = identify.async { implicit request =>
     storageService
-      .getFileUploadForThisPeriod(request.zReference, reference)
+      .getFileUploadForThisPeriod(request.zReference, reference, request.currentDate)
       .map(resultNavigator.getFileProcessingOutcome(_, reference))
       .recover { case NonFatal(ex) =>
         logger.error(s"[FileProcessingController][checkProgress] Failed to retrieve upload $reference", ex)
@@ -68,7 +68,7 @@ class FileProcessingController @Inject() (
 
   def onContinue(reference: String): Action[AnyContent] = identify.async { implicit request =>
     storageService
-      .getFileUploadForThisPeriod(request.zReference, reference)
+      .getFileUploadForThisPeriod(request.zReference, reference, request.currentDate)
       .map(resultNavigator.getFileProcessingOutcome(_, reference))
       .recover { case NonFatal(ex) =>
         logger.error(s"[FileProcessingController][onContinue] Failed to retrieve upload $reference", ex)
@@ -83,7 +83,7 @@ class FileProcessingController @Inject() (
 
   def status(reference: String): Action[AnyContent] = identify.async { implicit request =>
     storageService
-      .getFileUploadForThisPeriod(request.zReference, reference)
+      .getFileUploadForThisPeriod(request.zReference, reference, request.currentDate)
       .map(resultNavigator.getFileProcessingOutcome(_, reference))
       .recover { case NonFatal(ex) =>
         logger.error(s"[FileProcessingController][status] Failed to retrieve upload $reference", ex)

@@ -1,0 +1,58 @@
+@*
+ * Copyright 2026 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@this(
+    layout: views.html.templates.Layout,
+    formHelper: FormWithCSRF,
+    govukErrorSummary: GovukErrorSummary,
+    govukDateInput: GovukDateInput,
+    govukButton: GovukButton
+)
+
+@(form: Form[_])(implicit request: Request[_], messages: Messages)
+
+@layout(pageTitle = title(form, "Test reporting overrides"), showBackLink = false, timeout = false, showSignOut = false) {
+    @formHelper(action = testOnly.controllers.routes.TestOnlyReportingOverridesController.onSubmit(), Symbol("autoComplete") -> "off") {
+        @if(form.errors.nonEmpty) {
+            @govukErrorSummary(ErrorSummaryViewModel(form))
+        }
+
+        <h1 class="govuk-heading-l">Test reporting overrides</h1>
+        <p class="govuk-body">Set the system date and reporting window for your enrolled Z-reference.</p>
+
+        @govukDateInput(DateViewModel(
+            field = form("reportingWindowStart"),
+            legend = LegendViewModel("Reporting window start").withCssClass("govuk-fieldset__legend--m")
+        ))
+
+        @govukDateInput(DateViewModel(
+            field = form("reportingWindowEnd"),
+            legend = LegendViewModel("Reporting window end").withCssClass("govuk-fieldset__legend--m")
+        ))
+
+        @govukDateInput(DateViewModel(
+            field = form("systemDate"),
+            legend = LegendViewModel("System date").withCssClass("govuk-fieldset__legend--m")
+        ))
+
+        @govukButton(Button(content = Text("Set overrides")))
+        @govukButton(Button(
+            content = Text("Reset overrides"),
+            classes = "govuk-button--secondary",
+            attributes = Map("formaction" -> testOnly.controllers.routes.TestOnlyReportingOverridesController.reset().url)
+        ))
+    }
+}

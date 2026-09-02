@@ -62,10 +62,10 @@ class UploadFileController @Inject() (
         request.getQueryString("errorCode").map(UploadError.toMessageKey)
 
       upscanService
-        .initiate(request.zReference)
+        .initiate(request.zReference, request.currentDate)
         .flatMap { upscanResponse =>
           storageService
-            .createFileUploadForThisPeriod(request.zReference, upscanResponse.reference)
+            .createFileUploadForThisPeriod(request.zReference, upscanResponse.reference, request.currentDate)
             .map { _ =>
               val model = UploadViewModel(
                 upscan = upscanResponse,

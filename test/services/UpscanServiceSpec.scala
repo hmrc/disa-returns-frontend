@@ -25,6 +25,7 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
 import utils.DateHelper
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class UpscanServiceSpec extends SpecBase with MockitoSugar {
@@ -64,7 +65,7 @@ class UpscanServiceSpec extends SpecBase with MockitoSugar {
 
       val service = new UpscanService(connector, dateHelper, appConfig)
 
-      val result = service.initiate(testZReference).futureValue
+      val result = service.initiate(testZReference, LocalDate.now(testReportingWindowClock)).futureValue
 
       result mustEqual expectedResponse
 

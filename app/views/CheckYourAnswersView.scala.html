@@ -15,6 +15,7 @@
  *@
 
 @import controllers.routes.CheckYourAnswersController
+@import java.time.LocalDate
 @import models.MonthlyReturn
 @import utils.DateHelper
 @import viewmodels.CheckYourAnswersViewModel
@@ -27,7 +28,7 @@
     dateHelper: DateHelper
 )
 
-@(monthlyReturn: MonthlyReturn)(implicit request: Request[_], messages: Messages)
+@(monthlyReturn: MonthlyReturn, currentDate: LocalDate)(implicit request: Request[_], messages: Messages)
 
 @layout(pageTitle = titleNoForm(messages("checkYourAnswers.title"))) {
 
@@ -35,7 +36,7 @@
 
         <h1 class="govuk-heading-l">@messages("checkYourAnswers.heading")</h1>
 
-        @defining(CheckYourAnswersViewModel(monthlyReturn)(messages, dateHelper)) { viewModel =>
+        @defining(CheckYourAnswersViewModel(monthlyReturn, currentDate)(messages, dateHelper)) { viewModel =>
             @govukSummaryList(viewModel.summaryList)
         }
 

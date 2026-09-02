@@ -24,6 +24,8 @@ import play.api.test.Helpers.running
 import uk.gov.hmrc.govukfrontend.views.viewmodels.content.{HtmlContent, Text}
 import utils.DateHelper
 
+import java.time.LocalDate
+
 class CheckYourAnswersViewModelSpec extends SpecBase {
 
   private implicit val dateHelper: DateHelper =
@@ -54,7 +56,10 @@ class CheckYourAnswersViewModelSpec extends SpecBase {
       running(application) {
         implicit val msgs: Messages = messages(application)
 
-        val viewModel = CheckYourAnswersViewModel(emptyMonthlyReturn.copy(nilReturn = true))
+        val viewModel = CheckYourAnswersViewModel(
+          emptyMonthlyReturn.copy(nilReturn = true),
+          LocalDate.now(testReportingWindowClock)
+        )
 
         val rows = viewModel.summaryList.rows
 
@@ -77,7 +82,7 @@ class CheckYourAnswersViewModelSpec extends SpecBase {
           fileUploads = Seq(successfulUploadOne, inProgressUpload, successfulUploadTwo)
         )
 
-        val viewModel = CheckYourAnswersViewModel(monthlyReturn)
+        val viewModel = CheckYourAnswersViewModel(monthlyReturn, LocalDate.now(testReportingWindowClock))
 
         val rows = viewModel.summaryList.rows
 

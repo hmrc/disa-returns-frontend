@@ -15,6 +15,7 @@
  *@
 
 @import controllers.routes.MonthlyReportSubmissionController
+@import java.time.LocalDate
 @import models.YesNoAnswer
 @import utils.DateHelper
 
@@ -27,7 +28,7 @@
     dateHelper: DateHelper
 )
 
-@(form: Form[_])(implicit request: Request[_], messages: Messages)
+@(form: Form[_], currentDate: LocalDate)(implicit request: Request[_], messages: Messages)
 
 @layout(pageTitle = title(form, "monthlyReportSubmission.title")) {
 
@@ -48,9 +49,9 @@
         @govukRadios(
             RadiosViewModel(
                 field = form("value"),
-                legend = LegendViewModel(Text(messages("monthlyReportSubmission.question", dateHelper.reportingWindowMonth))).withCssClass("govuk-fieldset__legend--m"),
+                legend = LegendViewModel(Text(messages("monthlyReportSubmission.question", dateHelper.reportingWindowMonth(currentDate)))).withCssClass("govuk-fieldset__legend--m"),
                 items = YesNoAnswer.options("monthlyReportSubmission")
-            ).withHint(Hint(content = Text(messages("monthlyReportSubmission.hint", dateHelper.reportingPeriodMonth))))
+            ).withHint(Hint(content = Text(messages("monthlyReportSubmission.hint", dateHelper.reportingPeriodMonth(currentDate)))))
         )
 
         @govukButton(

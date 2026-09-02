@@ -29,6 +29,7 @@ import services.StorageService
 import uk.gov.hmrc.http.HeaderCarrier
 import views.html.FileProcessingView
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class FileProcessingControllerSpec extends SpecBase {
@@ -39,7 +40,11 @@ class FileProcessingControllerSpec extends SpecBase {
     val mockStorageService = mock[StorageService]
 
     when(
-      mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+      mockStorageService.getFileUploadForThisPeriod(
+        eqTo(testZReference),
+        eqTo(testReference),
+        any[LocalDate]
+      )(
         any[HeaderCarrier]
       )
     ).thenReturn(result)
@@ -261,7 +266,11 @@ class FileProcessingControllerSpec extends SpecBase {
         val mockStorageService = mock[StorageService]
 
         when(
-          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+          mockStorageService.getFileUploadForThisPeriod(
+            eqTo(testZReference),
+            eqTo(testReference),
+            any[LocalDate]
+          )(
             any[HeaderCarrier]
           )
         )
@@ -290,7 +299,11 @@ class FileProcessingControllerSpec extends SpecBase {
         val mockStorageService = mock[StorageService]
 
         when(
-          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+          mockStorageService.getFileUploadForThisPeriod(
+            eqTo(testZReference),
+            eqTo(testReference),
+            any[LocalDate]
+          )(
             any[HeaderCarrier]
           )
         )
@@ -341,7 +354,11 @@ class FileProcessingControllerSpec extends SpecBase {
         val mockStorageService = mock[StorageService]
 
         when(
-          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+          mockStorageService.getFileUploadForThisPeriod(
+            eqTo(testZReference),
+            eqTo(testReference),
+            any[LocalDate]
+          )(
             any[HeaderCarrier]
           )
         )
@@ -387,7 +404,11 @@ class FileProcessingControllerSpec extends SpecBase {
         val mockStorageService = mock[StorageService]
 
         when(
-          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+          mockStorageService.getFileUploadForThisPeriod(
+            eqTo(testZReference),
+            eqTo(testReference),
+            any[LocalDate]
+          )(
             any[HeaderCarrier]
           )
         )
@@ -426,7 +447,11 @@ class FileProcessingControllerSpec extends SpecBase {
         val mockStorageService = mock[StorageService]
 
         when(
-          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+          mockStorageService.getFileUploadForThisPeriod(
+            eqTo(testZReference),
+            eqTo(testReference),
+            any[LocalDate]
+          )(
             any[HeaderCarrier]
           )
         )
@@ -465,7 +490,11 @@ class FileProcessingControllerSpec extends SpecBase {
         val mockStorageService = mock[StorageService]
 
         when(
-          mockStorageService.getFileUploadForThisPeriod(eqTo(testZReference), eqTo(testReference))(
+          mockStorageService.getFileUploadForThisPeriod(
+            eqTo(testZReference),
+            eqTo(testReference),
+            any[LocalDate]
+          )(
             any[HeaderCarrier]
           )
         )

@@ -66,7 +66,7 @@ class MonthlyReportSubmissionController @Inject() (
         .map(monthlyReturn => if (monthlyReturn.nilReturn) form.fill(No) else form.fill(Yes))
         .getOrElse(form)
 
-      Ok(view(preparedForm))
+      Ok(view(preparedForm, request.currentDate))
     }
 
   def onSubmit(): Action[AnyContent] =
@@ -75,15 +75,12 @@ class MonthlyReportSubmissionController @Inject() (
         form
           .bindFromRequest()
           .fold(
-            formWithErrors =>
-              Future.successful(
-                BadRequest(view(formWithErrors))
-              ),
+            formWithErrors => Future.successful(BadRequest(view(formWithErrors, request.currentDate))),
             answer => {
               val nilReturn = answer == No
 
               storageService
-                .saveForThisPeriod(request.zReference, request.monthlyReturn, nilReturn)
+                .saveForThisPeriod(request.zReference, request.monthlyReturn, nilReturn, request.currentDate)
                 .map { saveResult =>
                   if (saveResult.created) {
                     auditFileUploadStarted(request, saveResult.monthlyReturn)

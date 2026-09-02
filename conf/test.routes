@@ -1,0 +1,3 @@
+GET        /reporting-overrides       testOnly.controllers.TestOnlyReportingOverridesController.onPageLoad()
+POST       /reporting-overrides       testOnly.controllers.TestOnlyReportingOverridesController.onSubmit()
+POST       /reporting-overrides/reset testOnly.controllers.TestOnlyReportingOverridesController.reset()

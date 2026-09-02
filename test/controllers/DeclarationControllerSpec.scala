@@ -31,6 +31,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import views.html.DeclarationView
 import viewmodels.DeclarationViewModel
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class DeclarationControllerSpec extends SpecBase with MockitoSugar {
@@ -96,7 +97,7 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
 
     "must redirect to SubmissionComplete when the declaration is submitted successfully" in {
       val storageService = mock[StorageService]
-      when(storageService.declareForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
+      when(storageService.declareForThisPeriod(eqTo(testZReference), any[LocalDate])(any[HeaderCarrier]))
         .thenReturn(Future.successful(Declared))
 
       val application =
@@ -111,7 +112,9 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual SEE_OTHER
         redirectLocation(result).value mustEqual routes.SubmissionCompleteController.onPageLoad().url
-        verify(storageService).declareForThisPeriod(eqTo(testZReference))(any[HeaderCarrier])
+        verify(storageService).declareForThisPeriod(eqTo(testZReference), any[LocalDate])(
+          any[HeaderCarrier]
+        )
       }
     }
 
@@ -123,7 +126,7 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
     ).foreach { case (outcome, description) =>
       s"must render the shared internal server error page when $description" in {
         val storageService = mock[StorageService]
-        when(storageService.declareForThisPeriod(eqTo(testZReference))(any[HeaderCarrier]))
+        when(storageService.declareForThisPeriod(eqTo(testZReference), any[LocalDate])(any[HeaderCarrier]))
           .thenReturn(Future.successful(outcome))
 
         val application = applicationBuilder(monthlyReturn = Some(nilReturn))

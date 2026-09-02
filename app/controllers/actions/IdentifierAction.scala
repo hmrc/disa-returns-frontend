@@ -24,6 +24,7 @@ import models.requests.IdentifierRequest
 import play.api.Logging
 import play.api.mvc.Results.*
 import play.api.mvc.*
+import services.ReportingContextSource
 import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.AffinityGroup.Agent
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.*
@@ -35,18 +36,47 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait IdentifierAction
     extends ActionBuilder[IdentifierRequest, AnyContent]
-    with ActionFunction[Request, IdentifierRequest]
+    with ActionFunction[Request, IdentifierRequest] {
+
+  def invokeBlockWithoutReportingContext[A](request: Request[A], block: String => Future[Result]): Future[Result] =
+    invokeBlock(request, identified => block(identified.zReference))
+}
 
 class AuthenticatedIdentifierAction @Inject() (
   override val authConnector: AuthConnector,
   config: FrontendAppConfig,
+  reportingContextSource: ReportingContextSource,
   val parser: BodyParsers.Default
 )(implicit val executionContext: ExecutionContext)
     extends IdentifierAction
     with AuthorisedFunctions
     with Logging {
 
-  override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] = {
+  override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
+    authenticate(request) { (zReference, userDetails) =>
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+      reportingContextSource.get(zReference).flatMap { context =>
+        block(
+          IdentifierRequest(
+            request,
+            zReference,
+            userDetails,
+            context.effectiveDate,
+            context.reportingWindowOpen
+          )
+        )
+      }
+    }
+
+  override def invokeBlockWithoutReportingContext[A](
+    request: Request[A],
+    block: String => Future[Result]
+  ): Future[Result] =
+    authenticate(request)((zReference, _) => block(zReference))
+
+  private def authenticate[A](
+    request: Request[A]
+  )(block: (String, UserDetails) => Future[Result]): Future[Result] = {
 
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
@@ -63,27 +93,18 @@ class AuthenticatedIdentifierAction @Inject() (
         } { zReference =>
           (maybeCredentials, maybeAffinityGroup, maybeGroupId) match {
             case (_, Some(Agent), Some(groupId))             =>
-              block(
-                IdentifierRequest(
-                  request,
-                  zReference,
-                  agentDetails(groupId, agentInfo)
-                )
-              )
+              block(zReference, agentDetails(groupId, agentInfo))
             case (Some(credentials), Some(_), Some(groupId)) =>
               maybeCredentialRole.fold {
                 logger.warn("User with DISA enrolment was missing credential role")
                 Future.successful(Redirect(routes.UnauthorisedController.onPageLoad()))
               } { role =>
                 block(
-                  IdentifierRequest(
-                    request,
-                    zReference,
-                    UserDetails.IsaManager(
-                      groupId = groupId,
-                      credId = credentials.providerId,
-                      credentialRole = role.toString
-                    )
+                  zReference,
+                  UserDetails.IsaManager(
+                    groupId = groupId,
+                    credId = credentials.providerId,
+                    credentialRole = role.toString
                   )
                 )
               }

@@ -19,8 +19,12 @@ package models.requests
 import models.UserDetails
 import play.api.mvc.{Request, WrappedRequest}
 
+import java.time.LocalDate
+
 case class IdentifierRequest[A](
   request: Request[A],
   zReference: String,
-  userDetails: UserDetails
+  userDetails: UserDetails,
+  currentDate: LocalDate,
+  reportingWindowOpen: Boolean
 ) extends WrappedRequest[A](request)

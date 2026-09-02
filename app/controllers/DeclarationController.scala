@@ -55,7 +55,7 @@ class DeclarationController @Inject() (
       implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
       storageService
-        .declareForThisPeriod(request.zReference)
+        .declareForThisPeriod(request.zReference, request.currentDate)
         .flatMap {
           case Declared =>
             Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))

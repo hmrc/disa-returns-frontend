@@ -34,8 +34,15 @@ class DataRetrievalActionImpl @Inject() (
     implicit val hc: HeaderCarrier =
       HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
-    storageService.retrieveForThisPeriod(request.zReference).map { monthlyReturn =>
-      OptionalDataRequest(request.request, request.zReference, request.userDetails, monthlyReturn)
+    storageService.retrieveForThisPeriod(request.zReference, request.currentDate).map { monthlyReturn =>
+      OptionalDataRequest(
+        request.request,
+        request.zReference,
+        request.userDetails,
+        monthlyReturn,
+        request.currentDate,
+        request.reportingWindowOpen
+      )
     }
   }
 }
