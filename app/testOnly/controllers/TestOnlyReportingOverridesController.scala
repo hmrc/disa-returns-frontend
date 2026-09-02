@@ -46,61 +46,68 @@ class TestOnlyReportingOverridesController @Inject() (
     with Logging {
 
   def onPageLoad(): Action[AnyContent] = Action.async { implicit request =>
-    identify.invokeBlockWithoutReportingContext(request, zReference => {
-      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
-      connector
-        .get(zReference)
-        .map { current =>
-          val form = current.reportingWindow match {
-            case Some((start, end)) => formProvider().fill(TestOnlyReportingOverrides(start, end, current.systemDate))
-            case None               =>
-              val systemDateData = current.systemDate.fold(Map.empty[String, String]) { date =>
-                Map(
-                  "systemDate.day"   -> date.getDayOfMonth.toString,
-                  "systemDate.month" -> date.getMonthValue.toString,
-                  "systemDate.year"  -> date.getYear.toString
-                )
-              }
-              formProvider().bind(systemDateData).discardingErrors
+    identify.invokeBlockWithoutReportingContext(
+      request,
+      zReference => {
+        implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+        connector
+          .get(zReference)
+          .map { current =>
+            val form = current.reportingWindow match {
+              case Some((start, end)) => formProvider().fill(TestOnlyReportingOverrides(start, end, current.systemDate))
+              case None               =>
+                val systemDateData = current.systemDate.fold(Map.empty[String, String]) { date =>
+                  Map(
+                    "systemDate.day"   -> date.getDayOfMonth.toString,
+                    "systemDate.month" -> date.getMonthValue.toString,
+                    "systemDate.year"  -> date.getYear.toString
+                  )
+                }
+                formProvider().bind(systemDateData).discardingErrors
+            }
+            Ok(view(form))
           }
-          Ok(view(form))
-        }
-        .recoverWith(logAndHandle("load", zReference))
-    })
+          .recoverWith(logAndHandle("load", zReference))
+      }
+    )
   }
 
   def onSubmit(): Action[AnyContent] = Action.async { implicit request =>
-    identify.invokeBlockWithoutReportingContext(request, zReference =>
-      formProvider()
-        .bindFromRequest()
-        .fold(
-          errors => Future.successful(BadRequest(view(errors))),
-          overrides => {
-            implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
-            connector
-              .set(zReference, overrides)
-              .map(_ => Redirect(testOnly.controllers.routes.TestOnlyReportingOverridesController.onPageLoad()))
-              .recoverWith(logAndHandle("set", zReference))
-          }
-        )
+    identify.invokeBlockWithoutReportingContext(
+      request,
+      zReference =>
+        formProvider()
+          .bindFromRequest()
+          .fold(
+            errors => Future.successful(BadRequest(view(errors))),
+            overrides => {
+              implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+              connector
+                .set(zReference, overrides)
+                .map(_ => Redirect(testOnly.controllers.routes.TestOnlyReportingOverridesController.onPageLoad()))
+                .recoverWith(logAndHandle("set", zReference))
+            }
+          )
     )
   }
 
   def reset(): Action[AnyContent] = Action.async { implicit request =>
-    identify.invokeBlockWithoutReportingContext(request, zReference => {
-      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
-      connector
-        .reset(zReference)
-        .map(_ => Redirect(testOnly.controllers.routes.TestOnlyReportingOverridesController.onPageLoad()))
-        .recoverWith(logAndHandle("reset", zReference))
-    })
+    identify.invokeBlockWithoutReportingContext(
+      request,
+      zReference => {
+        implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+        connector
+          .reset(zReference)
+          .map(_ => Redirect(testOnly.controllers.routes.TestOnlyReportingOverridesController.onPageLoad()))
+          .recoverWith(logAndHandle("reset", zReference))
+      }
+    )
   }
 
   private def logAndHandle(operation: String, zReference: String)(implicit
     request: RequestHeader
-  ): PartialFunction[Throwable, Future[Result]] = {
-    case NonFatal(exception) =>
-      logger.error(s"Failed to $operation test-only reporting overrides for zReference [$zReference]", exception)
-      errorHandler.internalServerError
+  ): PartialFunction[Throwable, Future[Result]] = { case NonFatal(exception) =>
+    logger.error(s"Failed to $operation test-only reporting overrides for zReference [$zReference]", exception)
+    errorHandler.internalServerError
   }
 }

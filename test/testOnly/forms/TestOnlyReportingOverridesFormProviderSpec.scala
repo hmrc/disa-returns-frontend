@@ -22,9 +22,9 @@ import play.api.i18n.Messages
 import java.time.LocalDate
 
 class TestOnlyReportingOverridesFormProviderSpec extends SpecBase {
-  private val app = applicationBuilder().build()
+  private val app                                 = applicationBuilder().build()
   implicit private val implicitMessages: Messages = messages(app)
-  private val form = new TestOnlyReportingOverridesFormProvider()()
+  private val form                                = new TestOnlyReportingOverridesFormProvider()()
 
   "TestOnlyReportingOverridesFormProvider" - {
     "must bind valid overrides" in {
@@ -60,14 +60,14 @@ class TestOnlyReportingOverridesFormProviderSpec extends SpecBase {
   }
 
   private def validData: Map[String, String] = Map(
-    "reportingWindowStart.day"  -> "6",
+    "reportingWindowStart.day"   -> "6",
     "reportingWindowStart.month" -> "6",
-    "reportingWindowStart.year" -> "2026",
-    "reportingWindowEnd.day"    -> "19",
-    "reportingWindowEnd.month"  -> "6",
-    "reportingWindowEnd.year"   -> "2026",
-    "systemDate.day"            -> "10",
-    "systemDate.month"          -> "6",
-    "systemDate.year"           -> "2026"
+    "reportingWindowStart.year"  -> "2026",
+    "reportingWindowEnd.day"     -> "19",
+    "reportingWindowEnd.month"   -> "6",
+    "reportingWindowEnd.year"    -> "2026",
+    "systemDate.day"             -> "10",
+    "systemDate.month"           -> "6",
+    "systemDate.year"            -> "2026"
   )
 }

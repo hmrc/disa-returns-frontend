@@ -48,8 +48,8 @@ class TestOnlyReportingOverridesConnector @Inject() (
     }
 
   def set(zReference: String, overrides: TestOnlyReportingOverrides)(implicit hc: HeaderCarrier): Future[Unit] = {
-    val start = overrides.reportingWindowStart.atStartOfDay(ZoneOffset.UTC).toInstant
-    val end   = overrides.reportingWindowEnd.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant.minusNanos(1)
+    val start       = overrides.reportingWindowStart.atStartOfDay(ZoneOffset.UTC).toInstant
+    val end         = overrides.reportingWindowEnd.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant.minusNanos(1)
     val replacement = TestOverrideRequest(
       clock = overrides.systemDate.map(ClockOverride.apply),
       reportingWindow = Some(ReportingWindowOverride(start, end))
@@ -97,7 +97,7 @@ object TestOnlyReportingOverridesConnector {
   private object TestOverrideRequest {
     implicit val writes: OWrites[TestOverrideRequest] = OWrites { value =>
       Json.obj(
-        "clock" -> value.clock.fold[JsValue](JsNull)(Json.toJson(_)),
+        "clock"           -> value.clock.fold[JsValue](JsNull)(Json.toJson(_)),
         "reportingWindow" -> value.reportingWindow.fold[JsValue](JsNull)(Json.toJson(_))
       )
     }
