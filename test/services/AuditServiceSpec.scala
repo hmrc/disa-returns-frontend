@@ -31,6 +31,8 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import utils.DateHelper
 
+import java.time.LocalDate
+
 import scala.concurrent.Future
 
 class AuditServiceSpec extends SpecBase with MockitoSugar {
@@ -63,7 +65,9 @@ class AuditServiceSpec extends SpecBase with MockitoSugar {
           credId = testIsaManagerCredId,
           credentialRole = testCredentialRole
         ),
-        monthlyReturn = None
+        monthlyReturn = None,
+        currentDate = LocalDate.now(testReportingWindowClock),
+        reportingWindowOpen = true
       )
 
       service.auditFileUploadStarted(request, emptyMonthlyReturn).futureValue mustEqual ()
@@ -93,7 +97,9 @@ class AuditServiceSpec extends SpecBase with MockitoSugar {
           agentId = testAgentId,
           agentName = testAgentName
         ),
-        monthlyReturn = None
+        monthlyReturn = None,
+        currentDate = LocalDate.now(testReportingWindowClock),
+        reportingWindowOpen = true
       )
 
       service.auditFileUploadStarted(request, emptyMonthlyReturn).futureValue mustEqual ()

@@ -59,7 +59,7 @@ class AuditService @Inject() (
   private def baseDetail[A](request: OptionalDataRequest[A], monthlyReturn: MonthlyReturn): JsObject =
     Json.obj(
       EventData.internalReturnId -> monthlyReturn.submissionId.toString,
-      EventData.period           -> dateHelper.reportingPeriod,
+      EventData.period           -> dateHelper.reportingPeriod(request.currentDate),
       EventData.groupId          -> request.userDetails.groupId,
       EventData.zReference       -> request.zReference,
       EventData.userType         -> request.userDetails.userType

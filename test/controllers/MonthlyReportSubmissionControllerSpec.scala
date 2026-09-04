@@ -35,7 +35,7 @@ import services.{AuditService, StorageService}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import views.html.MonthlyReportSubmissionView
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -72,7 +72,15 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
       scala.concurrent.ExecutionContext.Implicits.global
 
     override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
-      block(IdentifierRequest(request, testZReference, testUserDetails))
+      block(
+        IdentifierRequest(
+          request,
+          testZReference,
+          testUserDetails,
+          LocalDate.now(testReportingWindowClock),
+          reportingWindowOpen = true
+        )
+      )
   }
 
   private def mockStorageService(
@@ -86,7 +94,8 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
       storageService.saveForThisPeriod(
         any[String],
         any[Option[MonthlyReturn]],
-        any[Boolean]
+        any[Boolean],
+        any[LocalDate]
       )(any[HeaderCarrier])
     )
       .thenReturn(Future.successful(saveResult))
@@ -124,7 +133,8 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         val view = app.injector.instanceOf[MonthlyReportSubmissionView]
 
         status(result) mustEqual OK
-        contentAsString(result) mustEqual view(form)(request, messages(app)).toString
+        contentAsString(result) mustEqual
+          view(form, LocalDate.now(testReportingWindowClock))(request, messages(app)).toString
       }
     }
 
@@ -139,7 +149,8 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         val view = app.injector.instanceOf[MonthlyReportSubmissionView]
 
         status(result) mustEqual OK
-        contentAsString(result) mustEqual view(form.fill(No))(request, messages(app)).toString
+        contentAsString(result) mustEqual
+          view(form.fill(No), LocalDate.now(testReportingWindowClock))(request, messages(app)).toString
       }
     }
 
@@ -154,7 +165,8 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         val view = app.injector.instanceOf[MonthlyReportSubmissionView]
 
         status(result) mustEqual OK
-        contentAsString(result) mustEqual view(form.fill(Yes))(request, messages(app)).toString
+        contentAsString(result) mustEqual
+          view(form.fill(Yes), LocalDate.now(testReportingWindowClock))(request, messages(app)).toString
       }
     }
 
@@ -171,11 +183,13 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         val result = route(app, request).value
 
         status(result) mustEqual BAD_REQUEST
-        contentAsString(result) mustEqual view(boundForm)(request, messages(app)).toString
+        contentAsString(result) mustEqual
+          view(boundForm, LocalDate.now(testReportingWindowClock))(request, messages(app)).toString
         verify(storageService, never()).saveForThisPeriod(
           any[String],
           any[Option[MonthlyReturn]],
-          any[Boolean]
+          any[Boolean],
+          any[LocalDate]
         )(
           any[HeaderCarrier]
         )
@@ -196,7 +210,12 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual SEE_OTHER
 
-        verify(storageService).saveForThisPeriod(eqTo(testZReference), eqTo(None), eqTo(true))(any[HeaderCarrier])
+        verify(storageService).saveForThisPeriod(
+          eqTo(testZReference),
+          eqTo(None),
+          eqTo(true),
+          eqTo(LocalDate.now(testReportingWindowClock))
+        )(any[HeaderCarrier])
         verify(auditService, never()).auditFileUploadStarted(
           any[OptionalDataRequest[AnyContent]],
           any[MonthlyReturn]
@@ -224,9 +243,12 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
 
         status(result) mustEqual SEE_OTHER
 
-        verify(storageService).saveForThisPeriod(eqTo(testZReference), eqTo(Some(existing)), eqTo(false))(
-          any[HeaderCarrier]
-        )
+        verify(storageService).saveForThisPeriod(
+          eqTo(testZReference),
+          eqTo(Some(existing)),
+          eqTo(false),
+          eqTo(LocalDate.now(testReportingWindowClock))
+        )(any[HeaderCarrier])
         verify(auditService, never()).auditFileUploadStarted(
           any[OptionalDataRequest[AnyContent]],
           any[MonthlyReturn]
@@ -308,7 +330,8 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
         storageService.saveForThisPeriod(
           any[String],
           any[Option[MonthlyReturn]],
-          any[Boolean]
+          any[Boolean],
+          any[LocalDate]
         )(any[HeaderCarrier])
       )
         .thenReturn(Future.failed(new RuntimeException("boom")))
@@ -329,7 +352,12 @@ class MonthlyReportSubmissionControllerSpec extends SpecBase with MockitoSugar {
     "must redirect to Manage ISAs when the backend says the reporting window is closed" in {
       val storageService = mock[StorageService]
       when(
-        storageService.saveForThisPeriod(any[String], any[Option[MonthlyReturn]], any[Boolean])(any[HeaderCarrier])
+        storageService.saveForThisPeriod(
+          any[String],
+          any[Option[MonthlyReturn]],
+          any[Boolean],
+          any[LocalDate]
+        )(any[HeaderCarrier])
       ).thenReturn(Future.failed(UpstreamErrorResponse("closed", UNPROCESSABLE_ENTITY, UNPROCESSABLE_ENTITY)))
       val app            = applicationWith(storageService = storageService)
 

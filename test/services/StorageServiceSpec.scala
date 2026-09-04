@@ -27,6 +27,8 @@ import play.api.http.Status.{CONFLICT, NOT_FOUND}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import utils.DateHelper
 
+import java.time.LocalDate
+
 import scala.concurrent.Future
 
 class StorageServiceSpec extends SpecBase with MockitoSugar {
@@ -45,7 +47,9 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         .thenReturn(Future.successful(Some(emptyMonthlyReturn)))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.retrieveForThisPeriod(testZReference)(HeaderCarrier()).futureValue
+      val result = service
+        .retrieveForThisPeriod(testZReference, LocalDate.now(testReportingWindowClock))(HeaderCarrier())
+        .futureValue
 
       result.value mustEqual emptyMonthlyReturn
       verify(connector).retrieve(eqTo(testZReference), eqTo(testTaxYear), eqTo(testReportingPeriodMonthNumber))(
@@ -67,7 +71,11 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
       val service   = new StorageService(connector, dateHelper)
 
       val result =
-        service.saveForThisPeriod(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
+        service
+          .saveForThisPeriod(testZReference, None, nilReturn = true, LocalDate.now(testReportingWindowClock))(
+            HeaderCarrier()
+          )
+          .futureValue
 
       result.monthlyReturn mustEqual emptyMonthlyReturn
       result.created mustEqual true
@@ -94,7 +102,12 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
 
       val result =
         service
-          .saveForThisPeriod(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
+          .saveForThisPeriod(
+            testZReference,
+            Some(emptyMonthlyReturn),
+            nilReturn = false,
+            LocalDate.now(testReportingWindowClock)
+          )(HeaderCarrier())
           .futureValue
 
       result.monthlyReturn mustEqual emptyMonthlyReturn
@@ -130,7 +143,11 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
       val service   = new StorageService(connector, dateHelper)
 
       val result =
-        service.saveForThisPeriod(testZReference, None, nilReturn = true)(HeaderCarrier()).futureValue
+        service
+          .saveForThisPeriod(testZReference, None, nilReturn = true, LocalDate.now(testReportingWindowClock))(
+            HeaderCarrier()
+          )
+          .futureValue
 
       result.monthlyReturn mustEqual emptyMonthlyReturn
       result.created mustEqual false
@@ -164,7 +181,11 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         .thenReturn(Future.successful(()))
       val service   = new StorageService(connector, dateHelper)
 
-      service.deleteFileUploadForThisPeriod(testZReference, reference)(HeaderCarrier()).futureValue
+      service
+        .deleteFileUploadForThisPeriod(testZReference, reference, LocalDate.now(testReportingWindowClock))(
+          HeaderCarrier()
+        )
+        .futureValue
 
       verify(connector).deleteFileUpload(
         eqTo(testZReference),
@@ -193,7 +214,11 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         .thenReturn(Future.successful(Some(fileUpload)))
       val service    = new StorageService(connector, dateHelper)
 
-      val result = service.getFileUploadForThisPeriod(testZReference, reference)(HeaderCarrier()).futureValue
+      val result = service
+        .getFileUploadForThisPeriod(testZReference, reference, LocalDate.now(testReportingWindowClock))(
+          HeaderCarrier()
+        )
+        .futureValue
 
       result.value mustEqual fileUpload
       verify(connector).getFileUpload(
@@ -216,7 +241,9 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         .thenReturn(Future.successful(()))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.declareForThisPeriod(testZReference)(HeaderCarrier()).futureValue
+      val result = service
+        .declareForThisPeriod(testZReference, LocalDate.now(testReportingWindowClock))(HeaderCarrier())
+        .futureValue
 
       result mustEqual Declared
 
@@ -236,7 +263,9 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         .thenReturn(Future.failed(UpstreamErrorResponse("already declared", CONFLICT, CONFLICT)))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.declareForThisPeriod(testZReference)(HeaderCarrier()).futureValue
+      val result = service
+        .declareForThisPeriod(testZReference, LocalDate.now(testReportingWindowClock))(HeaderCarrier())
+        .futureValue
 
       result mustEqual Failed
     }
@@ -251,7 +280,9 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         .thenReturn(Future.failed(new RuntimeException("boom")))
       val service   = new StorageService(connector, dateHelper)
 
-      val result = service.declareForThisPeriod(testZReference)(HeaderCarrier()).futureValue
+      val result = service
+        .declareForThisPeriod(testZReference, LocalDate.now(testReportingWindowClock))(HeaderCarrier())
+        .futureValue
 
       result mustEqual Failed
     }
@@ -280,7 +311,12 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
 
       val result =
         service
-          .saveForThisPeriod(testZReference, Some(emptyMonthlyReturn), nilReturn = false)(HeaderCarrier())
+          .saveForThisPeriod(
+            testZReference,
+            Some(emptyMonthlyReturn),
+            nilReturn = false,
+            LocalDate.now(testReportingWindowClock)
+          )(HeaderCarrier())
           .futureValue
 
       result.monthlyReturn mustEqual emptyMonthlyReturn

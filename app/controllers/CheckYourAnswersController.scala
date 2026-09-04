@@ -39,7 +39,7 @@ class CheckYourAnswersController @Inject() (
 
   def onPageLoad(): Action[AnyContent] =
     (identify andThen getData andThen journeyGuard(Page.CheckYourAnswers)) { implicit request =>
-      Ok(view(request.monthlyReturn))
+      Ok(view(request.monthlyReturn, request.currentDate))
     }
 
   def onSubmit(): Action[AnyContent] =

@@ -23,6 +23,7 @@ import models.upscan.{UpscanInitiateRequest, UpscanInitiateResponse}
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateHelper
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class UpscanService @Inject() (
@@ -31,11 +32,12 @@ class UpscanService @Inject() (
   appConfig: FrontendAppConfig
 ) {
 
-  def initiate(zReference: String)(implicit hc: HeaderCarrier): Future[UpscanInitiateResponse] =
+  def initiate(zReference: String, currentDate: LocalDate)(implicit hc: HeaderCarrier): Future[UpscanInitiateResponse] =
     upscanConnector.initiateUpload(
       UpscanInitiateRequest(
         callbackUrl =
-          s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly/upscan/callback/$zReference/${dateHelper.reportingPeriodTaxYear}/${dateHelper.reportingPeriodMonthNumber}",
+          s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly/upscan/callback/$zReference/${dateHelper
+              .reportingPeriodTaxYear(currentDate)}/${dateHelper.reportingPeriodMonthNumber(currentDate)}",
         successRedirect = Some(s"${appConfig.host}/file-processing"),
         errorRedirect = Some(s"${appConfig.host}/file-upload/error"),
         minimumFileSize = Some(appConfig.upscanMinFileSize),

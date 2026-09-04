@@ -19,7 +19,7 @@ package connectors
 import config.FrontendAppConfig
 import models.MonthlyReturn.fileUploadFormat
 import models.{CreateMonthlyReturnResponse, FileUpload, MonthlyReturn}
-import play.api.http.Status.{CREATED, NO_CONTENT}
+import play.api.http.Status.{CREATED, NO_CONTENT, OK}
 import play.api.libs.json.Json
 import play.api.libs.ws.writeableOf_JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits.*
@@ -37,6 +37,19 @@ class BackendConnector @Inject() (
 
   private val backendUrl =
     s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/monthly"
+
+  def isReportingWindowOpen(zReference: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    val reportingWindowStatusUrl =
+      s"${appConfig.disaReturnsBackendBaseUrl}/disa-returns-backend/reporting-window/status/$zReference"
+
+    httpClient.get(url"$reportingWindowStatusUrl").execute[HttpResponse].flatMap { response =>
+      if (response.status == OK) {
+        Future.successful((response.json \ "reportingWindowOpen").as[Boolean])
+      } else {
+        Future.failed(UpstreamErrorResponse("Failed to get backend reporting-window status", response.status))
+      }
+    }
+  }
 
   def retrieve(zRef: String, taxYear: String, month: Int)(implicit
     hc: HeaderCarrier

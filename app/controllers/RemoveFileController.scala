@@ -75,7 +75,7 @@ class RemoveFileController @Inject() (
                   val remainingSuccessfulFiles = request.monthlyReturn.successfulFileUploads
                     .filterNot(_.reference == reference)
                   storageService
-                    .deleteFileUploadForThisPeriod(request.zReference, reference)
+                    .deleteFileUploadForThisPeriod(request.zReference, reference, request.currentDate)
                     .map { _ =>
                       if (remainingSuccessfulFiles.isEmpty)
                         Redirect(routes.UploadFileController.onPageLoad())

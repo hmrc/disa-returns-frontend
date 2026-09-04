@@ -27,23 +27,12 @@ import play.api.mvc.Results.Ok
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.{Instant, LocalDate}
 import scala.concurrent.Future
 
 class JourneyGuardSpec extends SpecBase {
 
-  private val reportingWindowStartDay = 6
-  private val reportingWindowEndDay   = 19
-  private val openWindowClock         = Clock.fixed(Instant.parse("2026-03-15T12:00:00Z"), ZoneOffset.UTC)
-  private val closedWindowClock       = Clock.fixed(Instant.parse("2026-03-05T12:00:00Z"), ZoneOffset.UTC)
-
-  private def configuredApplication =
-    applicationBuilder()
-      .configure(
-        "reportingWindow.startDay" -> reportingWindowStartDay,
-        "reportingWindow.endDay"   -> reportingWindowEndDay
-      )
-      .build()
+  private def configuredApplication = applicationBuilder().build()
 
   private val successfulUpload = FileUpload(
     reference = "successful-reference",
@@ -91,11 +80,18 @@ class JourneyGuardSpec extends SpecBase {
 
       running(application) {
         val appConfig = application.injector.instanceOf[FrontendAppConfig]
-        val guard     = new JourneyGuard(appConfig, openWindowClock)
+        val guard     = new JourneyGuard(appConfig)
 
         requiredPages.foreach { page =>
           states.foreach { monthlyReturn =>
-            val request = OptionalDataRequest(FakeRequest(), testZReference, testUserDetails, monthlyReturn)
+            val request = OptionalDataRequest(
+              FakeRequest(),
+              testZReference,
+              testUserDetails,
+              monthlyReturn,
+              LocalDate.parse("2026-03-15"),
+              reportingWindowOpen = true
+            )
             val result  = guard(page).invokeBlock(request, _ => Future.successful(Ok(""))).futureValue
 
             if (allowedStatesByPage(page).contains(monthlyReturn)) {
@@ -114,10 +110,17 @@ class JourneyGuardSpec extends SpecBase {
 
       running(application) {
         val appConfig = application.injector.instanceOf[FrontendAppConfig]
-        val guard     = new JourneyGuard(appConfig, openWindowClock)
+        val guard     = new JourneyGuard(appConfig)
 
         states.foreach { monthlyReturn =>
-          val request = OptionalDataRequest(FakeRequest(), testZReference, testUserDetails, monthlyReturn)
+          val request = OptionalDataRequest(
+            FakeRequest(),
+            testZReference,
+            testUserDetails,
+            monthlyReturn,
+            LocalDate.parse("2026-03-15"),
+            reportingWindowOpen = true
+          )
           val result  = guard
             .optionalData(MonthlyReportSubmission)
             .invokeBlock(request, _ => Future.successful(Ok("")))
@@ -138,10 +141,17 @@ class JourneyGuardSpec extends SpecBase {
 
       running(application) {
         val appConfig = application.injector.instanceOf[FrontendAppConfig]
-        val guard     = new JourneyGuard(appConfig, openWindowClock)
+        val guard     = new JourneyGuard(appConfig)
 
         states.foreach { monthlyReturn =>
-          val request = OptionalDataRequest(FakeRequest(), testZReference, testUserDetails, monthlyReturn)
+          val request = OptionalDataRequest(
+            FakeRequest(),
+            testZReference,
+            testUserDetails,
+            monthlyReturn,
+            LocalDate.parse("2026-03-15"),
+            reportingWindowOpen = true
+          )
           val result  = guard
             .optionalData(Index)
             .invokeBlock(request, _ => Future.successful(Ok("")))
@@ -162,8 +172,15 @@ class JourneyGuardSpec extends SpecBase {
 
       running(application) {
         val appConfig = application.injector.instanceOf[FrontendAppConfig]
-        val guard     = new JourneyGuard(appConfig, closedWindowClock)
-        val request   = OptionalDataRequest(FakeRequest(), testZReference, testUserDetails, Some(nonNilWithFiles))
+        val guard     = new JourneyGuard(appConfig)
+        val request   = OptionalDataRequest(
+          FakeRequest(),
+          testZReference,
+          testUserDetails,
+          Some(nonNilWithFiles),
+          LocalDate.parse("2026-03-05"),
+          reportingWindowOpen = false
+        )
 
         requiredPages.foreach { page =>
           val result = guard(page).invokeBlock(request, _ => Future.successful(Ok(""))).futureValue

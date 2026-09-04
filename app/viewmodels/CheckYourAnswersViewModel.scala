@@ -25,17 +25,19 @@ import uk.gov.hmrc.govukfrontend.views.viewmodels.summarylist.{ActionItem, Summa
 import utils.DateHelper
 import viewmodels.govuk.summarylist.*
 
+import java.time.LocalDate
+
 final case class CheckYourAnswersViewModel(
   summaryList: SummaryList
 )
 
 object CheckYourAnswersViewModel {
 
-  def apply(monthlyReturn: MonthlyReturn)(implicit
+  def apply(monthlyReturn: MonthlyReturn, currentDate: LocalDate)(implicit
     messages: Messages,
     dateHelper: DateHelper
   ): CheckYourAnswersViewModel = {
-    val reportingWindowMonth = dateHelper.reportingWindowMonth
+    val reportingWindowMonth = dateHelper.reportingWindowMonth(currentDate)
     val rows                 = Seq(reportSubmissionRow(monthlyReturn.nilReturn, reportingWindowMonth)) ++ fileRows(monthlyReturn)
 
     new CheckYourAnswersViewModel(

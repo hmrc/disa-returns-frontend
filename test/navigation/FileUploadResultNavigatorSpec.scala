@@ -204,8 +204,7 @@ class FileUploadResultNavigatorSpec extends SpecBase {
             Some(validationFailure(FileUploadValidationStatus.InvalidFile, invalidFileReason = Some("UnknownReason"))),
             reference
           ) mustEqual Completed(generic)
-        } finally
-          app.RoutesPrefix.setPrefix(originalPrefix)
+        } finally app.RoutesPrefix.setPrefix(originalPrefix)
       }
     }
   }

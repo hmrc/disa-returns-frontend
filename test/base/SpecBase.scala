@@ -18,7 +18,7 @@ package base
 
 import config.FrontendAppConfig
 import controllers.actions.*
-import models.MonthlyReturn
+import models.{MonthlyReturn, ReportingContext}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -30,10 +30,12 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeRequest
 import play.api.test.Helpers.stubControllerComponents
+import services.ReportingContextSource
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
-import scala.concurrent.ExecutionContext
+import java.time.LocalDate
+import scala.concurrent.{ExecutionContext, Future}
 
 trait SpecBase
     extends AnyFreeSpec
@@ -45,10 +47,16 @@ trait SpecBase
     with IntegrationPatience
     with TestData {
 
-  implicit val ec: ExecutionContext                = scala.concurrent.ExecutionContext.Implicits.global
-  implicit val hc: HeaderCarrier                   = HeaderCarrier()
-  protected val mockHttpClient: HttpClientV2       = mock[HttpClientV2]
-  protected val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
+  implicit val ec: ExecutionContext                                = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val hc: HeaderCarrier                                   = HeaderCarrier()
+  protected val mockHttpClient: HttpClientV2                       = mock[HttpClientV2]
+  protected val mockRequestBuilder: RequestBuilder                 = mock[RequestBuilder]
+  protected val testReportingContextSource: ReportingContextSource = new ReportingContextSource {
+    override def get(zReference: String)(implicit hc: HeaderCarrier): Future[ReportingContext] =
+      Future.successful(
+        ReportingContext(LocalDate.now(testReportingWindowClock), reportingWindowOpen = true)
+      )
+  }
 
   def messages(app: Application): Messages = app.injector.instanceOf[MessagesApi].preferred(FakeRequest())
 
@@ -61,9 +69,18 @@ trait SpecBase
 
     new GuiceApplicationBuilder()
       .overrides(
-        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, testZReference, testUserDetails)),
+        bind[IdentifierAction].toInstance(
+          new FakeIdentifierAction(
+            bodyParsers,
+            testZReference,
+            testUserDetails,
+            LocalDate.now(testReportingWindowClock),
+            reportingWindowOpen = true
+          )
+        ),
         bind[DataRetrievalAction].toInstance(new FakeDataRetrievalAction(monthlyReturn)),
         bind[java.time.Clock].toInstance(testReportingWindowClock),
+        bind[ReportingContextSource].toInstance(testReportingContextSource),
         bind[HttpClientV2].toInstance(mockHttpClient),
         bind[RequestBuilder].toInstance(mockRequestBuilder)
       )

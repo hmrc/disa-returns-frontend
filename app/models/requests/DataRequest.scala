@@ -19,16 +19,22 @@ package models.requests
 import models.{MonthlyReturn, UserDetails}
 import play.api.mvc.{Request, WrappedRequest}
 
+import java.time.LocalDate
+
 case class OptionalDataRequest[A](
   request: Request[A],
   zReference: String,
   userDetails: UserDetails,
-  monthlyReturn: Option[MonthlyReturn]
+  monthlyReturn: Option[MonthlyReturn],
+  currentDate: LocalDate,
+  reportingWindowOpen: Boolean
 ) extends WrappedRequest[A](request)
 
 case class DataRequest[A](
   request: Request[A],
   zReference: String,
   userDetails: UserDetails,
-  monthlyReturn: MonthlyReturn
+  monthlyReturn: MonthlyReturn,
+  currentDate: LocalDate,
+  reportingWindowOpen: Boolean
 ) extends WrappedRequest[A](request)

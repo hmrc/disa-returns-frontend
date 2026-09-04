@@ -16,20 +16,29 @@
 
 package config
 
-import com.google.inject.AbstractModule
 import controllers.actions._
+import play.api.{Configuration, Environment}
+import play.api.inject.{Binding, Module => AppModule, bind => binding}
+import services.{ReportingContextSource, SystemReportingContextSource}
+import testOnly.TestOnlyBackendReportingContextSource
 
-import java.time.{Clock, ZoneOffset}
+import java.time.Clock
 
-class Module extends AbstractModule {
+class Module extends AppModule {
 
-  override def configure(): Unit = {
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
+    val reportingContextBinding =
+      if (configuration.getOptional[String]("application.router").contains("testOnlyDoNotUseInAppConf.Routes")) {
+        binding[ReportingContextSource].to[TestOnlyBackendReportingContextSource]
+      } else {
+        binding[ReportingContextSource].to[SystemReportingContextSource]
+      }
 
-    bind(classOf[DataRetrievalAction]).to(classOf[DataRetrievalActionImpl]).asEagerSingleton()
-
-    // For session based storage instead of cred based, change to SessionIdentifierAction
-    bind(classOf[IdentifierAction]).to(classOf[AuthenticatedIdentifierAction]).asEagerSingleton()
-
-    bind(classOf[Clock]).toInstance(Clock.systemDefaultZone.withZone(ZoneOffset.UTC))
+    Seq(
+      binding[DataRetrievalAction].to[DataRetrievalActionImpl].eagerly(),
+      binding[IdentifierAction].to[AuthenticatedIdentifierAction].eagerly(),
+      binding[Clock].to(Clock.systemUTC()),
+      reportingContextBinding
+    )
   }
 }

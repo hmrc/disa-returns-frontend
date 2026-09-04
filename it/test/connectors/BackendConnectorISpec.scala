@@ -98,14 +98,30 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
       )
       .build()
 
-  private val monthlyReturnPath    =
+  private val monthlyReturnPath         =
     s"/disa-returns-backend/monthly/$testZReference/$testTaxYear/$testMonth"
-  private val declarationPath      = s"$monthlyReturnPath/declarations"
-  private val updateNilReturnPath  = s"$monthlyReturnPath/nilReturn"
-  private val createFileUploadPath = s"$monthlyReturnPath/files"
-  private val deleteFileUploadPath = s"$monthlyReturnPath/files/$testReference"
+  private val declarationPath           = s"$monthlyReturnPath/declarations"
+  private val updateNilReturnPath       = s"$monthlyReturnPath/nilReturn"
+  private val createFileUploadPath      = s"$monthlyReturnPath/files"
+  private val deleteFileUploadPath      = s"$monthlyReturnPath/files/$testReference"
+  private val reportingWindowStatusPath =
+    s"/disa-returns-backend/reporting-window/status/$testZReference"
 
   "BackendConnector" - {
+
+    "must retrieve reporting-window status from backend" in {
+      wireMockServer.stubFor(
+        get(urlEqualTo(reportingWindowStatusPath))
+          .willReturn(okJson("""{"reportingWindowOpen":true}"""))
+      )
+
+      val app = application
+      running(app) {
+        appConnector(app).isReportingWindowOpen(testZReference)(HeaderCarrier()).futureValue mustBe true
+      }
+
+      wireMockServer.verify(1, getRequestedFor(urlEqualTo(reportingWindowStatusPath)))
+    }
 
     "must retrieve a stored monthly return" in {
       wireMockServer.stubFor(

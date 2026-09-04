@@ -28,27 +28,35 @@ class DateHelper @Inject() (
 
   private def reportingWindowDate: LocalDate = LocalDate.now(clock)
 
-  private def reportingPeriodDate: LocalDate = reportingWindowDate.minusMonths(1)
+  private def reportingPeriodDate(date: LocalDate): LocalDate = date.minusMonths(1)
 
-  def reportingPeriod: String =
-    reportingPeriodDate.format(DateTimeFormatter.ofPattern("MMMM uuuu", Locale.UK))
+  def reportingPeriod: String = reportingPeriod(reportingWindowDate)
+
+  def reportingPeriod(date: LocalDate): String =
+    reportingPeriodDate(date).format(DateTimeFormatter.ofPattern("MMMM uuuu", Locale.UK))
 
   private def monthName(date: LocalDate): String =
     date.getMonth.getDisplayName(TextStyle.FULL, Locale.UK)
 
-  def reportingWindowMonth: String =
-    monthName(reportingWindowDate)
+  def reportingWindowMonth: String = reportingWindowMonth(reportingWindowDate)
 
-  def reportingPeriodMonth: String =
-    monthName(reportingPeriodDate)
+  def reportingWindowMonth(date: LocalDate): String = monthName(date)
+
+  def reportingPeriodMonth: String = reportingPeriodMonth(reportingWindowDate)
+
+  def reportingPeriodMonth(date: LocalDate): String = monthName(reportingPeriodDate(date))
 
   def reportingWindowMonthNumber: Int = reportingWindowDate.getMonthValue
 
-  def reportingPeriodMonthNumber: Int = reportingPeriodDate.getMonthValue
+  def reportingPeriodMonthNumber: Int = reportingPeriodMonthNumber(reportingWindowDate)
+
+  def reportingPeriodMonthNumber(date: LocalDate): Int = reportingPeriodDate(date).getMonthValue
 
   def reportingWindowTaxYear: String = taxYearFor(reportingWindowDate)
 
-  def reportingPeriodTaxYear: String = taxYearFor(reportingPeriodDate)
+  def reportingPeriodTaxYear: String = reportingPeriodTaxYear(reportingWindowDate)
+
+  def reportingPeriodTaxYear(date: LocalDate): String = taxYearFor(reportingPeriodDate(date))
 
   private def taxYearFor(date: LocalDate): String = {
     val startYear =

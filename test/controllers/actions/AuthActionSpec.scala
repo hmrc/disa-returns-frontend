@@ -20,14 +20,20 @@ import base.{SpecBase, TestData}
 import com.google.inject.Inject
 import config.FrontendAppConfig
 import controllers.routes
+import models.ReportingContext
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.Mockito.{times, verify, verifyNoInteractions, when}
+import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.mvc.{Action, AnyContent, BodyParsers, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
+import services.ReportingContextSource
 import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{AgentInformation, Credentials, Retrieval, ~}
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuthActionSpec extends SpecBase {
@@ -38,6 +44,9 @@ class AuthActionSpec extends SpecBase {
     def userType(): Action[AnyContent] = authAction(request => Results.Ok(request.userDetails.userType))
 
     def groupId(): Action[AnyContent] = authAction(request => Results.Ok(request.userDetails.groupId))
+
+    def reportingContext(): Action[AnyContent] =
+      authAction(request => Results.Ok(s"${request.currentDate}:${request.reportingWindowOpen}"))
   }
 
   "Auth Action" - {
@@ -55,6 +64,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeSuccessfulZReferenceAuthConnector(testZReference),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -76,6 +86,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeSuccessfulZReferenceAuthConnector(testZReference),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -83,6 +94,54 @@ class AuthActionSpec extends SpecBase {
 
           status(result) mustBe OK
           contentAsString(result) mustBe testGroupId
+        }
+      }
+
+      "must resolve and capture the reporting context exactly once" in {
+        val application = applicationBuilder().build()
+
+        running(application) {
+          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
+          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
+          val source      = mock[ReportingContextSource]
+          val date        = LocalDate.parse("2026-06-17")
+          when(source.get(eqTo(testZReference))(any[HeaderCarrier]))
+            .thenReturn(Future.successful(ReportingContext(date, reportingWindowOpen = false)))
+          val authAction  = new AuthenticatedIdentifierAction(
+            new FakeSuccessfulZReferenceAuthConnector(testZReference),
+            appConfig,
+            source,
+            bodyParsers
+          )
+
+          val result = new Harness(authAction).reportingContext()(FakeRequest())
+
+          status(result) mustBe OK
+          contentAsString(result) mustBe "2026-06-17:false"
+          verify(source, times(1)).get(eqTo(testZReference))(any[HeaderCarrier])
+        }
+      }
+
+      "must authenticate without resolving reporting context when requested" in {
+        val application = applicationBuilder().build()
+
+        running(application) {
+          val source     = mock[ReportingContextSource]
+          val authAction = new AuthenticatedIdentifierAction(
+            new FakeSuccessfulZReferenceAuthConnector(testZReference),
+            application.injector.instanceOf[FrontendAppConfig],
+            source,
+            application.injector.instanceOf[BodyParsers.Default]
+          )
+
+          val result = authAction.invokeBlockWithoutReportingContext(
+            FakeRequest(),
+            zReference => Future.successful(Results.Ok(zReference))
+          )
+
+          status(result) mustBe OK
+          contentAsString(result) mustBe testZReference
+          verifyNoInteractions(source)
         }
       }
     }
@@ -109,6 +168,7 @@ class AuthActionSpec extends SpecBase {
               )
             ),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -135,6 +195,7 @@ class AuthActionSpec extends SpecBase {
               affinityGroup = AffinityGroup.Agent
             ),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -163,6 +224,7 @@ class AuthActionSpec extends SpecBase {
               affinityGroup = AffinityGroup.Organisation
             ),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -187,6 +249,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeMissingZReferenceAuthConnector,
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -211,6 +274,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeFailingAuthConnector(new MissingBearerToken),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -235,6 +299,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeFailingAuthConnector(new BearerTokenExpired),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -259,6 +324,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeFailingAuthConnector(new InsufficientEnrolments),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -283,6 +349,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeFailingAuthConnector(new InsufficientConfidenceLevel),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -307,6 +374,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeFailingAuthConnector(new UnsupportedAuthProvider),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -331,6 +399,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeFailingAuthConnector(new UnsupportedAffinityGroup),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)
@@ -355,6 +424,7 @@ class AuthActionSpec extends SpecBase {
           val authAction = new AuthenticatedIdentifierAction(
             new FakeFailingAuthConnector(new UnsupportedCredentialRole),
             appConfig,
+            testReportingContextSource,
             bodyParsers
           )
           val controller = new Harness(authAction)

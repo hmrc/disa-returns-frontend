@@ -29,6 +29,7 @@ import views.html.UploadFileView
 import uk.gov.hmrc.http.HeaderCarrier
 import viewmodels.UploadViewModel
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class UploadFileControllerSpec extends SpecBase {
@@ -53,13 +54,17 @@ class UploadFileControllerSpec extends SpecBase {
         )
       )
 
-      when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
+      when(mockUpscanService.initiate(eqTo(testZReference), any[LocalDate])(any[HeaderCarrier]))
         .thenReturn(Future.successful(upscanResponse))
 
       val mockStorageService = mock[StorageService]
 
       when(
-        mockStorageService.createFileUploadForThisPeriod(eqTo(testZReference), eqTo(upscanResponse.reference))(
+        mockStorageService.createFileUploadForThisPeriod(
+          eqTo(testZReference),
+          eqTo(upscanResponse.reference),
+          any[LocalDate]
+        )(
           any[HeaderCarrier]
         )
       )
@@ -102,13 +107,17 @@ class UploadFileControllerSpec extends SpecBase {
         )
       )
 
-      when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
+      when(mockUpscanService.initiate(eqTo(testZReference), any[LocalDate])(any[HeaderCarrier]))
         .thenReturn(Future.successful(upscanResponse))
 
       val mockStorageService = mock[StorageService]
 
       when(
-        mockStorageService.createFileUploadForThisPeriod(eqTo(testZReference), eqTo(upscanResponse.reference))(
+        mockStorageService.createFileUploadForThisPeriod(
+          eqTo(testZReference),
+          eqTo(upscanResponse.reference),
+          any[LocalDate]
+        )(
           any[HeaderCarrier]
         )
       )
@@ -141,7 +150,7 @@ class UploadFileControllerSpec extends SpecBase {
 
       val mockUpscanService = mock[UpscanService]
 
-      when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
+      when(mockUpscanService.initiate(eqTo(testZReference), any[LocalDate])(any[HeaderCarrier]))
         .thenReturn(Future.failed(new RuntimeException("Upscan failed")))
 
       val application = applicationBuilder(monthlyReturn = Some(emptyMonthlyReturn))
@@ -171,13 +180,17 @@ class UploadFileControllerSpec extends SpecBase {
         )
       )
 
-      when(mockUpscanService.initiate(eqTo(testZReference))(any[HeaderCarrier]))
+      when(mockUpscanService.initiate(eqTo(testZReference), any[LocalDate])(any[HeaderCarrier]))
         .thenReturn(Future.successful(upscanResponse))
 
       val mockStorageService = mock[StorageService]
 
       when(
-        mockStorageService.createFileUploadForThisPeriod(eqTo(testZReference), eqTo(upscanResponse.reference))(
+        mockStorageService.createFileUploadForThisPeriod(
+          eqTo(testZReference),
+          eqTo(upscanResponse.reference),
+          any[LocalDate]
+        )(
           any[HeaderCarrier]
         )
       )

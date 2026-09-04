@@ -28,8 +28,7 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   val host: String    = getString("host")
   val appName: String = getString("appName")
 
-  lazy val disaReturnsBackendBaseUrl: String = baseUrl("disa-returns-backend")
-
+  lazy val disaReturnsBackendBaseUrl: String          = baseUrl("disa-returns-backend")
   private lazy val disaAccountFrontendBaseUrl: String = baseUrl("disa-account-frontend")
 
   private val contactHost                  = getString("contact-frontend.host")
@@ -66,9 +65,6 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   lazy val upscanAcceptedExtensions: String = getString("upscan.acceptedExtensions")
 
   val fileUploadMaxInlineErrors: Int = getInt("fileUploadValidation.maxInlineErrors")
-
-  val reportingWindowStartDay: Int = getInt("reportingWindow.startDay")
-  val reportingWindowEndDay: Int   = getInt("reportingWindow.endDay")
 
   val monthlyReportTemplateResourcePath: Option[String] =
     config.getOptional[String]("monthlyReportTemplate.resourcePath")
