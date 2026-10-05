@@ -23,12 +23,12 @@ class FrontendAppConfigSpec extends SpecBase {
 
   "FrontendAppConfig" - {
 
-    "must compose the Manage ISAs URL from the accounts service and its route context" in {
+    "must compose the Manage ISAs URL from the disa-account-frontend host and its route context" in {
       val application = applicationBuilder().build()
 
       running(application) {
         application.injector.instanceOf[FrontendAppConfig].manageIsasUrl mustEqual
-          "https://manage-isas.example.com:443/obligations/account/isa"
+          "https://manage-isas.example.com/obligations/account/isa/manage-isas"
       }
     }
 
