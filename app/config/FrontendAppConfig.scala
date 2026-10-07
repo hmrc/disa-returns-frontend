@@ -41,8 +41,7 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   val loginContinueUrl: String = getString("urls.loginContinue")
   val signOutUrl: String       = getString("urls.signOut")
 
-  // TODO DFI-2372: replace this provisional context when disa-accounts-frontend publishes the Manage ISAs route.
-  private val manageIsasUrlContext: String = "/obligations/account/isa"
+  private val manageIsasUrlContext: String = "/obligations/account/isa/manage-isas"
   val manageIsasUrl: String                = s"$disaAccountFrontendBaseUrl$manageIsasUrlContext"
 
   private val exitSurveyBaseUrl: String = baseUrl("feedback-frontend")
