@@ -21,6 +21,7 @@ import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import handlers.ErrorHandler
 import models.MonthlyReturnDeclarationResult
 import models.MonthlyReturnDeclarationResult.{AlreadyDeclared, Declared, MonthlyReturnNotFound, OutsideDeclarationPeriod}
+import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.{AuditService, StorageService}
@@ -32,6 +33,7 @@ import views.html.DeclarationView
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class DeclarationController @Inject() (
   override val messagesApi: MessagesApi,
@@ -45,7 +47,8 @@ class DeclarationController @Inject() (
   view: DeclarationView
 )(implicit ec: ExecutionContext)
     extends FrontendBaseController
-    with I18nSupport {
+    with I18nSupport
+    with Logging {
 
   def onPageLoad(): Action[AnyContent] =
     (identify andThen getData andThen journeyGuard(Page.Declaration)) { implicit request =>
@@ -59,7 +62,11 @@ class DeclarationController @Inject() (
       storageService
         .declareForThisPeriod(request.zReference, request.currentDate)
         .flatMap { outcome =>
-          auditService.auditFileUploadDeclarationSubmitted(request, failureReason(outcome)): Unit
+          auditService
+            .auditFileUploadDeclarationSubmitted(request, failureReason(outcome))
+            .recover { case NonFatal(e) =>
+              logger.warn(s"Failed to audit FileUploadDeclarationSubmitted for zRef: [${request.zReference}]", e)
+            }
           outcome match {
             case Declared => Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
             case _        => errorHandler.internalServerError
@@ -73,6 +80,6 @@ class DeclarationController @Inject() (
       case AlreadyDeclared          => Some("Monthly return has already been declared")
       case MonthlyReturnNotFound    => Some("Monthly return not found")
       case OutsideDeclarationPeriod => Some("Declaration is outside the reporting period")
-      case _                        => Some("Failed to declare monthly return with disa-returns-backend")
+      case _                        => Some("Service unavailable or connectivity issue with disa-returns-backend")
     }
 }

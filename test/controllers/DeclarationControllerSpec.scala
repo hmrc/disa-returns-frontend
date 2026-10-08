@@ -21,7 +21,7 @@ import models.MonthlyReturnDeclarationResult
 import models.MonthlyReturnDeclarationResult.{AlreadyDeclared, Declared, Failed, MonthlyReturnNotFound, OutsideDeclarationPeriod}
 import models.{FileUpload, FileUploadDetails, FileUploadStatus}
 import models.requests.DataRequest
-import org.mockito.ArgumentMatchers.{any, argThat, eq => eqTo}
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
@@ -138,12 +138,12 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
       }
     }
 
-    Seq[(MonthlyReturnDeclarationResult, String)](
-      AlreadyDeclared          -> "the return is already declared",
-      OutsideDeclarationPeriod -> "the declaration period is closed",
-      MonthlyReturnNotFound    -> "the monthly return is missing",
-      Failed                   -> "the declaration fails"
-    ).foreach { case (outcome, description) =>
+    Seq[(MonthlyReturnDeclarationResult, String, String)](
+      (AlreadyDeclared, "the return is already declared", "Monthly return has already been declared"),
+      (OutsideDeclarationPeriod, "the declaration period is closed", "Declaration is outside the reporting period"),
+      (MonthlyReturnNotFound, "the monthly return is missing", "Monthly return not found"),
+      (Failed, "the declaration fails", "Service unavailable or connectivity issue with disa-returns-backend")
+    ).foreach { case (outcome, description, expectedReason) =>
       s"must render the shared internal server error page and audit failure when $description" in {
         val storageService = mock[StorageService]
         val auditService   = mockAuditService()
@@ -163,7 +163,7 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
           status(result) mustEqual INTERNAL_SERVER_ERROR
           contentAsString(result) must not be empty
           verify(auditService)
-            .auditFileUploadDeclarationSubmitted(any[DataRequest[AnyContent]], argThat[Option[String]](_.isDefined))(
+            .auditFileUploadDeclarationSubmitted(any[DataRequest[AnyContent]], eqTo(Some(expectedReason)))(
               any[HeaderCarrier]
             )
         }

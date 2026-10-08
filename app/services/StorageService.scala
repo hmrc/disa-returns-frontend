@@ -17,10 +17,10 @@
 package services
 
 import connectors.BackendConnector
-import models.MonthlyReturnDeclarationResult.{Declared, Failed}
+import models.MonthlyReturnDeclarationResult.{AlreadyDeclared, Declared, Failed, MonthlyReturnNotFound, OutsideDeclarationPeriod}
 import models.{FileUpload, MonthlyReturn, MonthlyReturnDeclarationResult, MonthlyReturnSaveResult}
 import play.api.Logging
-import play.api.http.Status.{CONFLICT, NOT_FOUND}
+import play.api.http.Status.{CONFLICT, NOT_FOUND, UNPROCESSABLE_ENTITY}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import utils.DateHelper
 
@@ -61,13 +61,22 @@ class StorageService @Inject() (
     withPeriod(currentDate)(backendConnector.declareMonthlyReturn(zReference, _, _))
       .map(_ => Declared)
       .recover {
-        case e: UpstreamErrorResponse =>
+        case e: UpstreamErrorResponse if e.statusCode == CONFLICT             =>
+          logger.warn(s"Monthly return already declared for zRef: [$zReference]")
+          AlreadyDeclared
+        case e: UpstreamErrorResponse if e.statusCode == NOT_FOUND            =>
+          logger.warn(s"Monthly return not found when declaring for zRef: [$zReference]")
+          MonthlyReturnNotFound
+        case e: UpstreamErrorResponse if e.statusCode == UNPROCESSABLE_ENTITY =>
+          logger.warn(s"Monthly return declaration outside the declaration period for zRef: [$zReference]")
+          OutsideDeclarationPeriod
+        case e: UpstreamErrorResponse                                         =>
           logger.warn(
             s"Monthly return declaration failed. Upstream HTTP status: [${e.statusCode}]",
             e
           )
           Failed
-        case NonFatal(e)              =>
+        case NonFatal(e)                                                      =>
           logger.error(
             s"Failed to declare monthly return for zRef: [$zReference]",
             e
