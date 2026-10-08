@@ -29,6 +29,7 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   val appName: String = getString("appName")
 
   lazy val disaReturnsBackendBaseUrl: String          = baseUrl("disa-returns-backend")
+  lazy val disaAccountBaseUrl: String                 = baseUrl("disa-account")
   private lazy val disaAccountFrontendBaseUrl: String = baseUrl("disa-account-frontend")
 
   private val contactHost                  = getString("contact-frontend.host")

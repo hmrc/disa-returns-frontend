@@ -19,10 +19,11 @@ package controllers
 import controllers.actions.JourneyGuard.Page
 import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import handlers.ErrorHandler
-import models.MonthlyReturnDeclarationResult.Declared
+import models.MonthlyReturnDeclarationResult
+import models.MonthlyReturnDeclarationResult.{AlreadyDeclared, Declared, MonthlyReturnNotFound, OutsideDeclarationPeriod}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import services.StorageService
+import services.{AuditService, StorageService}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -38,6 +39,7 @@ class DeclarationController @Inject() (
   getData: DataRetrievalAction,
   journeyGuard: JourneyGuard,
   storageService: StorageService,
+  auditService: AuditService,
   errorHandler: ErrorHandler,
   val controllerComponents: MessagesControllerComponents,
   view: DeclarationView
@@ -56,11 +58,21 @@ class DeclarationController @Inject() (
 
       storageService
         .declareForThisPeriod(request.zReference, request.currentDate)
-        .flatMap {
-          case Declared =>
-            Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
-          case _        =>
-            errorHandler.internalServerError
+        .flatMap { outcome =>
+          auditService.auditFileUploadDeclarationSubmitted(request, failureReason(outcome)): Unit
+          outcome match {
+            case Declared => Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
+            case _        => errorHandler.internalServerError
+          }
         }
+    }
+
+  private def failureReason(outcome: MonthlyReturnDeclarationResult): Option[String] =
+    outcome match {
+      case Declared                 => None
+      case AlreadyDeclared          => Some("Monthly return has already been declared")
+      case MonthlyReturnNotFound    => Some("Monthly return not found")
+      case OutsideDeclarationPeriod => Some("Declaration is outside the reporting period")
+      case _                        => Some("Failed to declare monthly return with disa-returns-backend")
     }
 }

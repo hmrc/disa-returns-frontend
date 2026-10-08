@@ -54,6 +54,7 @@ trait TestData {
   protected val testAgentUserType: String            = TestData.testAgentUserType
   protected val testAgentId: String                  = TestData.testAgentId
   protected val testAgentName: String                = TestData.testAgentName
+  protected val testCompanyName: String              = TestData.testCompanyName
   protected val testIsaManagerCredId: String         = TestData.testIsaManagerCredId
   protected val testDisaEnrolmentKey: String         = TestData.testDisaEnrolmentKey
   protected val testZReferenceIdentifierKey: String  = TestData.testZReferenceIdentifierKey
@@ -95,6 +96,7 @@ object TestData {
   val testAgentUserType: String                    = "Agent"
   val testAgentId: String                          = "8d181856-2103-4183-bbda-b4d37a400d1"
   val testAgentName: String                        = "testAgent"
+  val testCompanyName: String                      = "Test ISA Manager Ltd"
   val testIsaManagerCredId: String                 = "5053588723516092"
   val testDisaEnrolmentKey: String                 = "HMRC-DISA-ORG"
   val testZReferenceIdentifierKey: String          = "ZREF"
