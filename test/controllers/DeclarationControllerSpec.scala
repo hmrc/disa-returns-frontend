@@ -20,13 +20,15 @@ import base.SpecBase
 import models.MonthlyReturnDeclarationResult
 import models.MonthlyReturnDeclarationResult.{AlreadyDeclared, Declared, Failed, MonthlyReturnNotFound, OutsideDeclarationPeriod}
 import models.{FileUpload, FileUploadDetails, FileUploadStatus}
+import models.requests.DataRequest
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
+import play.api.mvc.AnyContent
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import services.StorageService
+import services.{AuditService, StorageService}
 import uk.gov.hmrc.http.HeaderCarrier
 import views.html.DeclarationView
 import viewmodels.DeclarationViewModel
@@ -44,6 +46,17 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
 
   private val nonNilReturnWithFile = emptyMonthlyReturn.copy(fileUploads = Seq(successfulUpload))
   private val nilReturn            = emptyMonthlyReturn.copy(nilReturn = true)
+
+  private def mockAuditService(): AuditService = {
+    val auditService = mock[AuditService]
+    when(
+      auditService.auditFileUploadDeclarationSubmitted(any[DataRequest[AnyContent]], any[Option[String]])(
+        any[HeaderCarrier]
+      )
+    )
+      .thenReturn(Future.successful(()))
+    auditService
+  }
 
   "DeclarationController" - {
 
@@ -95,14 +108,18 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
       }
     }
 
-    "must redirect to SubmissionComplete when the declaration is submitted successfully" in {
+    "must redirect to SubmissionComplete and audit success when the declaration is submitted successfully" in {
       val storageService = mock[StorageService]
+      val auditService   = mockAuditService()
       when(storageService.declareForThisPeriod(eqTo(testZReference), any[LocalDate])(any[HeaderCarrier]))
         .thenReturn(Future.successful(Declared))
 
       val application =
         applicationBuilder(monthlyReturn = Some(nilReturn))
-          .overrides(bind[StorageService].toInstance(storageService))
+          .overrides(
+            bind[StorageService].toInstance(storageService),
+            bind[AuditService].toInstance(auditService)
+          )
           .build()
 
       running(application) {
@@ -115,22 +132,29 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
         verify(storageService).declareForThisPeriod(eqTo(testZReference), any[LocalDate])(
           any[HeaderCarrier]
         )
+        verify(auditService).auditFileUploadDeclarationSubmitted(any[DataRequest[AnyContent]], eqTo(None))(
+          any[HeaderCarrier]
+        )
       }
     }
 
-    Seq[(MonthlyReturnDeclarationResult, String)](
-      AlreadyDeclared          -> "the return is already declared",
-      OutsideDeclarationPeriod -> "the declaration period is closed",
-      MonthlyReturnNotFound    -> "the monthly return is missing",
-      Failed                   -> "the declaration fails"
-    ).foreach { case (outcome, description) =>
-      s"must render the shared internal server error page when $description" in {
+    Seq[(MonthlyReturnDeclarationResult, String, String)](
+      (AlreadyDeclared, "the return is already declared", "Monthly return has already been declared"),
+      (OutsideDeclarationPeriod, "the declaration period is closed", "Declaration is outside the reporting period"),
+      (MonthlyReturnNotFound, "the monthly return is missing", "Monthly return not found"),
+      (Failed, "the declaration fails", "Service unavailable or connectivity issue with disa-returns-backend")
+    ).foreach { case (outcome, description, expectedReason) =>
+      s"must render the shared internal server error page and audit failure when $description" in {
         val storageService = mock[StorageService]
+        val auditService   = mockAuditService()
         when(storageService.declareForThisPeriod(eqTo(testZReference), any[LocalDate])(any[HeaderCarrier]))
           .thenReturn(Future.successful(outcome))
 
         val application = applicationBuilder(monthlyReturn = Some(nilReturn))
-          .overrides(bind[StorageService].toInstance(storageService))
+          .overrides(
+            bind[StorageService].toInstance(storageService),
+            bind[AuditService].toInstance(auditService)
+          )
           .build()
 
         running(application) {
@@ -138,6 +162,10 @@ class DeclarationControllerSpec extends SpecBase with MockitoSugar {
 
           status(result) mustEqual INTERNAL_SERVER_ERROR
           contentAsString(result) must not be empty
+          verify(auditService)
+            .auditFileUploadDeclarationSubmitted(any[DataRequest[AnyContent]], eqTo(Some(expectedReason)))(
+              any[HeaderCarrier]
+            )
         }
       }
     }

@@ -17,8 +17,9 @@
 package services
 
 import config.FrontendAppConfig
+import connectors.DisaAccountConnector
 import models.UserDetails
-import models.requests.OptionalDataRequest
+import models.requests.{DataRequest, OptionalDataRequest}
 import models.MonthlyReturn
 import play.api.Logging
 import play.api.libs.json.{JsObject, Json}
@@ -29,41 +30,115 @@ import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import utils.DateHelper
 
+import java.time.LocalDate
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class AuditService @Inject() (
   connector: AuditConnector,
   appConfig: FrontendAppConfig,
-  dateHelper: DateHelper
+  dateHelper: DateHelper,
+  disaAccountConnector: DisaAccountConnector
 )(implicit ec: ExecutionContext)
     extends Logging {
 
   def auditFileUploadStarted[A](
     request: OptionalDataRequest[A],
     monthlyReturn: MonthlyReturn
+  )(implicit hc: HeaderCarrier): Future[Unit] =
+    retrieveGroupName(request.zReference, AuditTypes.FileUploadStarted).flatMap { groupName =>
+      val detail =
+        baseDetail(request.zReference, request.userDetails, groupName, request.currentDate, monthlyReturn) ++
+          userDetail(request.userDetails)
+
+      sendEvent(AuditTypes.FileUploadStarted, detail)
+    }
+
+  def auditFileUploadDeclarationSubmitted[A](
+    request: DataRequest[A],
+    failureReason: Option[String]
   )(implicit hc: HeaderCarrier): Future[Unit] = {
-    val detail = baseDetail(request, monthlyReturn) ++ userDetail(request.userDetails)
-    val event  = ExtendedDataEvent(
+    val monthlyReturn = request.monthlyReturn
+    val returnDetail  =
+      if (monthlyReturn.nilReturn) {
+        Json.obj(EventData.nilReturn -> "yes")
+      } else {
+        val successfulUploads = monthlyReturn.successfulFileUploads
+        val numberOfEntries   =
+          successfulUploads.flatMap(_.fileUploadDetails.flatMap(_.validation)).map(_.rowsValidated).sum
+        Json.obj(
+          EventData.numberOfFiles   -> successfulUploads.size.toString,
+          EventData.numberOfEntries -> numberOfEntries.toString
+        )
+      }
+    val statusDetail  = failureReason.fold(Json.obj(EventData.submissionStatus -> SubmissionStatus.Success)) { reason =>
+      Json.obj(
+        EventData.submissionStatus -> SubmissionStatus.Failure,
+        EventData.failureReason    -> reason
+      )
+    }
+
+    retrieveGroupName(request.zReference, AuditTypes.FileUploadDeclarationSubmitted).flatMap { groupName =>
+      val detail =
+        baseDetail(request.zReference, request.userDetails, groupName, request.currentDate, monthlyReturn) ++
+          userDetail(request.userDetails) ++
+          returnDetail ++
+          statusDetail
+
+      sendEvent(AuditTypes.FileUploadDeclarationSubmitted, detail)
+    }
+  }
+
+  private def sendEvent(auditType: String, detail: JsObject)(implicit hc: HeaderCarrier): Future[Unit] = {
+    val event = ExtendedDataEvent(
       auditSource = appConfig.appName,
-      auditType = AuditTypes.FileUploadStarted,
+      auditType = auditType,
       tags = getAuditTags,
       detail = detail
     )
 
     connector
       .sendExtendedEvent(event)
-      .map(logResponse(_, AuditTypes.FileUploadStarted))
+      .map(logResponse(_, auditType))
   }
 
-  private def baseDetail[A](request: OptionalDataRequest[A], monthlyReturn: MonthlyReturn): JsObject =
+  private def retrieveGroupName(zReference: String, auditType: String)(implicit
+    hc: HeaderCarrier
+  ): Future[Option[String]] =
+    disaAccountConnector
+      .getCompanyName(zReference)
+      .map { companyName =>
+        if (companyName.isEmpty) {
+          logger.warn(s"$auditType audit sent without groupName, no company name found for zRef: [$zReference]")
+        }
+        companyName
+      }
+      .recover { case NonFatal(e) =>
+        logger.warn(
+          s"$auditType audit sent without groupName, failed to retrieve company name for zRef: [$zReference]",
+          e
+        )
+        None
+      }
+
+  private def baseDetail(
+    zReference: String,
+    userDetails: UserDetails,
+    groupName: Option[String],
+    currentDate: LocalDate,
+    monthlyReturn: MonthlyReturn
+  ): JsObject =
     Json.obj(
       EventData.internalReturnId -> monthlyReturn.submissionId.toString,
-      EventData.period           -> dateHelper.reportingPeriod(request.currentDate),
-      EventData.groupId          -> request.userDetails.groupId,
-      EventData.zReference       -> request.zReference,
-      EventData.userType         -> request.userDetails.userType
-    )
+      EventData.period           -> dateHelper.reportingPeriod(currentDate),
+      EventData.groupId          -> userDetails.groupId
+    ) ++
+      groupName.fold(Json.obj())(name => Json.obj(EventData.groupName -> name)) ++
+      Json.obj(
+        EventData.zReference -> zReference,
+        EventData.userType   -> userDetails.userType
+      )
 
   private def userDetail(userDetails: UserDetails): JsObject =
     userDetails match {
@@ -93,17 +168,29 @@ class AuditService @Inject() (
 }
 
 object AuditTypes {
-  val FileUploadStarted = "FileUploadStarted"
+  val FileUploadStarted              = "FileUploadStarted"
+  val FileUploadDeclarationSubmitted = "FileUploadDeclarationSubmitted"
+}
+
+object SubmissionStatus {
+  val Success = "Success"
+  val Failure = "Failure"
 }
 
 object EventData {
   val internalReturnId = "internalReturnId"
   val period           = "period"
   val groupId          = "groupId"
+  val groupName        = "groupName"
   val zReference       = "zReference"
   val userType         = "userType"
   val credId           = "credId"
   val credentialRole   = "credentialRole"
   val agentId          = "agentId"
   val agentName        = "agentName"
+  val nilReturn        = "nilReturn"
+  val numberOfFiles    = "numberOfFiles"
+  val numberOfEntries  = "numberOfEntries"
+  val submissionStatus = "submissionStatus"
+  val failureReason    = "failureReason"
 }

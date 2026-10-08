@@ -17,19 +17,14 @@
 package connectors
 
 import base.ISpecBase
-import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import models.MonthlyReturn
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.running
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
-class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with BeforeAndAfterEach {
-
-  private val wireMockServer = new WireMockServer(wireMockConfig().dynamicPort())
+class BackendConnectorISpec extends ISpecBase {
 
   private val monthlyReturn               = MonthlyReturn(
     submissionId = testSubmissionId,
@@ -73,21 +68,6 @@ class BackendConnectorISpec extends ISpecBase with BeforeAndAfterAll with Before
       |  "reference": "$testReference"
       |}
       |""".stripMargin
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    wireMockServer.start()
-  }
-
-  override protected def afterAll(): Unit = {
-    wireMockServer.stop()
-    super.afterAll()
-  }
-
-  override protected def beforeEach(): Unit = {
-    wireMockServer.resetAll()
-    super.beforeEach()
-  }
 
   private def application: Application =
     new GuiceApplicationBuilder()
