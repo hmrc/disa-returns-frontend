@@ -51,7 +51,7 @@ class TestOnlyReportingOverridesControllerSpec extends SpecBase {
       running(application) {
         val result = route(
           application,
-          FakeRequest(GET, "/obligations/returns/isa/test-only/reporting-overrides")
+          FakeRequest(GET, s"$registrationFrontendRoutePrefix/test-only/reporting-overrides")
         ).value
 
         status(result) mustBe OK
@@ -86,7 +86,7 @@ class TestOnlyReportingOverridesControllerSpec extends SpecBase {
       running(application) {
         val result = route(
           application,
-          FakeRequest(GET, "/obligations/returns/isa/test-only/reporting-overrides")
+          FakeRequest(GET, s"$registrationFrontendRoutePrefix/test-only/reporting-overrides")
         ).value
 
         status(result) mustBe OK
@@ -115,7 +115,7 @@ class TestOnlyReportingOverridesControllerSpec extends SpecBase {
       running(application) {
         val result = route(
           application,
-          FakeRequest(POST, "/obligations/returns/isa/test-only/reporting-overrides")
+          FakeRequest(POST, s"$registrationFrontendRoutePrefix/test-only/reporting-overrides")
             .withFormUrlEncodedBody(
               "reportingWindowStart.day"   -> "6",
               "reportingWindowStart.month" -> "6",

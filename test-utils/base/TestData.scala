@@ -24,6 +24,7 @@ import scala.util.Random
 
 trait TestData {
 
+  protected val registrationFrontendRoutePrefix: String      = TestData.registrationFrontendRoutePrefix
   protected val testAppName: String                          = TestData.testAppName
   protected val testZReference: String                       = TestData.randomZReference
   protected val testSubmissionId: UUID                       = TestData.randomSubmissionId
@@ -70,6 +71,7 @@ trait TestData {
 
 object TestData {
 
+  val registrationFrontendRoutePrefix: String      = "/submit-manage-isas-return"
   val testAppName: String                          = "disa-returns-frontend"
   val testReportingWindowInstant: Instant          = Instant.parse("2026-03-15T12:00:00Z")
   val testJanuaryReportingWindowInstant: Instant   = Instant.parse("2026-01-15T12:00:00Z")
