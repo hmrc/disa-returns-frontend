@@ -62,7 +62,7 @@ class SubmissionCompleteControllerSpec extends SpecBase {
         content must include("What did you think of this service?")
         content must include("/contact/beta-feedback?service=disa-returns-frontend")
         content must include(
-          s"backUrl=http://localhost:1205/submit-manage-isas-return/submit-manage-isas-return/submission-complete"
+          "backUrl=http://localhost:1205/submit-manage-isas-return/submission-complete"
         )
 
         content must include("Return to manage reports")
