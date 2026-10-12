@@ -42,7 +42,7 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   val loginContinueUrl: String = getString("urls.loginContinue")
   val signOutUrl: String       = getString("urls.signOut")
 
-  private val manageIsasUrlContext: String = "/obligations/account/isa/manage-isas"
+  private val manageIsasUrlContext: String = "/manage-isas-account/manage-isas"
   val manageIsasUrl: String                = s"$disaAccountFrontendBaseUrl$manageIsasUrlContext"
 
   private val exitSurveyBaseUrl: String = baseUrl("feedback-frontend")
