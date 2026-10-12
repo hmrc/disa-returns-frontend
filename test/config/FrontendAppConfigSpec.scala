@@ -28,7 +28,7 @@ class FrontendAppConfigSpec extends SpecBase {
 
       running(application) {
         application.injector.instanceOf[FrontendAppConfig].manageIsasUrl mustEqual
-          "https://manage-isas.example.com:443/obligations/account/isa/manage-isas"
+          "https://manage-isas.example.com:443/manage-isas-account/manage-isas"
       }
     }
 
