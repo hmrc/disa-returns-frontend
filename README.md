@@ -80,14 +80,14 @@ backend status endpoint used in production.
 The authenticated page is available at:
 
 ```text
-GET http://localhost:1205/obligations/returns/isa/test-only/reporting-overrides
+GET http://localhost:1205/submit-manage-isas-return/test-only/reporting-overrides
 ```
 
-| Method | Path | Behavior |
-| --- | --- | --- |
-| `GET` | `/obligations/returns/isa/test-only/reporting-overrides` | Load current overrides. |
-| `POST` | `/obligations/returns/isa/test-only/reporting-overrides` | Validate and set overrides. |
-| `POST` | `/obligations/returns/isa/test-only/reporting-overrides/reset` | Reset both overrides. |
+| Method  | Path | Behavior |
+|---------| --- | --- |
+| `GET`   | `/submit-manage-isas-return/test-only/reporting-overrides` | Load current overrides. |
+| `POST`  | `/submit-manage-isas-return/test-only/reporting-overrides` | Validate and set overrides. |
+| `POST`  | `/submit-manage-isas-return/test-only/reporting-overrides/reset` | Reset both overrides. |
 
 All three routes require the `HMRC-DISA-ORG` enrolment and use its `ZREF` identifier. Overrides are scoped to the
 authenticated user's enrolled Z-reference; the page does not accept an arbitrary Z-reference.
