@@ -19,10 +19,12 @@ package controllers
 import controllers.actions.JourneyGuard.Page
 import controllers.actions.{DataRetrievalAction, IdentifierAction, JourneyGuard}
 import handlers.ErrorHandler
-import models.MonthlyReturnDeclarationResult.Declared
+import models.MonthlyReturnDeclarationResult
+import models.MonthlyReturnDeclarationResult.{AlreadyDeclared, Declared, MonthlyReturnNotFound, OutsideDeclarationPeriod}
+import play.api.Logging
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import services.StorageService
+import services.{AuditService, StorageService}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -31,6 +33,7 @@ import views.html.DeclarationView
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class DeclarationController @Inject() (
   override val messagesApi: MessagesApi,
@@ -38,12 +41,14 @@ class DeclarationController @Inject() (
   getData: DataRetrievalAction,
   journeyGuard: JourneyGuard,
   storageService: StorageService,
+  auditService: AuditService,
   errorHandler: ErrorHandler,
   val controllerComponents: MessagesControllerComponents,
   view: DeclarationView
 )(implicit ec: ExecutionContext)
     extends FrontendBaseController
-    with I18nSupport {
+    with I18nSupport
+    with Logging {
 
   def onPageLoad(): Action[AnyContent] =
     (identify andThen getData andThen journeyGuard(Page.Declaration)) { implicit request =>
@@ -56,11 +61,25 @@ class DeclarationController @Inject() (
 
       storageService
         .declareForThisPeriod(request.zReference, request.currentDate)
-        .flatMap {
-          case Declared =>
-            Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
-          case _        =>
-            errorHandler.internalServerError
+        .flatMap { outcome =>
+          auditService
+            .auditFileUploadDeclarationSubmitted(request, failureReason(outcome))
+            .recover { case NonFatal(e) =>
+              logger.warn(s"Failed to audit FileUploadDeclarationSubmitted for zRef: [${request.zReference}]", e)
+            }
+          outcome match {
+            case Declared => Future.successful(Redirect(routes.SubmissionCompleteController.onPageLoad()))
+            case _        => errorHandler.internalServerError
+          }
         }
+    }
+
+  private def failureReason(outcome: MonthlyReturnDeclarationResult): Option[String] =
+    outcome match {
+      case Declared                 => None
+      case AlreadyDeclared          => Some("Monthly return has already been declared")
+      case MonthlyReturnNotFound    => Some("Monthly return not found")
+      case OutsideDeclarationPeriod => Some("Declaration is outside the reporting period")
+      case _                        => Some("Service unavailable or connectivity issue with disa-returns-backend")
     }
 }

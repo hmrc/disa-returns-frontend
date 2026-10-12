@@ -16,10 +16,12 @@
 
 package base
 
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.{OptionValues, TryValues}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, OptionValues, TryValues}
 import org.scalatestplus.mockito.MockitoSugar
 
 trait ISpecBase
@@ -31,3 +33,23 @@ trait ISpecBase
     with IntegrationPatience
     with MockitoSugar
     with TestData
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach {
+
+  protected val wireMockServer: WireMockServer = new WireMockServer(wireMockConfig().dynamicPort())
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    wireMockServer.start()
+  }
+
+  override protected def afterAll(): Unit = {
+    wireMockServer.stop()
+    super.afterAll()
+  }
+
+  override protected def beforeEach(): Unit = {
+    wireMockServer.resetAll()
+    super.beforeEach()
+  }
+}

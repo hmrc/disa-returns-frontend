@@ -17,10 +17,7 @@
 package testOnly.connectors
 
 import base.ISpecBase
-import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.running
@@ -29,24 +26,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.LocalDate
 
-class TestOnlyReportingOverridesConnectorISpec extends ISpecBase with BeforeAndAfterAll with BeforeAndAfterEach {
-  private val wireMockServer = new WireMockServer(wireMockConfig().dynamicPort())
-  private val path           = s"/disa-returns-backend/test-only/overrides/$testZReference"
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    wireMockServer.start()
-  }
-
-  override protected def afterAll(): Unit = {
-    wireMockServer.stop()
-    super.afterAll()
-  }
-
-  override protected def beforeEach(): Unit = {
-    wireMockServer.resetAll()
-    super.beforeEach()
-  }
+class TestOnlyReportingOverridesConnectorISpec extends ISpecBase {
+  private val path = s"/disa-returns-backend/test-only/overrides/$testZReference"
 
   private def application: Application =
     new GuiceApplicationBuilder()

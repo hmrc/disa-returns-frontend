@@ -19,11 +19,11 @@ package services
 import base.SpecBase
 import connectors.BackendConnector
 import models.FileUpload
-import models.MonthlyReturnDeclarationResult.{Declared, Failed}
+import models.MonthlyReturnDeclarationResult.{AlreadyDeclared, Declared, Failed, MonthlyReturnNotFound, OutsideDeclarationPeriod}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.http.Status.{CONFLICT, NOT_FOUND}
+import play.api.http.Status.{CONFLICT, NOT_FOUND, SERVICE_UNAVAILABLE, UNPROCESSABLE_ENTITY}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import utils.DateHelper
 
@@ -253,21 +253,30 @@ class StorageServiceSpec extends SpecBase with MockitoSugar {
         )
     }
 
-    "must return Failed when declaring the monthly return returns an upstream error" in {
-      val connector = mock[BackendConnector]
-      when(
-        connector.declareMonthlyReturn(eqTo(testZReference), eqTo(testTaxYear), eqTo(testReportingPeriodMonthNumber))(
-          any[HeaderCarrier]
+    Seq(
+      CONFLICT             -> AlreadyDeclared,
+      NOT_FOUND            -> MonthlyReturnNotFound,
+      UNPROCESSABLE_ENTITY -> OutsideDeclarationPeriod,
+      SERVICE_UNAVAILABLE  -> Failed
+    ).foreach { case (status, expected) =>
+      s"must return $expected when declaring the monthly return returns $status" in {
+        val connector = mock[BackendConnector]
+        when(
+          connector.declareMonthlyReturn(
+            eqTo(testZReference),
+            eqTo(testTaxYear),
+            eqTo(testReportingPeriodMonthNumber)
+          )(any[HeaderCarrier])
         )
-      )
-        .thenReturn(Future.failed(UpstreamErrorResponse("already declared", CONFLICT, CONFLICT)))
-      val service   = new StorageService(connector, dateHelper)
+          .thenReturn(Future.failed(UpstreamErrorResponse("declareMonthlyReturn failed", status, status)))
+        val service   = new StorageService(connector, dateHelper)
 
-      val result = service
-        .declareForThisPeriod(testZReference, LocalDate.now(testReportingWindowClock))(HeaderCarrier())
-        .futureValue
+        val result = service
+          .declareForThisPeriod(testZReference, LocalDate.now(testReportingWindowClock))(HeaderCarrier())
+          .futureValue
 
-      result mustEqual Failed
+        result mustEqual expected
+      }
     }
 
     "must return Failed when declaring the monthly return fails" in {
