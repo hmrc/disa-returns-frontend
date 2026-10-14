@@ -55,6 +55,9 @@ class UpscanServiceSpec extends SpecBase with MockitoSugar {
       when(appConfig.upscanAcceptedMimeTypes)
         .thenReturn("application/pdf")
 
+      when(appConfig.registrationFrontendRoutePrefix)
+        .thenReturn(registrationFrontendRoutePrefix)
+
       val expectedResponse = UpscanInitiateResponse(
         reference = "ref123",
         uploadRequest = null
@@ -72,8 +75,8 @@ class UpscanServiceSpec extends SpecBase with MockitoSugar {
       val expectedRequest = UpscanInitiateRequest(
         callbackUrl =
           s"http://backend/disa-returns-backend/monthly/upscan/callback/$testZReference/${dateHelper.reportingPeriodTaxYear}/${dateHelper.reportingPeriodMonthNumber}",
-        successRedirect = Some("http://localhost:12804/file-processing"),
-        errorRedirect = Some("http://localhost:12804/file-upload/error"),
+        successRedirect = Some(s"http://localhost:12804$registrationFrontendRoutePrefix/file-processing"),
+        errorRedirect = Some(s"http://localhost:12804$registrationFrontendRoutePrefix/file-upload/error"),
         minimumFileSize = Some(testUpscanMinFileSize),
         maximumFileSize = Some(testUpscanMaxFileSize),
         expectedFileType = Some("application/pdf")
