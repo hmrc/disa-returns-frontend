@@ -17,10 +17,21 @@
 package models
 
 import base.SpecBase
+import ch.qos.logback.classic.{Level, Logger}
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
+import org.slf4j.LoggerFactory
+import play.api.test.Helpers.running
+
+import scala.jdk.CollectionConverters._
 
 class FileValidationErrorCodesSpec extends SpecBase {
 
   "FileValidationErrorCodes" - {
+
+    "genericMessageKey must identify the safe fallback message" in {
+      FileValidationErrorCodes.genericMessageKey mustEqual "fileValidationErrors.generic"
+    }
 
     "cellReference" - {
 
@@ -62,10 +73,46 @@ class FileValidationErrorCodesSpec extends SpecBase {
 
     "messageKey" - {
 
-      "must return the i18n message key for a given error code" in {
-        FileValidationErrorCodes.messageKey("E010") mustEqual "fileValidationErrors.E010"
-        FileValidationErrorCodes.messageKey("E192") mustEqual "fileValidationErrors.E192"
-        FileValidationErrorCodes.messageKey("E001") mustEqual "fileValidationErrors.E001"
+      "must return the i18n message key for a known error code" in {
+        val application = applicationBuilder().build()
+
+        running(application) {
+          implicit val implicitMessages = messages(application)
+
+          FileValidationErrorCodes.messageKey("E010", "reference") mustEqual "fileValidationErrors.E010"
+          FileValidationErrorCodes.messageKey("E192", "reference") mustEqual "fileValidationErrors.E192"
+        }
+      }
+
+      "must return the generic key and log a warning for an unknown error code" in {
+        val application   = applicationBuilder().build()
+        val logger        = LoggerFactory
+          .getLogger(FileValidationErrorCodes.getClass.getName.stripSuffix("$"))
+          .asInstanceOf[Logger]
+        val originalLevel = logger.getLevel
+        val appender      = new ListAppender[ILoggingEvent]()
+        val unknownCode   = "E001"
+        val reference     = "test-file-reference"
+        appender.start()
+        logger.addAppender(appender)
+        logger.setLevel(Level.WARN)
+
+        try
+          running(application) {
+            implicit val implicitMessages = messages(application)
+
+            FileValidationErrorCodes.messageKey(unknownCode, reference) mustEqual
+              FileValidationErrorCodes.genericMessageKey
+
+            val warnings = appender.list.asScala.filter(_.getLevel == Level.WARN)
+            warnings.count(_.getFormattedMessage.contains(unknownCode)) mustEqual 1
+            warnings.count(_.getFormattedMessage.contains(reference)) mustEqual 1
+          }
+        finally {
+          logger.detachAppender(appender)
+          logger.setLevel(originalLevel)
+          appender.stop()
+        }
       }
     }
   }

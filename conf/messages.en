@@ -233,6 +233,7 @@ fileValidationErrors.E182 = You entered an incorrect reason for the closure of y
 fileValidationErrors.E190 = Select the reason for the closure of the LISA account and date of the closure
 fileValidationErrors.E191 = You entered an incorrect reason for the closure of your LISA product. Select from the options
 fileValidationErrors.E192 = You entered an incorrect reason for the closure of your LISA product. Select from the options
+fileValidationErrors.generic = There is a problem with this entry
 
 submissionComplete.title = Submission complete
 submissionComplete.heading = Submission complete

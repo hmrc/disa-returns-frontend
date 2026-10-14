@@ -16,7 +16,12 @@
 
 package models
 
-object FileValidationErrorCodes {
+import play.api.Logging
+import play.api.i18n.Messages
+
+object FileValidationErrorCodes extends Logging {
+
+  val genericMessageKey = "fileValidationErrors.generic"
 
   private val columnByCode: Map[String, Option[String]] = Map(
     "E010" -> Some("A"),
@@ -83,6 +88,14 @@ object FileValidationErrorCodes {
       case None         => s"Row $rowNumber"
     }
 
-  def messageKey(errorCode: String): String =
-    s"fileValidationErrors.$errorCode"
+  def messageKey(errorCode: String, reference: String)(implicit messages: Messages): String = {
+    val messageKey = s"fileValidationErrors.$errorCode"
+
+    if (messages.isDefinedAt(messageKey)) {
+      messageKey
+    } else {
+      logger.warn(s"Unknown file validation error code [$errorCode] for upload reference [$reference]")
+      genericMessageKey
+    }
+  }
 }

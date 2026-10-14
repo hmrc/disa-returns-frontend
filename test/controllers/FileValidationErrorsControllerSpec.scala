@@ -101,21 +101,45 @@ class FileValidationErrorsControllerSpec extends SpecBase {
       val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
 
       running(application) {
-        val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
-        val result  = route(application, request).value
-        val view    = application.injector.instanceOf[FileValidationErrorsView]
+        val request                   = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
+        val result                    = route(application, request).value
+        val view                      = application.injector.instanceOf[FileValidationErrorsView]
+        implicit val implicitMessages = messages(application)
 
         val expectedErrors = twentyFiveInlineErrors.flatMap { inlineError =>
           inlineError.errorCodes.map { code =>
             FileValidationError(
               cell = FileValidationErrorCodes.cellReference(code, inlineError.rowNumber),
-              messageKey = FileValidationErrorCodes.messageKey(code)
+              messageKey = FileValidationErrorCodes.messageKey(code, testReference)
             )
           }
         }
 
         status(result) mustEqual OK
         contentAsString(result) mustEqual view(expectedErrors)(request, messages(application)).toString
+      }
+    }
+
+    "must render generic content for an unknown validation error code" in {
+      val unknownCode   = "E999"
+      val monthlyReturn = emptyMonthlyReturn.copy(
+        fileUploads = Seq(
+          fileUploadWithErrors(
+            Seq(InlineError(rowNumber = 4, errorCodes = Seq(unknownCode)))
+          )
+        )
+      )
+      val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
+
+      running(application) {
+        val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
+        val result  = route(application, request).value
+        val content = contentAsString(result)
+
+        status(result) mustEqual OK
+        content must include("Row 4")
+        content must include("There is a problem with this entry")
+        content must not include unknownCode
       }
     }
 
