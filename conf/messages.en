@@ -177,6 +177,7 @@ declaration.heading.nilReturn = Declaration for nil report
 declaration.p2.nilReturn = If there are no changes to all accounts held and you are submitting a nil report - you do not need to upload a file.
 declaration.p3.nilReturn = You must still agree to this declaration to confirm that there are no changes.
 
+fileValidationErrors.E001 = There is a problem with this row
 fileValidationErrors.E010 = You must enter your account number
 fileValidationErrors.E011 = Your account number is too long. It should not be more than 20 characters
 fileValidationErrors.E020 = Enter a National Insurance number
@@ -233,6 +234,7 @@ fileValidationErrors.E182 = You entered an incorrect reason for the closure of y
 fileValidationErrors.E190 = Select the reason for the closure of the LISA account and date of the closure
 fileValidationErrors.E191 = You entered an incorrect reason for the closure of your LISA product. Select from the options
 fileValidationErrors.E192 = You entered an incorrect reason for the closure of your LISA product. Select from the options
+fileValidationErrors.generic = There is a problem with this entry
 
 submissionComplete.title = Submission complete
 submissionComplete.heading = Submission complete
