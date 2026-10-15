@@ -110,7 +110,7 @@ class FileValidationErrorsControllerSpec extends SpecBase {
           inlineError.errorCodes.map { code =>
             FileValidationError(
               cell = FileValidationErrorCodes.cellReference(code, inlineError.rowNumber),
-              messageKey = FileValidationErrorCodes.messageKey(code, testReference)
+              messageKey = FileValidationErrorCodes.messageKey(code)
             )
           }
         }
@@ -140,6 +140,24 @@ class FileValidationErrorsControllerSpec extends SpecBase {
         content must include("Row 4")
         content must include("There is a problem with this entry")
         content must not include unknownCode
+      }
+    }
+
+    "must render E001 as a recognised row-level validation error" in {
+      val monthlyReturn = emptyMonthlyReturn.copy(
+        fileUploads = Seq(fileUploadWithErrors(Seq(InlineError(rowNumber = 1, errorCodes = Seq("E001")))))
+      )
+      val application   = applicationBuilder(monthlyReturn = Some(monthlyReturn)).build()
+
+      running(application) {
+        val request = FakeRequest(GET, routes.FileValidationErrorsController.onPageLoad(testReference).url)
+        val result  = route(application, request).value
+        val content = contentAsString(result)
+
+        status(result) mustEqual OK
+        content must include("Row 1")
+        content must include("There is a problem with this row")
+        content must not include "E001"
       }
     }
 

@@ -177,6 +177,7 @@ declaration.heading.nilReturn = Declaration for nil report
 declaration.p2.nilReturn = If there are no changes to all accounts held and you are submitting a nil report - you do not need to upload a file.
 declaration.p3.nilReturn = You must still agree to this declaration to confirm that there are no changes.
 
+fileValidationErrors.E001 = There is a problem with this row
 fileValidationErrors.E010 = You must enter your account number
 fileValidationErrors.E011 = Your account number is too long. It should not be more than 20 characters
 fileValidationErrors.E020 = Enter a National Insurance number

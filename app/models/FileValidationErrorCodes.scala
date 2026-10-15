@@ -88,14 +88,18 @@ object FileValidationErrorCodes extends Logging {
       case None         => s"Row $rowNumber"
     }
 
-  def messageKey(errorCode: String, reference: String)(implicit messages: Messages): String = {
+  def messageKey(errorCode: String)(implicit messages: Messages): String = {
     val messageKey = s"fileValidationErrors.$errorCode"
 
     if (messages.isDefinedAt(messageKey)) {
       messageKey
     } else {
-      logger.warn(s"Unknown file validation error code [$errorCode] for upload reference [$reference]")
       genericMessageKey
     }
   }
+
+  def warnForUnknownCodes(errorCodes: Seq[String], reference: String)(implicit messages: Messages): Unit =
+    errorCodes.distinct.filterNot(code => messages.isDefinedAt(s"fileValidationErrors.$code")).foreach { code =>
+      logger.warn(s"Unknown file validation error code [$code] for upload reference [$reference]")
+    }
 }

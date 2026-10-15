@@ -72,13 +72,16 @@ class FileValidationErrorsController @Inject() (
 
   private def toFileValidationErrors(inlineErrors: Seq[InlineError], reference: String)(implicit
     messages: Messages
-  ): Seq[FileValidationError] =
+  ): Seq[FileValidationError] = {
+    FileValidationErrorCodes.warnForUnknownCodes(inlineErrors.flatMap(_.errorCodes), reference)
+
     inlineErrors.flatMap { inlineError =>
       inlineError.errorCodes.map { code =>
         FileValidationError(
           cell = FileValidationErrorCodes.cellReference(code, inlineError.rowNumber),
-          messageKey = FileValidationErrorCodes.messageKey(code, reference)
+          messageKey = FileValidationErrorCodes.messageKey(code)
         )
       }
     }
+  }
 }

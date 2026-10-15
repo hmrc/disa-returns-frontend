@@ -79,19 +79,34 @@ class FileValidationErrorCodesSpec extends SpecBase {
         running(application) {
           implicit val implicitMessages = messages(application)
 
-          FileValidationErrorCodes.messageKey("E010", "reference") mustEqual "fileValidationErrors.E010"
-          FileValidationErrorCodes.messageKey("E192", "reference") mustEqual "fileValidationErrors.E192"
+          FileValidationErrorCodes.messageKey("E001") mustEqual "fileValidationErrors.E001"
+          FileValidationErrorCodes.messageKey("E010") mustEqual "fileValidationErrors.E010"
+          FileValidationErrorCodes.messageKey("E192") mustEqual "fileValidationErrors.E192"
         }
       }
 
-      "must return the generic key and log a warning for an unknown error code" in {
+      "must return the generic key for an unknown error code" in {
+        val application = applicationBuilder().build()
+
+        running(application) {
+          implicit val implicitMessages = messages(application)
+
+          FileValidationErrorCodes.messageKey("E999") mustEqual FileValidationErrorCodes.genericMessageKey
+        }
+      }
+    }
+
+    "warnForUnknownCodes" - {
+
+      "must log one warning per distinct unknown code and upload reference" in {
         val application   = applicationBuilder().build()
         val logger        = LoggerFactory
           .getLogger(FileValidationErrorCodes.getClass.getName.stripSuffix("$"))
           .asInstanceOf[Logger]
         val originalLevel = logger.getLevel
         val appender      = new ListAppender[ILoggingEvent]()
-        val unknownCode   = "E001"
+        val unknownCode   = "E999"
+        val otherCode     = "E998"
         val reference     = "test-file-reference"
         appender.start()
         logger.addAppender(appender)
@@ -101,12 +116,15 @@ class FileValidationErrorCodesSpec extends SpecBase {
           running(application) {
             implicit val implicitMessages = messages(application)
 
-            FileValidationErrorCodes.messageKey(unknownCode, reference) mustEqual
-              FileValidationErrorCodes.genericMessageKey
+            FileValidationErrorCodes.warnForUnknownCodes(
+              Seq(unknownCode, "E010", unknownCode, otherCode, otherCode),
+              reference
+            )
 
             val warnings = appender.list.asScala.filter(_.getLevel == Level.WARN)
             warnings.count(_.getFormattedMessage.contains(unknownCode)) mustEqual 1
-            warnings.count(_.getFormattedMessage.contains(reference)) mustEqual 1
+            warnings.count(_.getFormattedMessage.contains(otherCode)) mustEqual 1
+            warnings.count(_.getFormattedMessage.contains(reference)) mustEqual 2
           }
         finally {
           logger.detachAppender(appender)
