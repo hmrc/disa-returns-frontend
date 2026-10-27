@@ -58,6 +58,9 @@ Then run the same command from this frontend repository.
 On the frontend, enabling the test-only router both exposes the test-only page and selects the backend-driven
 reporting-context binding.
 
+> **Note**  
+> To override the window date then go to http://localhost:1205/submit-manage-isas-return/test-only/reporting-overrides
+
 ### Dates and reporting windows
 
 `ReportingContextSource` supplies the effective date and reporting-window status for the authenticated user's enrolled
