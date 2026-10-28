@@ -20,6 +20,7 @@ import config.FrontendAppConfig
 import controllers.routes
 import models.MonthlyReturn
 import models.requests.{DataRequest, OptionalDataRequest}
+import play.api.Logging
 import play.api.mvc.Results.Redirect
 import play.api.mvc.{ActionFilter, ActionRefiner, Result}
 
@@ -57,7 +58,8 @@ object JourneyGuard {
 @Singleton
 class JourneyGuard @Inject() (
   appConfig: FrontendAppConfig
-)(implicit ec: ExecutionContext) {
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   import JourneyGuard.Page
   import JourneyGuard.Page.*
@@ -70,7 +72,7 @@ class JourneyGuard @Inject() (
 
       override protected def filter[A](request: OptionalDataRequest[A]): Future[Option[Result]] =
         Future.successful(
-          redirectFor(page, request.monthlyReturn, request.reportingWindowOpen).map(Redirect(_))
+          redirectFor(page, request.zReference, request.monthlyReturn, request.reportingWindowOpen).map(Redirect(_))
         )
     }
 
@@ -80,7 +82,7 @@ class JourneyGuard @Inject() (
 
       override protected def refine[A](request: OptionalDataRequest[A]): Future[Either[Result, DataRequest[A]]] =
         Future.successful(
-          redirectFor(page, request.monthlyReturn, request.reportingWindowOpen) match {
+          redirectFor(page, request.zReference, request.monthlyReturn, request.reportingWindowOpen) match {
             case Some(destination) =>
               Left(Redirect(destination))
             case None              =>
@@ -97,6 +99,9 @@ class JourneyGuard @Inject() (
                     )
                   )
                 case None                =>
+                  logger.debug(
+                    s"[JourneyGuard] zRef: [${request.zReference}] page [$page] requires a monthly return but none was found, redirecting to [${appConfig.manageIsasUrl}]"
+                  )
                   Left(Redirect(appConfig.manageIsasUrl))
               }
           }
@@ -105,12 +110,21 @@ class JourneyGuard @Inject() (
 
   private def redirectFor(
     page: Page,
+    zReference: String,
     monthlyReturn: Option[MonthlyReturn],
     reportingWindowOpen: Boolean
   ): Option[String] = {
     val currentState = state(monthlyReturn, reportingWindowOpen)
 
-    Option.unless(isAllowed(page, currentState))(recoveryUrl(currentState))
+    if (isAllowed(page, currentState)) {
+      None
+    } else {
+      val destination = recoveryUrl(currentState)
+      logger.debug(
+        s"[JourneyGuard] zRef: [$zReference] page [$page] not allowed in state [$currentState], redirecting to [$destination]"
+      )
+      Some(destination)
+    }
   }
 
   private def state(monthlyReturn: Option[MonthlyReturn], reportingWindowOpen: Boolean): State =
