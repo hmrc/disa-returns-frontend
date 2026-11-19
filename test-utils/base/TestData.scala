@@ -27,6 +27,8 @@ trait TestData {
   protected val registrationFrontendRoutePrefix: String      = TestData.registrationFrontendRoutePrefix
   protected val testAppName: String                          = TestData.testAppName
   protected val testZReference: String                       = TestData.randomZReference
+  protected val secondTestZReference: String                 =
+    Iterator.continually(TestData.randomZReference).filter(_ != testZReference).next()
   protected val testSubmissionId: UUID                       = TestData.randomSubmissionId
   protected val secondTestSubmissionId: UUID                 = TestData.randomSubmissionId
   protected val testReportingWindowInstant: Instant          = TestData.testReportingWindowInstant

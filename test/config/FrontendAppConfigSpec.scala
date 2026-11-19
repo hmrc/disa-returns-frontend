@@ -23,6 +23,24 @@ class FrontendAppConfigSpec extends SpecBase {
 
   "FrontendAppConfig" - {
 
+    "must disable agent authentication by default" in {
+      val application = applicationBuilder().build()
+
+      running(application) {
+        application.injector.instanceOf[FrontendAppConfig].agentAuthenticationEnabled mustBe false
+      }
+    }
+
+    Seq(true, false).foreach { enabled =>
+      s"must allow agent authentication to be configured as $enabled" in {
+        val application = applicationBuilder().configure("features.agent-authentication-enabled" -> enabled).build()
+
+        running(application) {
+          application.injector.instanceOf[FrontendAppConfig].agentAuthenticationEnabled mustBe enabled
+        }
+      }
+    }
+
     "must compose the Manage ISAs URL from the accounts service and its route context" in {
       val application = applicationBuilder().build()
 

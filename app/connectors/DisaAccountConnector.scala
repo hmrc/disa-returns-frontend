@@ -18,6 +18,7 @@ package connectors
 
 import config.FrontendAppConfig
 import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.libs.json.JsResultException
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
@@ -30,6 +31,25 @@ class DisaAccountConnector @Inject() (
   httpClient: HttpClientV2,
   appConfig: FrontendAppConfig
 )(implicit ec: ExecutionContext) {
+
+  def getAgentZReference()(implicit hc: HeaderCarrier): Future[Option[String]] = {
+    val preferencesUrl = s"${appConfig.disaAccountBaseUrl}/disa-account/agents/preferences"
+
+    httpClient.get(url"$preferencesUrl").execute[HttpResponse].flatMap { response =>
+      response.status match {
+        case OK        =>
+          (response.json \ "zReference")
+            .validateOpt[String]
+            .fold(
+              errors => Future.failed(JsResultException(errors)),
+              reference => Future.successful(reference.filter(_.trim.nonEmpty))
+            )
+        case NOT_FOUND => Future.successful(None)
+        case status    =>
+          Future.failed(UpstreamErrorResponse("Failed to get disa-account agent preferences", status))
+      }
+    }
+  }
 
   def getCompanyName(zRef: String)(implicit hc: HeaderCarrier): Future[Option[String]] = {
     val registrationUrl = s"${appConfig.disaAccountBaseUrl}/disa-account/registration/$zRef"
