@@ -23,11 +23,11 @@ class FrontendAppConfigSpec extends SpecBase {
 
   "FrontendAppConfig" - {
 
-    "must disable agent authentication by default" in {
+    "must enable agent authentication for local development" in {
       val application = applicationBuilder().build()
 
       running(application) {
-        application.injector.instanceOf[FrontendAppConfig].agentAuthenticationEnabled mustBe false
+        application.injector.instanceOf[FrontendAppConfig].agentAuthenticationEnabled mustBe true
       }
     }
 
