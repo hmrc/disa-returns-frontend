@@ -23,7 +23,7 @@ import handlers.ErrorHandler
 import models.{FileValidationError, FileValidationErrorCodes, InlineError}
 import navigation.FileProcessingDecision.{Completed, Failed, Processing}
 import navigation.FileUploadResultNavigator
-import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, RequestHeader, Result}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendBaseController
 import views.html.FileValidationErrorsView
@@ -54,7 +54,7 @@ class FileValidationErrorsController @Inject() (
             .flatMap(_.validation)
             .flatMap(_.inlineErrors)
 
-          Future.successful(Ok(view(toFileValidationErrors(inlineErrors))))
+          Future.successful(Ok(view(toFileValidationErrors(inlineErrors, reference))))
         case Completed(destination)                                                                               =>
           Future.successful(Redirect(destination))
         case Failed(destination)                                                                                  =>
@@ -70,7 +70,11 @@ class FileValidationErrorsController @Inject() (
       case _                   => errorHandler.internalServerError
     }
 
-  private def toFileValidationErrors(inlineErrors: Seq[InlineError]): Seq[FileValidationError] =
+  private def toFileValidationErrors(inlineErrors: Seq[InlineError], reference: String)(implicit
+    messages: Messages
+  ): Seq[FileValidationError] = {
+    FileValidationErrorCodes.warnForUnknownCodes(inlineErrors.flatMap(_.errorCodes), reference)
+
     inlineErrors.flatMap { inlineError =>
       inlineError.errorCodes.map { code =>
         FileValidationError(
@@ -79,4 +83,5 @@ class FileValidationErrorsController @Inject() (
         )
       }
     }
+  }
 }
