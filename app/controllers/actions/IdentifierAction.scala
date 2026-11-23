@@ -28,7 +28,7 @@ import play.api.mvc.Results.*
 import play.api.mvc.*
 import services.ReportingContextSource
 import uk.gov.hmrc.auth.core.*
-import uk.gov.hmrc.auth.core.AffinityGroup.Agent
+import uk.gov.hmrc.auth.core.AffinityGroup.{Agent, Organisation}
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.*
 import uk.gov.hmrc.auth.core.retrieve.{AgentInformation, Credentials, ~}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
@@ -84,7 +84,9 @@ class AuthenticatedIdentifierAction @Inject() (
 
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
-    authorised(Enrolment(enrolmentKey) or Agent).retrieve(
+    authorised(
+      (Agent and Enrolment(agentEnrolmentKey)) or (Organisation and Enrolment(enrolmentKey))
+    ).retrieve(
       authorisedEnrolments and credentials and credentialRole and affinityGroup and agentInformation and groupIdentifier
     ) { case enrolments ~ maybeCredentials ~ maybeCredentialRole ~ maybeAffinityGroup ~ agentInfo ~ maybeGroupId =>
       (maybeCredentials, maybeAffinityGroup, maybeGroupId) match {
@@ -94,7 +96,7 @@ class AuthenticatedIdentifierAction @Inject() (
           authenticateAgent(groupId, agentInfo)(block)
         case (_, Some(Agent), None)                                    =>
           rejectMissingAgentGroupId()
-        case (Some(credentials), Some(_), Some(groupId))               =>
+        case (Some(credentials), Some(Organisation), Some(groupId))    =>
           authenticateIsaManager(enrolments, credentials, groupId, maybeCredentialRole)(block)
         case _                                                         =>
           rejectMissingAuditIdentity()
@@ -108,6 +110,7 @@ class AuthenticatedIdentifierAction @Inject() (
   }
 
   private val enrolmentKey      = "HMRC-DISA-ORG"
+  private val agentEnrolmentKey = "HMRC-AS-AGENT"
   private val identifierKey     = "ZREF"
   private val delegatedAuthRule = "disa-auth"
 

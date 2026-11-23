@@ -39,7 +39,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthActionSpec extends SpecBase {
 
-  private val initialPredicate  = Enrolment(testDisaEnrolmentKey) or AffinityGroup.Agent
+  private val initialPredicate  =
+    (AffinityGroup.Agent and Enrolment(testAgentEnrolmentKey)) or
+      (AffinityGroup.Organisation and Enrolment(testDisaEnrolmentKey))
   private val initialRetrieval  =
     authorisedEnrolments and credentials and credentialRole and affinityGroup and agentInformation and groupIdentifier
   private val managerEnrolments = Enrolments(
@@ -51,6 +53,7 @@ class AuthActionSpec extends SpecBase {
       )
     )
   )
+  private val agentEnrolments   = Enrolments(Set(Enrolment(testAgentEnrolmentKey)))
   private val reportingContext  = ReportingContext(LocalDate.parse("2026-06-17"), reportingWindowOpen = false)
 
   private class TestAuthConnector(
@@ -117,7 +120,7 @@ class AuthActionSpec extends SpecBase {
     groupId: Option[String] = Some(testGroupId)
   ): TestAuthConnector = new TestAuthConnector(
     group = Some(AffinityGroup.Agent),
-    enrolments = Enrolments(Set.empty),
+    enrolments = agentEnrolments,
     creds = None,
     role = None,
     groupId = groupId,
@@ -145,6 +148,26 @@ class AuthActionSpec extends SpecBase {
       }
     }
 
+    "must use the ISA manager's own ZReference when an Organisation has both principal enrolments" in {
+      val auth = new TestAuthConnector(
+        enrolments = Enrolments(managerEnrolments.enrolments ++ agentEnrolments.enrolments)
+      )
+      withAction(auth, preferences = Future.successful(Some(secondTestZReference))) { (action, account, source) =>
+        val result = action.invokeBlock(
+          FakeRequest(),
+          request => {
+            request.userDetails mustBe UserDetails.IsaManager(testGroupId, testCredId, User.toString)
+            Future.successful(Results.Ok(request.zReference))
+          }
+        )
+        status(result) mustBe OK
+        contentAsString(result) mustBe testZReference
+        auth.predicates mustBe Vector(initialPredicate)
+        verify(source).get(eqTo(testZReference))(any[HeaderCarrier])
+        verifyNoInteractions(account)
+      }
+    }
+
     "must authenticate without reporting context when requested" in {
       withAction(new TestAuthConnector) { (action, account, source) =>
         val result = action.invokeBlockWithoutReportingContext(
@@ -158,14 +181,15 @@ class AuthActionSpec extends SpecBase {
     }
 
     Seq(
-      "missing ZREF"            -> (() =>
+      "missing ZREF"              -> (() =>
         new TestAuthConnector(enrolments = Enrolments(Set(Enrolment(testDisaEnrolmentKey, Seq.empty, "Activated"))))
       ),
-      "missing enrolment"       -> (() => new TestAuthConnector(enrolments = Enrolments(Set.empty))),
-      "missing credential role" -> (() => new TestAuthConnector(role = None)),
-      "missing credentials"     -> (() => new TestAuthConnector(creds = None)),
-      "missing affinity group"  -> (() => new TestAuthConnector(group = None)),
-      "missing group ID"        -> (() => new TestAuthConnector(groupId = None))
+      "missing enrolment"         -> (() => new TestAuthConnector(enrolments = Enrolments(Set.empty))),
+      "missing credential role"   -> (() => new TestAuthConnector(role = None)),
+      "missing credentials"       -> (() => new TestAuthConnector(creds = None)),
+      "missing affinity group"    -> (() => new TestAuthConnector(group = None)),
+      "Individual affinity group" -> (() => new TestAuthConnector(group = Some(AffinityGroup.Individual))),
+      "missing group ID"          -> (() => new TestAuthConnector(groupId = None))
     ).foreach { case (label, auth) =>
       s"must reject $label" in {
         withAction(auth()) { (action, account, source) =>
@@ -198,15 +222,14 @@ class AuthActionSpec extends SpecBase {
       }
     }
 
-    "must prefer the selected reference over an agent's principal enrolment and preserve unknown audit fields" in {
+    "must use the selected client when an Agent has both principal enrolments and preserve unknown audit fields" in {
       val otherEnrolment = Enrolments(
-        Set(
+        agentEnrolments.enrolments +
           Enrolment(
             testDisaEnrolmentKey,
             Seq(EnrolmentIdentifier(testZReferenceIdentifierKey, secondTestZReference)),
             "Activated"
           )
-        )
       )
       val auth           = new TestAuthConnector(
         group = Some(AffinityGroup.Agent),
@@ -278,7 +301,11 @@ class AuthActionSpec extends SpecBase {
         ),
         (
           "disabled flag with a principal enrolment",
-          () => new TestAuthConnector(group = Some(AffinityGroup.Agent)),
+          () =>
+            new TestAuthConnector(
+              group = Some(AffinityGroup.Agent),
+              enrolments = Enrolments(agentEnrolments.enrolments ++ managerEnrolments.enrolments)
+            ),
           false,
           Future.successful(Some(testZReference)),
           false,

@@ -60,6 +60,7 @@ trait TestData {
   protected val testCompanyName: String              = TestData.testCompanyName
   protected val testIsaManagerCredId: String         = TestData.testIsaManagerCredId
   protected val testDisaEnrolmentKey: String         = TestData.testDisaEnrolmentKey
+  protected val testAgentEnrolmentKey: String        = TestData.testAgentEnrolmentKey
   protected val testZReferenceIdentifierKey: String  = TestData.testZReferenceIdentifierKey
   protected val testActivatedEnrolmentStatus: String = TestData.testActivatedEnrolmentStatus
   protected val testUserDetails: UserDetails         =
@@ -103,6 +104,7 @@ object TestData {
   val testCompanyName: String                      = "Test ISA Manager Ltd"
   val testIsaManagerCredId: String                 = "5053588723516092"
   val testDisaEnrolmentKey: String                 = "HMRC-DISA-ORG"
+  val testAgentEnrolmentKey: String                = "HMRC-AS-AGENT"
   val testZReferenceIdentifierKey: String          = "ZREF"
   val testActivatedEnrolmentStatus: String         = "Activated"
 
