@@ -17,6 +17,7 @@
 package base
 
 import models.{MonthlyReturn, UserDetails}
+import utils.Constants
 
 import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
@@ -103,9 +104,9 @@ object TestData {
   val testAgentName: String                        = "testAgent"
   val testCompanyName: String                      = "Test ISA Manager Ltd"
   val testIsaManagerCredId: String                 = "5053588723516092"
-  val testDisaEnrolmentKey: String                 = "HMRC-DISA-ORG"
-  val testAgentEnrolmentKey: String                = "HMRC-AS-AGENT"
-  val testZReferenceIdentifierKey: String          = "ZREF"
+  val testDisaEnrolmentKey: String                 = Constants.disaEnrolmentKey
+  val testAgentEnrolmentKey: String                = Constants.agentEnrolmentKey
+  val testZReferenceIdentifierKey: String          = Constants.zReferenceIdentifierKey
   val testActivatedEnrolmentStatus: String         = "Activated"
 
   def randomZReference: String =

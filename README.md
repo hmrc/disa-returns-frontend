@@ -31,6 +31,33 @@ sbt reload
 sbt compile
 ```
 
+### Agent authentication
+
+`features.agent-authentication-enabled` controls whether agents can authenticate. It is `true` in the service's
+`application.conf` for local development, overridden to `false` by `app-config-base` for deployed environments,
+and enabled in QA by its environment override. To disable it locally, run:
+
+```bash
+sbt -Dfeatures.agent-authentication-enabled=false run
+```
+
+When disabled, agents are redirected to the unauthorised page. ISA manager authentication is unaffected.
+Affinity determines the user's role
+
+| Affinity group | Required activated principal enrolment | ZReference used |
+| --- | --- | --- |
+| Organisation (ISA manager) | `HMRC-DISA-ORG` | The principal enrolment's `ZREF`. |
+| Agent | `HMRC-AS-AGENT` | The client selected in the current session's agent preferences. |
+
+Agents also require a group ID. The frontend forwards the user's bearer token to
+`GET /disa-account/agents/preferences` to retrieve the session's selected ZReference, then checks delegated access
+using `HMRC-DISA-ORG`, identifier `ZREF`, and rule `disa-auth`. Missing preferences redirect to the unauthorised page;
+preferences responses of 401 or 403 are returned with the same status while redirect screens are being developed.
+
+Local agent testing requires the agent preferences endpoints from DFI-2914 in `disa-account`. The returns backend
+must also support agent authentication and have its own `features.agent-authentication-enabled` flag enabled for
+the full returns journey.
+
 ### Running the test suite
 
 To run the unit tests:
@@ -63,8 +90,8 @@ reporting-context binding.
 
 ### Dates and reporting windows
 
-`ReportingContextSource` supplies the effective date and reporting-window status for the authenticated user's enrolled
-Z-reference. `IdentifierAction` resolves that context once for each authenticated request and carries both values
+`ReportingContextSource` supplies the effective date and reporting-window status for the ZReference resolved during
+authentication. `IdentifierAction` resolves that context once for each authenticated request and carries both values
 through `IdentifierRequest`, `OptionalDataRequest`, and `DataRequest`.
 
 The same request-scoped date is used to derive the previous reporting period, address monthly-return backend routes,
@@ -92,8 +119,8 @@ GET http://localhost:1205/submit-manage-isas-return/test-only/reporting-override
 | `POST`  | `/submit-manage-isas-return/test-only/reporting-overrides` | Validate and set overrides. |
 | `POST`  | `/submit-manage-isas-return/test-only/reporting-overrides/reset` | Reset both overrides. |
 
-All three routes require the `HMRC-DISA-ORG` enrolment and use its `ZREF` identifier. Overrides are scoped to the
-authenticated user's enrolled Z-reference; the page does not accept an arbitrary Z-reference.
+All three routes use the authentication rules above. Overrides are scoped to the ISA manager's own ZReference or
+the agent's selected client ZReference; the page does not accept an arbitrary ZReference.
 
 Reporting-window start and end dates are required, and the start must be on or before the end. A submission replaces
 all overrides with one `PUT` to `/disa-returns-backend/test-only/overrides/:zReference`. The reporting window is sent as
@@ -115,6 +142,7 @@ backend status endpoint.
 
 | Key | Default | Purpose |
 | --- | --- | --- |
+| `features.agent-authentication-enabled` | `true` locally; `false` in app-config-base | Allow agent authentication when enabled; redirect agents to the unauthorised page when disabled. |
 | `application.router` | unset | Use `testOnlyDoNotUseInAppConf.Routes` to expose test-only routes and select the aggregate-aware reporting-context source. |
 | `microservice.services.disa-returns-backend.port` | `1207` | Backend service port. |
 

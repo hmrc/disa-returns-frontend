@@ -31,6 +31,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import services.ReportingContextSource
 import uk.gov.hmrc.http.{HeaderCarrier, SessionKeys, UpstreamErrorResponse}
+import utils.Constants.delegatedAuthRule
 
 import java.time.LocalDate
 import scala.concurrent.Future
@@ -38,10 +39,10 @@ import scala.concurrent.Future
 class AuthActionISpec extends ISpecBase {
   private val preferencesPath = "/disa-account/agents/preferences"
   private val bearer          = "Bearer agent-token"
-  private val initialRequest  = """{
-    "authorise":[{"$or":[
-      [{"affinityGroup":"Agent"},{"enrolment":"HMRC-AS-AGENT","identifiers":[],"state":"Activated"}],
-      [{"affinityGroup":"Organisation"},{"enrolment":"HMRC-DISA-ORG","identifiers":[],"state":"Activated"}]
+  private val initialRequest  = s"""{
+    "authorise":[{"$$or":[
+      [{"affinityGroup":"Agent"},{"enrolment":"$testAgentEnrolmentKey","identifiers":[],"state":"Activated"}],
+      [{"affinityGroup":"Organisation"},{"enrolment":"$testDisaEnrolmentKey","identifiers":[],"state":"Activated"}]
     ]}],
     "retrieve":["authorisedEnrolments","optionalCredentials","credentialRole","affinityGroup","agentInformation","groupIdentifier"]
   }"""
@@ -58,10 +59,10 @@ class AuthActionISpec extends ISpecBase {
     Json.obj(
       "authorise" -> Json.arr(
         Json.obj(
-          "enrolment"         -> "HMRC-DISA-ORG",
-          "identifiers"       -> Json.arr(Json.obj("key" -> "ZREF", "value" -> reference)),
+          "enrolment"         -> testDisaEnrolmentKey,
+          "identifiers"       -> Json.arr(Json.obj("key" -> testZReferenceIdentifierKey, "value" -> reference)),
           "state"             -> "Activated",
-          "delegatedAuthRule" -> "disa-auth"
+          "delegatedAuthRule" -> delegatedAuthRule
         )
       ),
       "retrieve"  -> Json.arr()

@@ -33,6 +33,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.*
 import uk.gov.hmrc.auth.core.retrieve.{AgentInformation, Credentials, ~}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
+import utils.Constants.{agentEnrolmentKey, delegatedAuthRule, disaEnrolmentKey, zReferenceIdentifierKey}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -85,7 +86,7 @@ class AuthenticatedIdentifierAction @Inject() (
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
     authorised(
-      (Agent and Enrolment(agentEnrolmentKey)) or (Organisation and Enrolment(enrolmentKey))
+      (Agent and Enrolment(agentEnrolmentKey)) or (Organisation and Enrolment(disaEnrolmentKey))
     ).retrieve(
       authorisedEnrolments and credentials and credentialRole and affinityGroup and agentInformation and groupIdentifier
     ) { case enrolments ~ maybeCredentials ~ maybeCredentialRole ~ maybeAffinityGroup ~ agentInfo ~ maybeGroupId =>
@@ -109,11 +110,6 @@ class AuthenticatedIdentifierAction @Inject() (
     }
   }
 
-  private val enrolmentKey      = "HMRC-DISA-ORG"
-  private val agentEnrolmentKey = "HMRC-AS-AGENT"
-  private val identifierKey     = "ZREF"
-  private val delegatedAuthRule = "disa-auth"
-
   private def authenticateAgent(
     groupId: String,
     agentInformation: AgentInformation
@@ -123,8 +119,8 @@ class AuthenticatedIdentifierAction @Inject() (
       .transformWith {
         case Success(Some(zReference))                                                 =>
           authorised(
-            Enrolment(enrolmentKey)
-              .withIdentifier(identifierKey, zReference)
+            Enrolment(disaEnrolmentKey)
+              .withIdentifier(zReferenceIdentifierKey, zReference)
               .withDelegatedAuthRule(delegatedAuthRule)
           ) {
             block(zReference, agentDetails(groupId, agentInformation))
@@ -161,11 +157,11 @@ class AuthenticatedIdentifierAction @Inject() (
     maybeCredentialRole: Option[CredentialRole]
   )(block: (String, UserDetails) => Future[Result]): Future[Result] =
     enrolments
-      .getEnrolment(enrolmentKey)
-      .flatMap(_.getIdentifier(identifierKey))
+      .getEnrolment(disaEnrolmentKey)
+      .flatMap(_.getIdentifier(zReferenceIdentifierKey))
       .map(_.value)
       .fold {
-        logger.warn(s"User with enrolment was missing $identifierKey identifier")
+        logger.warn(s"User with enrolment was missing $zReferenceIdentifierKey identifier")
         Future.successful(Redirect(routes.UnauthorisedController.onPageLoad()))
       } { zReference =>
         maybeCredentialRole.fold {

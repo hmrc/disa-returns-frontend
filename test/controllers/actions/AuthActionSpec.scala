@@ -33,6 +33,7 @@ import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{AgentInformation, EmptyRetrieval, Retrieval, ~}
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.*
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import utils.Constants.delegatedAuthRule
 
 import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
@@ -84,7 +85,7 @@ class AuthActionSpec extends SpecBase {
       } else if (
         predicate == Enrolment(testDisaEnrolmentKey)
           .withIdentifier(testZReferenceIdentifierKey, testZReference)
-          .withDelegatedAuthRule("disa-auth") && retrieval == EmptyRetrieval
+          .withDelegatedAuthRule(delegatedAuthRule) && retrieval == EmptyRetrieval
       ) {
         delegatedFailure.fold(Future.successful(().asInstanceOf[A]))(Future.failed)
       } else {
