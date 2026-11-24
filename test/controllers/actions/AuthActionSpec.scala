@@ -16,503 +16,390 @@
 
 package controllers.actions
 
-import base.{SpecBase, TestData}
-import com.google.inject.Inject
+import base.SpecBase
 import config.FrontendAppConfig
+import connectors.DisaAccountConnector
 import controllers.routes
-import models.ReportingContext
+import models.{ReportingContext, UserDetails}
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
-import org.mockito.Mockito.{times, verify, verifyNoInteractions, when}
+import org.mockito.Mockito.{verify, verifyNoInteractions, when}
 import org.scalatestplus.mockito.MockitoSugar.mock
-import play.api.mvc.{Action, AnyContent, BodyParsers, Results}
+import play.api.mvc.{BodyParsers, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import services.ReportingContextSource
 import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.{AgentInformation, Credentials, Retrieval, ~}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.auth.core.retrieve.{AgentInformation, EmptyRetrieval, Retrieval, ~}
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.*
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import utils.Constants.delegatedAuthRule
 
 import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuthActionSpec extends SpecBase {
 
-  class Harness(authAction: IdentifierAction) {
-    def onPageLoad(): Action[AnyContent] = authAction(request => Results.Ok(request.zReference))
+  private val initialPredicate  =
+    (AffinityGroup.Agent and Enrolment(testAgentEnrolmentKey)) or
+      (AffinityGroup.Organisation and Enrolment(testDisaEnrolmentKey))
+  private val initialRetrieval  =
+    authorisedEnrolments and credentials and credentialRole and affinityGroup and agentInformation and groupIdentifier
+  private val managerEnrolments = Enrolments(
+    Set(
+      Enrolment(
+        testDisaEnrolmentKey,
+        Seq(EnrolmentIdentifier(testZReferenceIdentifierKey, testZReference)),
+        "Activated"
+      )
+    )
+  )
+  private val agentEnrolments   = Enrolments(Set(Enrolment(testAgentEnrolmentKey)))
+  private val reportingContext  = ReportingContext(LocalDate.parse("2026-06-17"), reportingWindowOpen = false)
 
-    def userType(): Action[AnyContent] = authAction(request => Results.Ok(request.userDetails.userType))
+  private class TestAuthConnector(
+    group: Option[AffinityGroup] = Some(AffinityGroup.Organisation),
+    enrolments: Enrolments = managerEnrolments,
+    creds: Option[uk.gov.hmrc.auth.core.retrieve.Credentials] = Some(
+      uk.gov.hmrc.auth.core.retrieve.Credentials(testCredId, testProviderType)
+    ),
+    role: Option[CredentialRole] = Some(User),
+    groupId: Option[String] = Some(testGroupId),
+    agentInfo: AgentInformation = AgentInformation(Some(testAgentId), None, Some(testAgentName)),
+    initialFailure: Option[Throwable] = None,
+    delegatedFailure: Option[Throwable] = None
+  ) extends AuthConnector {
+    var predicates: Vector[Predicate] = Vector.empty
 
-    def groupId(): Action[AnyContent] = authAction(request => Results.Ok(request.userDetails.groupId))
-
-    def reportingContext(): Action[AnyContent] =
-      authAction(request => Results.Ok(s"${request.currentDate}:${request.reportingWindowOpen}"))
+    override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit
+      hc: HeaderCarrier,
+      ec: ExecutionContext
+    ): Future[A] = {
+      predicates = predicates :+ predicate
+      if (predicate == initialPredicate && retrieval == initialRetrieval) {
+        initialFailure.fold(
+          Future.successful(
+            new ~(new ~(new ~(new ~(new ~(enrolments, creds), role), group), agentInfo), groupId).asInstanceOf[A]
+          )
+        )(Future.failed)
+      } else if (
+        predicate == Enrolment(testDisaEnrolmentKey)
+          .withIdentifier(testZReferenceIdentifierKey, testZReference)
+          .withDelegatedAuthRule(delegatedAuthRule) && retrieval == EmptyRetrieval
+      ) {
+        delegatedFailure.fold(Future.successful(().asInstanceOf[A]))(Future.failed)
+      } else {
+        Future.failed(new AssertionError(s"Unexpected Auth request: $predicate / $retrieval"))
+      }
+    }
   }
 
-  "Auth Action" - {
+  private def withAction(
+    auth: TestAuthConnector,
+    enabled: Boolean = true,
+    preferences: Future[Option[String]] = Future.successful(Some(testZReference))
+  )(test: (AuthenticatedIdentifierAction, DisaAccountConnector, ReportingContextSource) => Unit): Unit = {
+    val application = applicationBuilder().configure("features.agent-authentication-enabled" -> enabled).build()
+    running(application) {
+      val account = mock[DisaAccountConnector]
+      val source  = mock[ReportingContextSource]
+      when(account.getAgentZReference()(any[HeaderCarrier])).thenReturn(preferences)
+      when(source.get(any[String])(any[HeaderCarrier])).thenReturn(Future.successful(reportingContext))
+      val action  = new AuthenticatedIdentifierAction(
+        auth,
+        application.injector.instanceOf[FrontendAppConfig],
+        source,
+        application.injector.instanceOf[BodyParsers.Default],
+        account
+      )
+      test(action, account, source)
+    }
+  }
 
-    "when the user has a DISA enrolment with a ZREF identifier" - {
+  private def agent(
+    delegatedFailure: Option[Throwable] = None,
+    groupId: Option[String] = Some(testGroupId)
+  ): TestAuthConnector = new TestAuthConnector(
+    group = Some(AffinityGroup.Agent),
+    enrolments = agentEnrolments,
+    creds = None,
+    role = None,
+    groupId = groupId,
+    delegatedFailure = delegatedFailure
+  )
 
-      "must use it as the request identifier" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(testZReference),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe OK
-          contentAsString(result) mustBe testZReference
-        }
-      }
-
-      "must capture the auth group id" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(testZReference),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.groupId()(FakeRequest())
-
-          status(result) mustBe OK
-          contentAsString(result) mustBe testGroupId
-        }
-      }
-
-      "must resolve and capture the reporting context exactly once" in {
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-          val source      = mock[ReportingContextSource]
-          val date        = LocalDate.parse("2026-06-17")
-          when(source.get(eqTo(testZReference))(any[HeaderCarrier]))
-            .thenReturn(Future.successful(ReportingContext(date, reportingWindowOpen = false)))
-          val authAction  = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(testZReference),
-            appConfig,
-            source,
-            bodyParsers
-          )
-
-          val result = new Harness(authAction).reportingContext()(FakeRequest())
-
-          status(result) mustBe OK
-          contentAsString(result) mustBe "2026-06-17:false"
-          verify(source, times(1)).get(eqTo(testZReference))(any[HeaderCarrier])
-        }
-      }
-
-      "must authenticate without resolving reporting context when requested" in {
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val source     = mock[ReportingContextSource]
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(testZReference),
-            application.injector.instanceOf[FrontendAppConfig],
-            source,
-            application.injector.instanceOf[BodyParsers.Default]
-          )
-
-          val result = authAction.invokeBlockWithoutReportingContext(
-            FakeRequest(),
-            zReference => Future.successful(Results.Ok(zReference))
-          )
-
-          status(result) mustBe OK
-          contentAsString(result) mustBe testZReference
-          verifyNoInteractions(source)
-        }
+  "ISA manager authentication" - {
+    "must preserve the ZReference, audit identity and reporting context without calling agent preferences" in {
+      val auth = new TestAuthConnector
+      withAction(auth, enabled = false) { (action, account, source) =>
+        val result = action.invokeBlock(
+          FakeRequest(),
+          request => {
+            request.zReference mustBe testZReference
+            request.userDetails mustBe UserDetails.IsaManager(testGroupId, testCredId, User.toString)
+            request.currentDate mustBe reportingContext.effectiveDate
+            request.reportingWindowOpen mustBe false
+            Future.successful(Results.Ok)
+          }
+        )
+        status(result) mustBe OK
+        auth.predicates mustBe Vector(initialPredicate)
+        verify(source).get(eqTo(testZReference))(any[HeaderCarrier])
+        verifyNoInteractions(account)
       }
     }
 
-    "when the user is an agent without a credential role" - {
-
-      "must allow the request and capture the agent user type" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(
-              testZReference,
-              credentialRole = None,
-              affinityGroup = AffinityGroup.Agent,
-              agentInformation = AgentInformation(
-                agentId = Some(testAgentId),
-                agentCode = None,
-                agentFriendlyName = Some(testAgentName)
-              )
-            ),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.userType()(FakeRequest())
-
-          status(result) mustBe OK
-          contentAsString(result) mustBe testAgentUserType
-        }
-      }
-
-      "must allow the request when credentials are unavailable" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(
-              testZReference,
-              credentials = None,
-              credentialRole = None,
-              affinityGroup = AffinityGroup.Agent
-            ),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.userType()(FakeRequest())
-
-          status(result) mustBe OK
-          contentAsString(result) mustBe testAgentUserType
-        }
+    "must use the ISA manager's own ZReference when an Organisation has both principal enrolments" in {
+      val auth = new TestAuthConnector(
+        enrolments = Enrolments(managerEnrolments.enrolments ++ agentEnrolments.enrolments)
+      )
+      withAction(auth, preferences = Future.successful(Some(secondTestZReference))) { (action, account, source) =>
+        val result = action.invokeBlock(
+          FakeRequest(),
+          request => {
+            request.userDetails mustBe UserDetails.IsaManager(testGroupId, testCredId, User.toString)
+            Future.successful(Results.Ok(request.zReference))
+          }
+        )
+        status(result) mustBe OK
+        contentAsString(result) mustBe testZReference
+        auth.predicates mustBe Vector(initialPredicate)
+        verify(source).get(eqTo(testZReference))(any[HeaderCarrier])
+        verifyNoInteractions(account)
       }
     }
 
-    "when an ISA Manager is missing a credential role" - {
+    "must authenticate without reporting context when requested" in {
+      withAction(new TestAuthConnector) { (action, account, source) =>
+        val result = action.invokeBlockWithoutReportingContext(
+          FakeRequest(),
+          zReference => Future.successful(Results.Ok(zReference))
+        )
+        status(result) mustBe OK
+        contentAsString(result) mustBe testZReference
+        verifyNoInteractions(account, source)
+      }
+    }
 
-      "must redirect the user to the unauthorised page" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeSuccessfulZReferenceAuthConnector(
-              testZReference,
-              credentialRole = None,
-              affinityGroup = AffinityGroup.Organisation
-            ),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
+    Seq(
+      "missing ZREF"              -> (() =>
+        new TestAuthConnector(enrolments = Enrolments(Set(Enrolment(testDisaEnrolmentKey, Seq.empty, "Activated"))))
+      ),
+      "missing enrolment"         -> (() => new TestAuthConnector(enrolments = Enrolments(Set.empty))),
+      "missing credential role"   -> (() => new TestAuthConnector(role = None)),
+      "missing credentials"       -> (() => new TestAuthConnector(creds = None)),
+      "missing affinity group"    -> (() => new TestAuthConnector(group = None)),
+      "Individual affinity group" -> (() => new TestAuthConnector(group = Some(AffinityGroup.Individual))),
+      "missing group ID"          -> (() => new TestAuthConnector(groupId = None))
+    ).foreach { case (label, auth) =>
+      s"must reject $label" in {
+        withAction(auth()) { (action, account, source) =>
+          val result = action.invokeBlock(FakeRequest(), _ => fail("Protected block was invoked"))
           status(result) mustBe SEE_OTHER
           redirectLocation(result).value mustBe routes.UnauthorisedController.onPageLoad().url
-        }
-      }
-    }
-
-    "when the user does not have a ZREF identifier" - {
-
-      "must redirect the user to the unauthorised page" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeMissingZReferenceAuthConnector,
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe SEE_OTHER
-          redirectLocation(result).value mustBe routes.UnauthorisedController.onPageLoad().url
-        }
-      }
-    }
-
-    "when the user hasn't logged in" - {
-
-      "must redirect the user to log in " in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeFailingAuthConnector(new MissingBearerToken),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe SEE_OTHER
-          redirectLocation(result).value must startWith(appConfig.loginUrl)
-        }
-      }
-    }
-
-    "the user's session has expired" - {
-
-      "must redirect the user to log in " in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeFailingAuthConnector(new BearerTokenExpired),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe SEE_OTHER
-          redirectLocation(result).value must startWith(appConfig.loginUrl)
-        }
-      }
-    }
-
-    "the user doesn't have sufficient enrolments" - {
-
-      "must redirect the user to the unauthorised page" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeFailingAuthConnector(new InsufficientEnrolments),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe SEE_OTHER
-          redirectLocation(result).value mustBe routes.UnauthorisedController.onPageLoad().url
-        }
-      }
-    }
-
-    "the user doesn't have sufficient confidence level" - {
-
-      "must redirect the user to the unauthorised page" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeFailingAuthConnector(new InsufficientConfidenceLevel),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe SEE_OTHER
-          redirectLocation(result).value mustBe routes.UnauthorisedController.onPageLoad().url
-        }
-      }
-    }
-
-    "the user used an unaccepted auth provider" - {
-
-      "must redirect the user to the unauthorised page" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeFailingAuthConnector(new UnsupportedAuthProvider),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe SEE_OTHER
-          redirectLocation(result).value mustBe routes.UnauthorisedController.onPageLoad().url
-        }
-      }
-    }
-
-    "the user has an unsupported affinity group" - {
-
-      "must redirect the user to the unauthorised page" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeFailingAuthConnector(new UnsupportedAffinityGroup),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe SEE_OTHER
-          redirectLocation(result) mustBe Some(routes.UnauthorisedController.onPageLoad().url)
-        }
-      }
-    }
-
-    "the user has an unsupported credential role" - {
-
-      "must redirect the user to the unauthorised page" in {
-
-        val application = applicationBuilder().build()
-
-        running(application) {
-          val bodyParsers = application.injector.instanceOf[BodyParsers.Default]
-          val appConfig   = application.injector.instanceOf[FrontendAppConfig]
-
-          val authAction = new AuthenticatedIdentifierAction(
-            new FakeFailingAuthConnector(new UnsupportedCredentialRole),
-            appConfig,
-            testReportingContextSource,
-            bodyParsers
-          )
-          val controller = new Harness(authAction)
-          val result     = controller.onPageLoad()(FakeRequest())
-
-          status(result) mustBe SEE_OTHER
-          redirectLocation(result) mustBe Some(routes.UnauthorisedController.onPageLoad().url)
+          verifyNoInteractions(account, source)
         }
       }
     }
   }
-}
 
-class FakeFailingAuthConnector @Inject() (exceptionToReturn: Throwable) extends AuthConnector {
-  val serviceUrl: String = ""
+  "Agent authentication" - {
+    "must authorise the selected ZReference without a principal DISA enrolment, credentials or role" in {
+      val auth = agent()
+      withAction(auth) { (action, account, source) =>
+        val result = action.invokeBlock(
+          FakeRequest(),
+          request => {
+            request.zReference mustBe testZReference
+            request.userDetails mustBe UserDetails.Agent(testGroupId, testAgentId, testAgentName)
+            request.currentDate mustBe reportingContext.effectiveDate
+            Future.successful(Results.Ok)
+          }
+        )
+        status(result) mustBe OK
+        auth.predicates.size mustBe 2
+        verify(account).getAgentZReference()(any[HeaderCarrier])
+        verify(source).get(eqTo(testZReference))(any[HeaderCarrier])
+      }
+    }
 
-  override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
-  ): Future[A] =
-    Future.failed(exceptionToReturn)
-}
+    "must use the selected client when an Agent has both principal enrolments and preserve unknown audit fields" in {
+      val otherEnrolment = Enrolments(
+        agentEnrolments.enrolments +
+          Enrolment(
+            testDisaEnrolmentKey,
+            Seq(EnrolmentIdentifier(testZReferenceIdentifierKey, secondTestZReference)),
+            "Activated"
+          )
+      )
+      val auth           = new TestAuthConnector(
+        group = Some(AffinityGroup.Agent),
+        enrolments = otherEnrolment,
+        agentInfo = AgentInformation(None, None, None)
+      )
+      withAction(auth) { (action, _, _) =>
+        val result = action.invokeBlock(
+          FakeRequest(),
+          request => {
+            request.zReference mustBe testZReference
+            request.userDetails mustBe UserDetails.Agent(testGroupId, UserDetails.unknown, UserDetails.unknown)
+            Future.successful(Results.Ok)
+          }
+        )
+        status(result) mustBe OK
+        auth.predicates.size mustBe 2
+      }
+    }
 
-class FakeSuccessfulZReferenceAuthConnector(
-  zReference: String,
-  credentials: Option[Credentials] = Some(Credentials(TestData.testCredId, TestData.testProviderType)),
-  credentialRole: Option[CredentialRole] = Some(User),
-  affinityGroup: AffinityGroup = AffinityGroup.Organisation,
-  agentInformation: AgentInformation = AgentInformation(None, None, None),
-  groupId: Option[String] = Some(TestData.testGroupId)
-) extends AuthConnector {
-  val serviceUrl: String = ""
+    Seq(false, true).foreach { withoutContext =>
+      s"must check delegated access when withoutReportingContext=$withoutContext" in {
+        val auth = agent()
+        withAction(auth) { (action, _, source) =>
+          val result = if (withoutContext) {
+            action.invokeBlockWithoutReportingContext(
+              FakeRequest(),
+              reference => Future.successful(Results.Ok(reference))
+            )
+          } else {
+            action.invokeBlock(FakeRequest(), request => Future.successful(Results.Ok(request.zReference)))
+          }
+          status(result) mustBe OK
+          contentAsString(result) mustBe testZReference
+          auth.predicates.size mustBe 2
+          if (withoutContext) verifyNoInteractions(source)
+          else verify(source).get(eqTo(testZReference))(any[HeaderCarrier])
+        }
+      }
 
-  override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
-  ): Future[A] =
-    Future.successful(
-      new ~(
-        new ~(
-          new ~(
-            new ~(
-              new ~(
-                Enrolments(
-                  Set(
-                    Enrolment(
-                      TestData.testDisaEnrolmentKey,
-                      Seq(EnrolmentIdentifier(TestData.testZReferenceIdentifierKey, zReference)),
-                      TestData.testActivatedEnrolmentStatus
-                    )
-                  )
-                ),
-                credentials
-              ),
-              credentialRole
-            ),
-            Some(affinityGroup)
-          ),
-          agentInformation
+      Seq(UNAUTHORIZED, FORBIDDEN).foreach { responseStatus =>
+        s"must return preferences status $responseStatus when withoutReportingContext=$withoutContext" in {
+          val auth = agent()
+          withAction(auth, preferences = Future.failed(UpstreamErrorResponse("preferences rejected", responseStatus))) {
+            (action, account, source) =>
+              val result = if (withoutContext) {
+                action.invokeBlockWithoutReportingContext(FakeRequest(), _ => fail("Protected block was invoked"))
+              } else {
+                action.invokeBlock(FakeRequest(), _ => fail("Protected block was invoked"))
+              }
+              status(result) mustBe responseStatus
+              redirectLocation(result) mustBe None
+              auth.predicates mustBe Vector(initialPredicate)
+              verify(account).getAgentZReference()(any[HeaderCarrier])
+              verifyNoInteractions(source)
+          }
+        }
+      }
+
+      Seq(
+        ("disabled flag", () => agent(), false, Future.successful(Some(testZReference)), false, false),
+        (
+          "disabled flag with no group ID",
+          () => agent(groupId = None),
+          false,
+          Future.successful(Some(testZReference)),
+          false,
+          false
         ),
-        groupId
-      ).asInstanceOf[A]
-    )
-}
-
-class FakeMissingZReferenceAuthConnector extends AuthConnector {
-  val serviceUrl: String = ""
-
-  override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
-  ): Future[A] =
-    Future.successful(
-      new ~(
-        new ~(
-          new ~(
-            new ~(
-              new ~(
-                Enrolments(Set.empty),
-                Some(Credentials(TestData.testCredId, TestData.testProviderType))
-              ),
-              Some(User)
+        (
+          "disabled flag with a principal enrolment",
+          () =>
+            new TestAuthConnector(
+              group = Some(AffinityGroup.Agent),
+              enrolments = Enrolments(agentEnrolments.enrolments ++ managerEnrolments.enrolments)
             ),
-            Some(AffinityGroup.Organisation)
-          ),
-          AgentInformation(None, None, None)
+          false,
+          Future.successful(Some(testZReference)),
+          false,
+          false
         ),
-        Some(TestData.testGroupId)
-      ).asInstanceOf[A]
-    )
+        ("missing group ID", () => agent(groupId = None), true, Future.successful(Some(testZReference)), false, false),
+        ("no preferences", () => agent(), true, Future.successful(None), true, false),
+        (
+          "missing delegated enrolment",
+          () => agent(Some(new InsufficientEnrolments)),
+          true,
+          Future.successful(Some(testZReference)),
+          true,
+          false
+        ),
+        (
+          "failed relationship",
+          () => agent(Some(new FailedRelationship)),
+          true,
+          Future.successful(Some(testZReference)),
+          true,
+          false
+        ),
+        (
+          "expired delegated authentication",
+          () => agent(Some(new BearerTokenExpired)),
+          true,
+          Future.successful(Some(testZReference)),
+          true,
+          true
+        )
+      ).foreach { case (label, makeAuth, enabled, preferences, callsAccount, login) =>
+        s"must reject $label when withoutReportingContext=$withoutContext" in {
+          withAction(makeAuth(), enabled, preferences) { (action, account, source) =>
+            val result = if (withoutContext) {
+              action.invokeBlockWithoutReportingContext(FakeRequest(), _ => fail("Protected block was invoked"))
+            } else {
+              action.invokeBlock(FakeRequest(), _ => fail("Protected block was invoked"))
+            }
+            status(result) mustBe SEE_OTHER
+            if (login) redirectLocation(result).value must startWith("http://localhost:9949/auth-login-stub/gg-sign-in")
+            else redirectLocation(result).value mustBe routes.UnauthorisedController.onPageLoad().url
+            verifyNoInteractions(source)
+            if (callsAccount) verify(account).getAgentZReference()(any[HeaderCarrier])
+            else verifyNoInteractions(account)
+          }
+        }
+      }
+    }
+
+    "must propagate preferences service and decoding failures without invoking protected code" in {
+      Seq(new RuntimeException("invalid preferences"), UpstreamErrorResponse("unavailable", SERVICE_UNAVAILABLE))
+        .foreach { error =>
+          withAction(agent(), preferences = Future.failed(error)) { (action, _, source) =>
+            val result = action.invokeBlock(FakeRequest(), _ => fail("Protected block was invoked"))
+            result.failed.futureValue mustBe error
+            verifyNoInteractions(source)
+          }
+        }
+    }
+
+    Seq(UNAUTHORIZED, FORBIDDEN).foreach { responseStatus =>
+      s"must propagate protected block failures with status $responseStatus" in {
+        withAction(agent()) { (action, _, _) =>
+          val error  = UpstreamErrorResponse("downstream rejected", responseStatus)
+          val result = action.invokeBlock(FakeRequest(), _ => Future.failed(error))
+          result.failed.futureValue mustBe error
+        }
+      }
+    }
+  }
+
+  "Initial authentication failures" - {
+    Seq(
+      new MissingBearerToken,
+      new BearerTokenExpired,
+      new InsufficientEnrolments,
+      new InsufficientConfidenceLevel,
+      new UnsupportedAuthProvider,
+      new UnsupportedAffinityGroup,
+      new UnsupportedCredentialRole
+    ).foreach { error =>
+      s"must handle ${error.getClass.getSimpleName}" in {
+        withAction(new TestAuthConnector(initialFailure = Some(error))) { (action, account, source) =>
+          val result = action.invokeBlock(FakeRequest(), _ => fail("Protected block was invoked"))
+          status(result) mustBe SEE_OTHER
+          if (error.isInstanceOf[NoActiveSession]) {
+            redirectLocation(result).value must include("continue=")
+            redirectLocation(result).value must startWith("http://localhost:9949/auth-login-stub/gg-sign-in")
+          } else redirectLocation(result).value mustBe routes.UnauthorisedController.onPageLoad().url
+          verifyNoInteractions(account, source)
+        }
+      }
+    }
+  }
 }

@@ -17,6 +17,7 @@
 package base
 
 import models.{MonthlyReturn, UserDetails}
+import utils.Constants
 
 import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
@@ -27,6 +28,8 @@ trait TestData {
   protected val registrationFrontendRoutePrefix: String      = TestData.registrationFrontendRoutePrefix
   protected val testAppName: String                          = TestData.testAppName
   protected val testZReference: String                       = TestData.randomZReference
+  protected val secondTestZReference: String                 =
+    Iterator.continually(TestData.randomZReference).filter(_ != testZReference).next()
   protected val testSubmissionId: UUID                       = TestData.randomSubmissionId
   protected val secondTestSubmissionId: UUID                 = TestData.randomSubmissionId
   protected val testReportingWindowInstant: Instant          = TestData.testReportingWindowInstant
@@ -58,6 +61,7 @@ trait TestData {
   protected val testCompanyName: String              = TestData.testCompanyName
   protected val testIsaManagerCredId: String         = TestData.testIsaManagerCredId
   protected val testDisaEnrolmentKey: String         = TestData.testDisaEnrolmentKey
+  protected val testAgentEnrolmentKey: String        = TestData.testAgentEnrolmentKey
   protected val testZReferenceIdentifierKey: String  = TestData.testZReferenceIdentifierKey
   protected val testActivatedEnrolmentStatus: String = TestData.testActivatedEnrolmentStatus
   protected val testUserDetails: UserDetails         =
@@ -100,8 +104,9 @@ object TestData {
   val testAgentName: String                        = "testAgent"
   val testCompanyName: String                      = "Test ISA Manager Ltd"
   val testIsaManagerCredId: String                 = "5053588723516092"
-  val testDisaEnrolmentKey: String                 = "HMRC-DISA-ORG"
-  val testZReferenceIdentifierKey: String          = "ZREF"
+  val testDisaEnrolmentKey: String                 = Constants.disaEnrolmentKey
+  val testAgentEnrolmentKey: String                = Constants.agentEnrolmentKey
+  val testZReferenceIdentifierKey: String          = Constants.zReferenceIdentifierKey
   val testActivatedEnrolmentStatus: String         = "Activated"
 
   def randomZReference: String =

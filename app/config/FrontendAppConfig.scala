@@ -52,6 +52,7 @@ class FrontendAppConfig @Inject(config: Configuration) extends ServicesConfig(co
   val exitSurveyUrl: String             = s"$exitSurveyBaseUrl/feedback/disa-returns-frontend"
 
   val languageTranslationEnabled: Boolean = getBoolean("features.welsh-translation")
+  val agentAuthenticationEnabled: Boolean = getBoolean("features.agent-authentication-enabled")
 
   def languageMap: Map[String, Lang] = Map(
     "en" -> Lang("en"),
